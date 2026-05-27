@@ -3,387 +3,1892 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F4A418">
+<meta name="description" content="SlimBoekhoud — Professionele boekhouding voor ZZP'ers">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;SlimBoekhoud&quot;,&quot;short_name&quot;:&quot;SB&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23F7F7F5&quot;,&quot;theme_color&quot;:&quot;%23F4A418&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23F4A418'/><text y='.9em' font-size='80' x='10'>SB</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;}]}">
 <title>SlimBoekhoud — Pro Stukadoors</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f5;color:#111;min-height:100vh}
-  .app{max-width:960px;margin:0 auto;padding:24px 20px}
-  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
-  .logo{width:40px;height:40px;border-radius:50%;background:#F4A418;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600;flex-shrink:0}
-  .topbar-info h1{font-size:17px;font-weight:500}
-  .topbar-info p{font-size:12px;color:#888}
-  .topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
-  select{font-size:13px;padding:5px 10px;border-radius:8px;border:1px solid #ddd;background:#fff}
-  .demo-btn{padding:6px 14px;font-size:12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
-  @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
-  .stat{background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #eee}
-  .stat-label{font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-  .stat-val{font-size:20px;font-weight:500}
-  .stat-sub{font-size:11px;color:#bbb;margin-top:3px}
-  .section-label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
-  .upload-zone{border:1.5px dashed #ccc;border-radius:12px;padding:28px 20px;text-align:center;margin-bottom:16px;background:#fafaf8;cursor:pointer;transition:all .15s}
-  .upload-zone:hover,.upload-zone.drag{border-color:#F4A418;background:#fffbf0}
-  .upload-zone .icon{font-size:28px;margin-bottom:8px}
-  .upload-zone p{font-size:13px;color:#555;margin-bottom:4px}
-  .upload-zone span{font-size:11px;color:#aaa}
-  .progress-bar{height:3px;background:#eee;border-radius:2px;margin-bottom:20px;overflow:hidden}
-  .progress-fill{height:100%;width:0;background:#F4A418;border-radius:2px;transition:width .4s}
-  .agents{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-  @media(max-width:600px){.agents{grid-template-columns:repeat(2,1fr)}}
-  .agent{background:#fff;border:1px solid #eee;border-radius:12px;padding:14px}
-  .agent-icon{font-size:22px;margin-bottom:8px}
-  .agent-name{font-size:13px;font-weight:500;margin-bottom:4px}
-  .agent-desc{font-size:11px;color:#888;line-height:1.5;margin-bottom:10px}
-  .agent-status{display:flex;align-items:center;gap:6px;font-size:11px;color:#aaa}
-  .dot{width:7px;height:7px;border-radius:50%;background:#ddd;flex-shrink:0;transition:background .3s}
-  .dot.running{background:#F4A418;animation:pulse 1s infinite}
-  .dot.done{background:#1D9E75}
-  .dot.error{background:#E24B4A}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .run-btn{width:100%;padding:12px;background:#F4A418;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:8px}
-  .run-btn:disabled{background:#ccc;cursor:not-allowed}
-  .tabs{display:flex;border:1px solid #eee;border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:20px}
-  .tab{padding:7px 16px;font-size:12px;font-weight:500;border:none;background:transparent;cursor:pointer;color:#888;border-right:1px solid #eee}
-  .tab.active{background:#f5f5f3;color:#111}
-  .tab:last-child{border-right:none}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th{text-align:left;padding:8px 10px;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #eee}
-  td{padding:9px 10px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
-  tr:hover td{background:#fafaf8}
-  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500}
-  .b-blue{background:#E6F1FB;color:#185FA5}
-  .b-amber{background:#FAEEDA;color:#854F0B}
-  .b-purple{background:#EEEDFE;color:#534AB7}
-  .b-green{background:#EAF3DE;color:#3B6D11}
-  .b-gray{background:#F1EFE8;color:#5F5E5A}
-  .b-ok{background:#EAF3DE;color:#3B6D11}
-  .b-flag{background:#FCEBEB;color:#A32D2D}
-  .kw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
-  @media(max-width:600px){.kw-grid{grid-template-columns:repeat(2,1fr)}}
-  .kw-card{background:#fff;border:1px solid #eee;border-radius:12px;padding:14px}
-  .kw-title{font-size:12px;font-weight:500;color:#888;margin-bottom:10px}
-  .kw-amount{font-size:18px;font-weight:500;margin-bottom:3px}
-  .kw-ex{font-size:11px;color:#888;margin-bottom:4px}
-  .kw-btw{font-size:11px;color:#1D9E75;font-weight:500;margin-bottom:10px}
-  .kw-bar-bg{height:3px;background:#eee;border-radius:2px}
-  .kw-bar-fill{height:3px;background:#F4A418;border-radius:2px}
-  .flag-card{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:#fff;border:1px solid #eee;border-radius:10px;margin-bottom:8px}
-  .flag-icon{font-size:18px;flex-shrink:0}
-  .flag-title{font-size:13px;font-weight:500;margin-bottom:3px}
-  .flag-sub{font-size:12px;color:#888}
-  .export-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
-  .export-btn{padding:9px 16px;font-size:13px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:6px}
-  .export-btn:hover{background:#f5f5f3}
-  .divider{border:none;border-top:1px solid #eee;margin:20px 0}
-  .footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;font-size:11px;color:#ccc;text-align:center}
-  .mono{font-family:'SF Mono',Monaco,monospace;font-size:12px}
-  .num{text-align:right}
-  .hidden{display:none}
-  /* API key setup banner */
-  .setup-banner{background:#FFF8E6;border:1px solid #F4A418;border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px}
-  .setup-banner strong{color:#854F0B}
-  .setup-banner a{color:#854F0B;font-weight:500}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#F4A418;--orange-dark:#d48c10;--orange-light:#FFF8E6;
+  --bg:#F7F7F5;--white:#FFFFFF;--sidebar:#1A1A2E;
+  --text:#111;--text-muted:#666;--text-light:#999;
+  --border:#E5E5E0;--green:#1D9E75;--red:#E24B4A;--blue:#185FA5;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+body.dark{
+  --bg:#0F0F13;--white:#1A1A24;--sidebar:#111118;
+  --text:#E8E8E0;--text-muted:#999;--text-light:#666;
+  --border:#2A2A38;--shadow:0 1px 3px rgba(0,0,0,.3);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:14px;transition:background .2s,color .2s}
+
+/* LOGIN */
+.login-screen{position:fixed;inset:0;background:var(--sidebar);display:flex;align-items:center;justify-content:center;z-index:999}
+.login-box{background:var(--white);border-radius:16px;padding:40px;width:360px;text-align:center}
+.login-logo{width:56px;height:56px;background:var(--orange);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#fff;margin:0 auto 16px}
+.login-title{font-size:22px;font-weight:600;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text-muted);margin-bottom:28px}
+.login-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;margin-bottom:12px;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+.login-btn{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px}
+.login-google{width:100%;padding:11px;background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.login-error{color:var(--red);font-size:12px;margin-bottom:8px}
+
+/* SIDEBAR */
+.sidebar{width:240px;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:100;transition:transform .3s}
+.sidebar-logo{padding:20px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+.logo-mark{width:36px;height:36px;background:var(--orange);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.logo-text{font-size:15px;font-weight:600;color:#fff}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+.sidebar-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-section{padding:6px 16px 4px;font-size:10px;font-weight:500;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;transition:all .15s;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(244,164,24,.15);color:var(--orange);font-weight:500}
+.nav-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--orange);border-radius:0 2px 2px 0}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--orange);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
+.sidebar-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.1)}
+.user-card{display:flex;align-items:center;gap:10px;cursor:pointer}
+.user-avatar{width:32px;height:32px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:#fff}
+.user-company{font-size:10px;color:rgba(255,255,255,.4)}
+
+/* MAIN */
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.page-title{font-size:15px;font-weight:600;flex:1}
+.btn{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-primary{background:var(--orange);color:#fff}
+.btn-primary:hover{background:var(--orange-dark)}
+.btn-secondary{background:var(--white);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--bg)}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+.btn-icon{width:34px;height:34px;padding:0;justify-content:center;font-size:16px}
+.content{padding:24px;flex:1}
+.page{display:none}.page.active{display:block}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.stat-label{font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.stat-value{font-size:22px;font-weight:600;margin-bottom:4px}
+.stat-sub{font-size:11px;color:var(--text-light)}
+
+/* CARDS */
+.card{background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:20px}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600}
+.card-body{padding:20px}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 14px;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);background:var(--bg)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.b-blue{background:#E6F1FB;color:#185FA5}.b-amber{background:#FAEEDA;color:#854F0B}
+.b-purple{background:#EEEDFE;color:#534AB7}.b-green{background:#EAF3DE;color:#3B6D11}
+.b-gray{background:#F1EFE8;color:#5F5E5A}.b-red{background:#FCEBEB;color:#A32D2D}
+.b-orange{background:#FFF0CC;color:#854F0B}
+
+/* UPLOAD & CAMERA */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg);margin-bottom:16px}
+.upload-zone:hover{border-color:var(--orange);background:var(--orange-light)}
+.upload-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.upload-option{border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--white)}
+.upload-option:hover{border-color:var(--orange);background:var(--orange-light)}
+.upload-option-icon{font-size:28px;margin-bottom:8px}
+.upload-option-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.upload-option-sub{font-size:11px;color:var(--text-muted)}
+
+/* AGENTS */
+.agents-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.agent-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+.agent-icon{font-size:22px;margin-bottom:8px}
+.agent-name{font-size:12px;font-weight:600;margin-bottom:4px}
+.agent-desc{font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px}
+.agent-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-light)}
+.dot{width:7px;height:7px;border-radius:50%;background:#ddd;flex-shrink:0}
+.dot.running{background:var(--orange);animation:pulse 1s infinite}
+.dot.done{background:var(--green)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* PROGRESS */
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-bottom:16px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:var(--orange);border-radius:2px;transition:width .4s}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:11px;font-weight:500;color:var(--text-muted)}
+.form-input{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--white);color:var(--text);font-family:'Inter',sans-serif;transition:border .15s}
+.form-input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(244,164,24,.1)}
+
+/* FACTUUR LINES */
+.factuur-lines{width:100%;border-collapse:collapse;margin-bottom:10px}
+.factuur-lines th{padding:7px 8px;font-size:11px;color:var(--text-muted);text-align:left;border-bottom:1px solid var(--border);background:var(--bg)}
+.factuur-lines td{padding:4px 4px}
+.factuur-lines input{width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;background:var(--white);color:var(--text)}
+.totals-box{background:var(--bg);border-radius:10px;padding:14px;width:260px;margin-left:auto}
+.totals-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.totals-row.total{font-weight:600;font-size:15px;border-top:1px solid var(--border);padding-top:8px;margin-top:4px}
+
+/* BTW GRID */
+.kwartaal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kw-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.kw-title{font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:8px}
+.kw-amount{font-size:18px;font-weight:600;margin-bottom:3px}
+.kw-sub{font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.kw-btw{font-size:11px;color:var(--green);font-weight:500;margin-bottom:8px}
+.kw-bar-bg{height:3px;background:var(--border);border-radius:2px}
+.kw-bar-fill{height:3px;background:var(--orange);border-radius:2px}
+
+/* NOTIFICATION */
+.notif{position:fixed;top:70px;right:20px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:999;display:flex;align-items:center;gap:10px;min-width:280px;animation:slideIn .3s ease;font-size:13px}
+.notif-warn{border-color:#F4A418;background:#FFF8E6}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* W&V */
+.wv-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+.wv-card{background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);text-align:center}
+.wv-icon{font-size:28px;margin-bottom:8px}
+.wv-label{font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.wv-value{font-size:22px;font-weight:600}
+
+/* INKOPEN MODULE */
+.lev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:900px){.lev-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.lev-grid{grid-template-columns:1fr}}
+.lev-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.lev-card:hover{border-color:var(--orange);transform:translateY(-1px)}
+.lev-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.lev-avatar{width:40px;height:40px;border-radius:10px;background:var(--orange-light);border:1px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.lev-name{font-size:14px;font-weight:600}
+.lev-cat{font-size:11px;color:var(--text-muted)}
+.lev-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lev-stat{background:var(--bg);border-radius:8px;padding:8px 10px}
+.lev-stat-label{font-size:10px;color:var(--text-muted);margin-bottom:3px}
+.lev-stat-val{font-size:14px;font-weight:600}
+.lev-bar-wrap{margin-top:12px}
+.lev-bar-bg{height:3px;background:var(--border);border-radius:2px}
+.lev-bar-fill{height:3px;background:var(--orange);border-radius:2px;transition:width .4s}
+.prod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:768px){.prod-grid{grid-template-columns:1fr 1fr}}
+.prod-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+.prod-icon{font-size:24px;margin-bottom:8px}
+.prod-name{font-size:13px;font-weight:600;margin-bottom:4px}
+.prod-amount{font-size:16px;font-weight:600;color:var(--orange-dark)}
+.prod-count{font-size:11px;color:var(--text-muted)}
+.inkoop-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.inkoop-tab{padding:9px 18px;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.inkoop-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+.search-bar{display:flex;gap:10px;margin-bottom:16px}
+.search-input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--white);color:var(--text);font-family:'Inter',sans-serif}
+.filter-select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--white);color:var(--text)}
+.detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-start;justify-content:flex-end}
+.detail-overlay.open{display:flex}
+.detail-panel{background:var(--white);width:480px;height:100vh;overflow-y:auto;padding:24px;box-shadow:-4px 0 20px rgba(0,0,0,.1)}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.detail-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted)}
+.handmatig-form{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+
+/* GOOGLE DRIVE & BOEKHOUDER */
+.gdrive-connect{background:var(--white);border:2px dashed var(--border);border-radius:16px;padding:40px;text-align:center;margin-bottom:20px}
+.gdrive-connect.connected{border-style:solid;border-color:var(--green);background:#F0FAF5}
+.gdrive-files{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:768px){.gdrive-files{grid-template-columns:1fr 1fr}}
+.gdrive-file{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;text-align:center}
+.gdrive-file:hover{border-color:var(--orange);background:var(--orange-light)}
+.gdrive-file.selected{border-color:var(--orange);background:var(--orange-light)}
+.gdrive-file-icon{font-size:28px;margin-bottom:8px}
+.gdrive-file-name{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gdrive-file-size{font-size:10px;color:var(--text-muted);margin-top:3px}
+.portal-card{background:var(--white);border-radius:16px;padding:28px;border:1px solid var(--border);margin-bottom:20px}
+.portal-link-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.portal-link-url{flex:1;font-size:13px;font-family:'SF Mono',monospace;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.portal-preview{background:var(--sidebar);border-radius:12px;padding:20px;color:#fff;margin-bottom:16px}
+.portal-preview-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.portal-preview-sub{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:16px}
+.portal-stat{display:inline-block;background:rgba(255,255,255,.1);border-radius:8px;padding:8px 14px;font-size:12px;margin-right:8px;margin-bottom:8px}
+.rapport-card{background:linear-gradient(135deg,#1A1A2E,#2D2D4E);border-radius:16px;padding:24px;color:#fff;margin-bottom:20px}
+.rapport-btn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;display:flex;align-items:center;gap:6px}
+.rapport-btn-primary{background:var(--orange);color:#fff}
+.rapport-btn-secondary{background:rgba(255,255,255,.1);color:#fff}
+
+.empty{text-align:center;padding:32px;color:var(--text-muted);font-size:13px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:'SF Mono',Monaco,monospace;font-size:12px}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .stats-grid,.kwartaal-grid,.wv-grid{grid-template-columns:1fr 1fr}
+  .agents-grid{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .upload-options{grid-template-columns:1fr}
+}
+.mobile-btn{display:none;background:none;border:none;cursor:pointer;font-size:20px;padding:4px}
+@media(max-width:768px){.mobile-btn{display:block}}
+
+/* DARK MODE TOGGLE */
+.dark-toggle{cursor:pointer;font-size:18px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--white)}
+
+/* INSTALL BANNER */
+.install-banner{background:var(--orange-light);border:1px solid var(--orange);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+
+/* OFFERTE */
+.offerte-badge{background:#EEEDFE;color:#534AB7}
 </style>
 </head>
 <body>
-<div class="app">
 
-  <div class="topbar">
-    <div class="logo">SB</div>
-    <div class="topbar-info">
-      <h1>SlimBoekhoud</h1>
-      <p>Pro Stukadoors Rotterdam &bull; KvK 64165965</p>
-    </div>
-    <div class="topbar-right">
-      <select id="year-sel" onchange="renderAll()">
-        <option>2024</option><option>2025</option><option selected>2026</option>
-      </select>
-      <button class="demo-btn" onclick="loadDemo()">Demo laden</button>
-    </div>
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">SB</div>
+    <div class="login-title">SlimBoekhoud</div>
+    <div class="login-sub">Professionele boekhouding voor ZZP'ers</div>
+    <div class="login-error" id="login-error" style="display:none">Onjuist wachtwoord</div>
+    <input class="login-input" type="email" id="login-email" placeholder="Email adres" value="parminder@prostukadoors.nl">
+    <input class="login-input" type="password" id="login-pass" placeholder="Wachtwoord" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Inloggen</button>
+    <div style="font-size:11px;color:var(--text-muted);margin:8px 0">of</div>
+    <button class="login-google" onclick="doGoogleLogin()">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Inloggen met Google
+    </button>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:16px">Demo wachtwoord: <strong>demo123</strong></div>
   </div>
-
-  <div id="setup-banner" class="setup-banner hidden">
-    ⚠️ <strong>API key nodig:</strong> Ga naar <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → kopieer je key → voeg toe als <strong>ANTHROPIC_API_KEY</strong> in Netlify Environment Variables.
-  </div>
-
-  <div class="stats">
-    <div class="stat"><div class="stat-label">Totaal bonnen</div><div class="stat-val" id="s-total">0</div><div class="stat-sub">dit jaar</div></div>
-    <div class="stat"><div class="stat-label">Incl. BTW</div><div class="stat-val" id="s-incl" style="color:#1D9E75">€ 0,00</div><div class="stat-sub">alle kwartalen</div></div>
-    <div class="stat"><div class="stat-label">Excl. BTW</div><div class="stat-val" id="s-excl">€ 0,00</div><div class="stat-sub">netto kosten</div></div>
-    <div class="stat"><div class="stat-label">Te claimen BTW</div><div class="stat-val" id="s-btw" style="color:#BA7517">€ 0,00</div><div class="stat-sub">voorbelasting</div></div>
-  </div>
-
-  <div class="section-label">Upload bonnen</div>
-  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-in').click()">
-    <div class="icon">📂</div>
-    <p id="upload-text">Sleep foto's, PDF's of bankafschriften hierheen</p>
-    <span>JPG, PNG, PDF, CSV — meerdere tegelijk</span>
-    <input type="file" id="file-in" style="display:none" multiple accept=".jpg,.jpeg,.png,.pdf,.csv" onchange="handleFiles(this.files)">
-  </div>
-
-  <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
-
-  <div class="section-label">Actieve agenten</div>
-  <div class="agents">
-    <div class="agent">
-      <div class="agent-icon">🔍</div>
-      <div class="agent-name">Scanner agent</div>
-      <div class="agent-desc">Leest bonnen, extraheert leverancier, datum, incl./excl. BTW.</div>
-      <div class="agent-status"><div class="dot" id="d-scan"></div><span id="l-scan">Wacht op bon</span></div>
-    </div>
-    <div class="agent">
-      <div class="agent-icon">🏷️</div>
-      <div class="agent-name">Sorteer agent</div>
-      <div class="agent-desc">Categoriseert elke bon: materiaal, brandstof, gereedschap, etc.</div>
-      <div class="agent-status"><div class="dot" id="d-sort"></div><span id="l-sort">Wacht op scanner</span></div>
-    </div>
-    <div class="agent">
-      <div class="agent-icon">📅</div>
-      <div class="agent-name">Kwartaal agent</div>
-      <div class="agent-desc">Groepeert per Q1–Q4 en berekent BTW-totalen voor aangifte.</div>
-      <div class="agent-status"><div class="dot" id="d-kw"></div><span id="l-kw">Wacht op sorteerder</span></div>
-    </div>
-    <div class="agent">
-      <div class="agent-icon">🛡️</div>
-      <div class="agent-name">Accountant agent</div>
-      <div class="agent-desc">Controleert duplicaten, ontbrekende BTW, eindsamenvatting.</div>
-      <div class="agent-status"><div class="dot" id="d-acc"></div><span id="l-acc">Wacht op kwartaal agent</span></div>
-    </div>
-  </div>
-
-  <button class="run-btn" id="run-btn" onclick="runAgents()" disabled>
-    ▶ Verwerk alle bonnen met agenten
-  </button>
-
-  <div id="results" class="hidden">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('bonnen',this)">Alle bonnen</button>
-      <button class="tab" onclick="switchTab('kwartaal',this)">Per kwartaal</button>
-      <button class="tab" onclick="switchTab('categorie',this)">Per categorie</button>
-      <button class="tab" onclick="switchTab('vlaggen',this)">Vlaggen</button>
-    </div>
-
-    <div id="tab-bonnen">
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr>
-            <th>Datum</th><th>Leverancier</th><th>Categorie</th><th>Kwartaal</th>
-            <th class="num">Excl. BTW</th><th class="num">BTW</th><th class="num">Incl. BTW</th><th>Status</th>
-          </tr></thead>
-          <tbody id="t-bonnen"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="tab-kwartaal" class="hidden">
-      <div class="kw-grid" id="kw-grid"></div>
-    </div>
-
-    <div id="tab-categorie" class="hidden">
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr>
-            <th>Categorie</th><th class="num">Aantal</th>
-            <th class="num">Excl. BTW</th><th class="num">BTW</th><th class="num">Incl. BTW</th>
-          </tr></thead>
-          <tbody id="t-cat"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="tab-vlaggen" class="hidden">
-      <div id="flags-list"></div>
-    </div>
-
-    <div class="divider"></div>
-    <div class="section-label">Exporteren</div>
-    <div class="export-row">
-      <button class="export-btn" onclick="exportCSV()">📊 Excel / CSV export</button>
-      <button class="export-btn" onclick="printReport()">🖨️ Afdrukken / PDF</button>
-    </div>
-  </div>
-
-  <div class="footer">SlimBoekhoud &bull; Pro Stukadoors &bull; KvK 64165965 &bull; IBAN NL44RABO0368249190</div>
 </div>
 
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">SB</div>
+    <div>
+      <div class="logo-text">SlimBoekhoud</div>
+      <div class="logo-sub" id="sb-company">Pro Stukadoors</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overzicht</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
+    <div class="nav-section">Financieel</div>
+    <div class="nav-item" onclick="showPage('bonnen',this)"><span class="nav-icon">🧾</span>Bonnen<span class="nav-badge" id="bonnen-badge">0</span></div>
+    <div class="nav-item" onclick="showPage('offertes',this)"><span class="nav-icon">📋</span>Offertes</div>
+    <div class="nav-item" onclick="showPage('facturen',this)"><span class="nav-icon">📄</span>Facturen</div>
+    <div class="nav-item" onclick="showPage('wv',this)"><span class="nav-icon">📈</span>Winst & verlies</div>
+    <div class="nav-item" onclick="showPage('btw',this)"><span class="nav-icon">📅</span>BTW aangifte</div>
+    <div class="nav-item" onclick="showPage('bank',this)"><span class="nav-icon">🏦</span>Bankrekening</div>
+    <div class="nav-item" onclick="showPage('inkopen',this)"><span class="nav-icon">🛒</span>Inkopen<span class="nav-badge" id="inkopen-badge">0</span></div>
+    <div class="nav-item" onclick="showPage('gdrive',this)"><span class="nav-icon">📁</span>Google Drive</div>
+    <div class="nav-item" onclick="showPage('boekhouder',this)"><span class="nav-icon">👩‍💼</span>Boekhouder</div>
+    <div class="nav-section">Boekhouding</div>
+    <div class="nav-item" onclick="showPage('grootboek',this)"><span class="nav-icon">📚</span>Grootboek</div>
+    <div class="nav-item" onclick="showPage('balans',this)"><span class="nav-icon">⚖️</span>Balans</div>
+    <div class="nav-item" onclick="showPage('belastingdienst',this)"><span class="nav-icon">🏛️</span>Belastingdienst</div>
+    <div class="nav-item" onclick="showPage('klanten',this)"><span class="nav-icon">👥</span>Klanten</div>
+    <div class="nav-item" onclick="showPage('instellingen',this)"><span class="nav-icon">⚙️</span>Instellingen</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card" onclick="showPage('instellingen',null)">
+      <div class="user-avatar" id="user-av">PS</div>
+      <div>
+        <div class="user-name" id="user-name">Parminder Singh</div>
+        <div class="user-company">Pro Stukadoors</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main" id="main-content">
+  <div class="topbar">
+    <button class="mobile-btn" onclick="toggleSidebar()">☰</button>
+    <div class="page-title" id="page-title">Dashboard</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--white);color:var(--text)" id="year-sel" onchange="renderAll()">
+        <option>2024</option><option>2025</option><option selected>2026</option>
+      </select>
+      <button class="dark-toggle" onclick="toggleDark()" id="dark-btn" title="Donkere modus">🌙</button>
+      <button class="btn btn-primary" onclick="showPage('bonnen',null);setTimeout(()=>document.getElementById('cam-input').click(),200)">+ Bon</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div id="btw-warning" style="display:none" class="notif notif-warn" style="position:relative;top:0;right:0;margin-bottom:16px;animation:none">
+        ⚠️ <span id="btw-warning-text"></span>
+        <button onclick="this.parentElement.style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px">×</button>
+      </div>
+      <div id="install-banner" class="install-banner" style="display:none">
+        📱 <span>Installeer SlimBoekhoud als app op je telefoon!</span>
+        <button class="btn btn-primary" onclick="installApp()" style="font-size:12px">Installeren</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Omzet dit jaar</div><div class="stat-value" id="d-omzet" style="color:var(--green)">€ 0,00</div><div class="stat-sub">uit facturen</div></div>
+        <div class="stat-card"><div class="stat-label">Kosten dit jaar</div><div class="stat-value" id="d-kosten">€ 0,00</div><div class="stat-sub">incl. BTW</div></div>
+        <div class="stat-card"><div class="stat-label">Te claimen BTW</div><div class="stat-value" id="d-btw" style="color:var(--orange-dark)">€ 0,00</div><div class="stat-sub">voorbelasting</div></div>
+        <div class="stat-card"><div class="stat-label">Nettowinst</div><div class="stat-value" id="d-winst" style="color:var(--blue)">€ 0,00</div><div class="stat-sub">omzet minus kosten</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Kosten per kwartaal 2026</span></div>
+          <div class="card-body">
+            <div id="chart-bars" style="display:flex;align-items:flex-end;gap:8px;height:100px">
+              <div style="color:var(--text-muted);font-size:12px;margin:auto">Laad demo data →</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Laatste bonnen</span></div>
+          <div id="recent-bonnen"><div class="empty">Geen bonnen</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Snelle acties</span></div>
+        <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="showPage('bonnen',null)">🧾 Bon uploaden</button>
+          <button class="btn btn-secondary" onclick="showPage('offertes',null);setTimeout(nieuweOfferte,100)">📋 Nieuwe offerte</button>
+          <button class="btn btn-secondary" onclick="showPage('facturen',null);setTimeout(nieuwFactuur,100)">📄 Nieuwe factuur</button>
+          <button class="btn btn-secondary" onclick="showPage('btw',null)">📅 BTW aangifte</button>
+          <button class="btn btn-primary" onclick="loadDemo()">▶ Demo laden</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BONNEN -->
+    <div class="page" id="page-bonnen">
+      <div class="upload-options">
+        <div class="upload-option" onclick="document.getElementById('cam-input').click()">
+          <div class="upload-option-icon">📸</div>
+          <div class="upload-option-title">Foto maken</div>
+          <div class="upload-option-sub">Maak foto met camera</div>
+          <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleFiles(this.files)">
+        </div>
+        <div class="upload-option" onclick="document.getElementById('file-input').click()">
+          <div class="upload-option-icon">📂</div>
+          <div class="upload-option-title">Bestand uploaden</div>
+          <div class="upload-option-sub">JPG, PNG, PDF, CSV</div>
+          <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.pdf,.csv" style="display:none" onchange="handleFiles(this.files)">
+        </div>
+      </div>
+      <div id="upload-status" style="display:none;margin-bottom:12px;font-size:13px;color:var(--text-muted)"></div>
+      <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+      <div class="agents-grid">
+        <div class="agent-card"><div class="agent-icon">🔍</div><div class="agent-name">Scanner agent</div><div class="agent-desc">Leest bonnen, extraheert leverancier, datum, BTW.</div><div class="agent-status"><div class="dot" id="d-scan"></div><span id="l-scan">Wacht op bon</span></div></div>
+        <div class="agent-card"><div class="agent-icon">🏷️</div><div class="agent-name">Sorteer agent</div><div class="agent-desc">Categoriseert automatisch op type.</div><div class="agent-status"><div class="dot" id="d-sort"></div><span id="l-sort">Wacht op scanner</span></div></div>
+        <div class="agent-card"><div class="agent-icon">📅</div><div class="agent-name">Kwartaal agent</div><div class="agent-desc">Groepeert per Q1–Q4 voor aangifte.</div><div class="agent-status"><div class="dot" id="d-kw"></div><span id="l-kw">Wacht op sorteerder</span></div></div>
+        <div class="agent-card"><div class="agent-icon">🛡️</div><div class="agent-name">Accountant agent</div><div class="agent-desc">Controleert duplicaten en BTW fouten.</div><div class="agent-status"><div class="dot" id="d-acc"></div><span id="l-acc">Wacht op kwartaal agent</span></div></div>
+      </div>
+      <button class="btn btn-primary" id="run-btn" onclick="runAgents()" disabled style="width:100%;padding:12px;margin-bottom:20px;justify-content:center">▶ Verwerk bonnen met agenten</button>
+      <div class="card" id="bonnen-results" style="display:none">
+        <div class="card-header">
+          <span class="card-title" id="bonnen-count">Verwerkte bonnen</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:12px">📊 CSV</button>
+            <button class="btn btn-ghost" onclick="exportBonnenPDF()" style="font-size:12px">📄 PDF</button>
+          </div>
+        </div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="bon-search" class="form-input" placeholder="🔍 Zoek leverancier..." style="width:180px;padding:6px 10px;font-size:12px" oninput="filterBonnen()">
+          <select id="bon-cat-filter" class="form-input" style="padding:6px 10px;font-size:12px;width:auto" onchange="filterBonnen()">
+            <option value="">Alle categorieën</option>
+            <option>Materiaal</option><option>Brandstof</option><option>Gereedschap</option>
+            <option>Verzekering</option><option>Telefoon</option><option>Eten & drinken</option>
+            <option>Transport</option><option>Subcontractor</option><option>Overig</option>
+          </select>
+          <select id="bon-kw-filter" class="form-input" style="padding:6px 10px;font-size:12px;width:auto" onchange="filterBonnen()">
+            <option value="">Alle kwartalen</option>
+            <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
+          </select>
+          <button class="btn btn-ghost" onclick="resetBonFilter()" style="font-size:11px;padding:5px 10px">× Reset</button>
+          <span id="bon-filter-count" style="font-size:11px;color:var(--text-muted);margin-left:auto"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Datum</th><th>Leverancier</th><th>Categorie</th>
+              <th>Notitie / Label</th><th>Kwartaal</th>
+              <th class="num">Excl.</th><th class="num">BTW</th><th class="num">Incl.</th><th>Status</th>
+            </tr></thead>
+            <tbody id="t-bonnen"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFERTES -->
+    <div class="page" id="page-offertes">
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-primary" onclick="nieuweOfferte()">+ Nieuwe offerte</button>
+        <button class="btn btn-secondary" onclick="toonOfferteList()">📋 Alle offertes</button>
+      </div>
+      <div id="offerte-list">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nummer</th><th>Klant</th><th>Datum</th><th class="num">Bedrag</th><th>Status</th><th></th></tr></thead>
+              <tbody id="t-offertes"><tr><td colspan="6" class="empty">Nog geen offertes</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="offerte-form" style="display:none">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Nieuwe offerte</span><button class="btn btn-ghost" onclick="toonOfferteList()" style="font-size:12px">← Terug</button></div>
+          <div class="card-body">
+            <div class="form-grid" style="margin-bottom:16px">
+              <div class="form-group"><label class="form-label">Klant *</label><input class="form-input" id="o-klant" placeholder="Naam klant"></div>
+              <div class="form-group"><label class="form-label">Offertenummer</label><input class="form-input" id="o-nummer" placeholder="2026-O001"></div>
+              <div class="form-group"><label class="form-label">Datum</label><input class="form-input" type="date" id="o-datum"></div>
+              <div class="form-group"><label class="form-label">Geldig tot</label><input class="form-input" type="date" id="o-geldig"></div>
+              <div class="form-group full"><label class="form-label">Project omschrijving</label><input class="form-input" id="o-project" placeholder="bijv. Stucwerk woonkamer + slaapkamer"></div>
+            </div>
+            <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:8px">REGELPOSTEN</div>
+            <table class="factuur-lines">
+              <thead><tr><th style="width:40%">Omschrijving</th><th style="width:15%">Aantal</th><th style="width:20%">Prijs excl.</th><th style="width:12%">BTW%</th><th style="width:13%">Totaal</th></tr></thead>
+              <tbody id="offerte-regels">
+                <tr><td><input class="form-input" oninput="berekenOfferte()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="berekenOfferte()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="berekenOfferte()"></td><td><input class="form-input num" type="number" value="21" oninput="berekenOfferte()"></td><td><input class="form-input num" readonly style="background:var(--bg)"></td></tr>
+              </tbody>
+            </table>
+            <button class="btn btn-ghost" onclick="voegOfferteRegelToe()" style="font-size:12px;margin-bottom:16px">+ Regel toevoegen</button>
+            <div class="totals-box">
+              <div class="totals-row"><span>Subtotaal excl. BTW</span><span id="o-tot-excl">€ 0,00</span></div>
+              <div class="totals-row"><span>BTW</span><span id="o-tot-btw">€ 0,00</span></div>
+              <div class="totals-row total"><span>Totaal incl. BTW</span><span id="o-tot-incl">€ 0,00</span></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <button class="btn btn-primary" onclick="slaOfferteOp()">💾 Opslaan</button>
+              <button class="btn btn-secondary" onclick="offerteNaarFactuur()">→ Naar factuur</button>
+              <button class="btn btn-ghost" onclick="downloadOffertePDF()">📄 PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FACTUREN -->
+    <div class="page" id="page-facturen">
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-primary" onclick="nieuwFactuur()">+ Nieuwe factuur</button>
+        <button class="btn btn-secondary" onclick="toonFacturenList()">📋 Alle facturen</button>
+      </div>
+      <div id="facturen-list">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nummer</th><th>Klant</th><th>Datum</th><th>Verval</th><th class="num">Bedrag</th><th>Status</th><th></th></tr></thead>
+              <tbody id="t-facturen"><tr><td colspan="7" class="empty">Nog geen facturen</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="factuur-form" style="display:none">
+        <div class="card">
+          <div class="card-header"><span class="card-title" id="f-form-title">Nieuwe factuur</span><button class="btn btn-ghost" onclick="toonFacturenList()" style="font-size:12px">← Terug</button></div>
+          <div class="card-body">
+            <div class="form-grid" style="margin-bottom:16px">
+              <div class="form-group"><label class="form-label">Klant *</label><input class="form-input" id="f-klant" placeholder="Naam klant"></div>
+              <div class="form-group"><label class="form-label">Factuurnummer</label><input class="form-input" id="f-nummer" placeholder="2026-001"></div>
+              <div class="form-group"><label class="form-label">Factuurdatum</label><input class="form-input" type="date" id="f-datum"></div>
+              <div class="form-group"><label class="form-label">Vervaldatum (30 dagen)</label><input class="form-input" type="date" id="f-verval"></div>
+              <div class="form-group full"><label class="form-label">Project</label><input class="form-input" id="f-project" placeholder="bijv. Stucwerk woonkamer"></div>
+            </div>
+            <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:8px">REGELPOSTEN</div>
+            <table class="factuur-lines">
+              <thead><tr><th style="width:40%">Omschrijving</th><th style="width:15%">Aantal</th><th style="width:20%">Prijs excl.</th><th style="width:12%">BTW%</th><th style="width:13%">Totaal</th></tr></thead>
+              <tbody id="factuur-regels">
+                <tr><td><input class="form-input" oninput="berekenFactuur()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="berekenFactuur()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="berekenFactuur()"></td><td><input class="form-input num" type="number" value="21" oninput="berekenFactuur()"></td><td><input class="form-input num" readonly style="background:var(--bg)"></td></tr>
+              </tbody>
+            </table>
+            <button class="btn btn-ghost" onclick="voegRegelToe('factuur-regels','berekenFactuur')" style="font-size:12px;margin-bottom:16px">+ Regel toevoegen</button>
+            <div class="totals-box">
+              <div class="totals-row"><span>Subtotaal excl. BTW</span><span id="tot-excl">€ 0,00</span></div>
+              <div class="totals-row"><span>BTW (21%)</span><span id="tot-btw">€ 0,00</span></div>
+              <div class="totals-row total"><span>Totaal incl. BTW</span><span id="tot-incl">€ 0,00</span></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <button class="btn btn-primary" onclick="slaFactuurOp()">💾 Opslaan</button>
+              <button class="btn btn-secondary" onclick="downloadFactuurPDF()">📄 PDF download</button>
+              <button class="btn btn-ghost" onclick="emailFactuur()">📧 Email naar klant</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W&V -->
+    <div class="page" id="page-wv">
+      <div class="wv-grid">
+        <div class="wv-card"><div class="wv-icon">📈</div><div class="wv-label">Totale omzet</div><div class="wv-value" id="wv-omzet" style="color:var(--green)">€ 0,00</div></div>
+        <div class="wv-card"><div class="wv-icon">📉</div><div class="wv-label">Totale kosten</div><div class="wv-value" id="wv-kosten" style="color:var(--red)">€ 0,00</div></div>
+        <div class="wv-card"><div class="wv-icon">💰</div><div class="wv-label">Nettowinst</div><div class="wv-value" id="wv-winst" style="color:var(--blue)">€ 0,00</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Winst & verlies per kwartaal</span><button class="btn btn-ghost" onclick="exportWVPDF()" style="font-size:12px">📄 PDF rapport</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kwartaal</th><th class="num">Omzet</th><th class="num">Kosten</th><th class="num">BTW saldo</th><th class="num">Nettowinst</th></tr></thead>
+            <tbody id="t-wv"><tr><td colspan="5" class="empty">Laad demo data om rapport te zien</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BTW -->
+    <div class="page" id="page-btw">
+      <div class="kwartaal-grid" id="kw-grid-btw"></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">BTW aangifte overzicht</span><button class="btn btn-primary" onclick="exportBTWPDF()" style="font-size:12px">📥 PDF aangifte</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kwartaal</th><th class="num">Omzet excl.</th><th class="num">BTW ontvangen</th><th class="num">Kosten excl.</th><th class="num">BTW betaald</th><th class="num">Saldo</th></tr></thead>
+            <tbody id="t-btw"><tr><td colspan="6" class="empty">Laad bonnen en facturen om BTW te berekenen</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- INKOPEN -->
+    <div class="page" id="page-inkopen">
+
+      <!-- DETAIL PANEL -->
+      <div class="detail-overlay" id="detail-overlay" onclick="if(event.target===this)sluitDetail()">
+        <div class="detail-panel" id="detail-panel">
+          <div class="detail-header">
+            <div>
+              <div style="font-size:16px;font-weight:600" id="detail-title">Leverancier</div>
+              <div style="font-size:12px;color:var(--text-muted)" id="detail-sub"></div>
+            </div>
+            <button class="detail-close" onclick="sluitDetail()">×</button>
+          </div>
+          <div id="detail-body"></div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="inkoop-tabs">
+        <button class="inkoop-tab active" onclick="switchInkoopTab('leveranciers',this)">🏪 Leveranciers</button>
+        <button class="inkoop-tab" onclick="switchInkoopTab('producten',this)">📦 Producten</button>
+        <button class="inkoop-tab" onclick="switchInkoopTab('vergelijk',this)">📊 Vergelijking</button>
+        <button class="inkoop-tab" onclick="switchInkoopTab('handmatig',this)">✏️ Handmatig invoeren</button>
+      </div>
+
+      <!-- LEVERANCIERS TAB -->
+      <div id="inkoop-tab-leveranciers">
+        <div class="search-bar">
+          <input class="search-input" id="lev-search" placeholder="Zoek leverancier..." oninput="renderLeveranciers()">
+          <select class="filter-select" id="lev-filter" onchange="renderLeveranciers()">
+            <option value="">Alle categorieën</option>
+            <option>Materiaal</option><option>Brandstof</option><option>Gereedschap</option>
+            <option>Verzekering</option><option>Telefoon</option><option>Eten & drinken</option>
+            <option>Transport</option><option>Subcontractor</option><option>Overig</option>
+          </select>
+          <button class="btn btn-primary" onclick="exportLeverancierCSV()" style="font-size:12px">📊 Export</button>
+        </div>
+        <div class="lev-grid" id="lev-grid"></div>
+        <div id="lev-empty" style="display:none" class="empty">Geen leveranciers gevonden. Upload bonnen of voer handmatig in.</div>
+      </div>
+
+      <!-- PRODUCTEN TAB -->
+      <div id="inkoop-tab-producten" style="display:none">
+        <div class="search-bar">
+          <input class="search-input" id="prod-search" placeholder="Zoek product of categorie..." oninput="renderProducten()">
+          <select class="filter-select" id="prod-jaar" onchange="renderProducten()">
+            <option>2026</option><option>2025</option><option>2024</option>
+          </select>
+        </div>
+        <div class="prod-grid" id="prod-grid"></div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Alle producten & aankopen</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Datum</th><th>Product/omschrijving</th><th>Leverancier</th><th>Categorie</th><th class="num">Excl. BTW</th><th class="num">Incl. BTW</th></tr></thead>
+              <tbody id="t-producten"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERGELIJKING TAB -->
+      <div id="inkoop-tab-vergelijk" style="display:none">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Uitgaven per leverancier — vergelijking</span></div>
+          <div class="card-body">
+            <div id="vergelijk-chart" style="display:flex;flex-direction:column;gap:10px"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Top leveranciers dit jaar</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rank</th><th>Leverancier</th><th>Categorie</th><th class="num">Bonnen</th><th class="num">Totaal excl.</th><th class="num">Totaal incl.</th><th class="num">Gem. per bon</th></tr></thead>
+              <tbody id="t-vergelijk"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- HANDMATIG INVOEREN TAB -->
+      <div id="inkoop-tab-handmatig" style="display:none">
+        <div class="handmatig-form">
+          <div style="font-size:14px;font-weight:600;margin-bottom:16px">Nieuwe inkoop invoeren</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Leverancier *</label>
+              <input class="form-input" id="h-leverancier" placeholder="bijv. Gamma Rotterdam" list="leverancier-suggestions">
+              <datalist id="leverancier-suggestions"></datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Datum *</label>
+              <input class="form-input" type="date" id="h-datum">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Product/omschrijving</label>
+              <input class="form-input" id="h-product" placeholder="bijv. Stucmaterialen, 20kg">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Categorie</label>
+              <select class="form-input" id="h-cat">
+                <option>Materiaal</option><option>Brandstof</option><option>Gereedschap</option>
+                <option>Verzekering</option><option>Telefoon</option><option>Eten & drinken</option>
+                <option>Transport</option><option>Subcontractor</option><option>Overig</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bedrag excl. BTW (€) *</label>
+              <input class="form-input num" type="number" id="h-excl" placeholder="0.00" oninput="berekenHandmatig()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">BTW %</label>
+              <select class="form-input" id="h-pct" onchange="berekenHandmatig()">
+                <option value="21" selected>21%</option>
+                <option value="9">9%</option>
+                <option value="0">0%</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bedrag incl. BTW</label>
+              <input class="form-input num" id="h-incl" readonly style="background:var(--bg)" placeholder="Automatisch berekend">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bonnetje foto (optioneel)</label>
+              <input class="form-input" type="file" accept="image/*,.pdf" id="h-foto" style="padding:6px">
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Notitie</label>
+              <input class="form-input" id="h-notitie" placeholder="Extra informatie...">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn btn-primary" onclick="voegInkoopToe()">+ Toevoegen</button>
+            <button class="btn btn-ghost" onclick="resetHandmatig()">Wissen</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="handmatig-count">Handmatig ingevoerde inkopen</span>
+            <button class="btn btn-ghost" onclick="exportHandmatigCSV()" style="font-size:12px">📊 Export</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Datum</th><th>Leverancier</th><th>Product</th><th>Categorie</th><th class="num">Excl.</th><th class="num">BTW</th><th class="num">Incl.</th><th></th></tr></thead>
+              <tbody id="t-handmatig"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BANK -->
+    <div class="page" id="page-bank">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Bankrekening</span></div>
+        <div class="card-body" style="text-align:center;padding:40px">
+          <div style="font-size:48px;margin-bottom:16px">🏦</div>
+          <div style="font-size:16px;font-weight:500;margin-bottom:8px">Rabobank koppelen</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">IBAN: NL44RABO0368249190</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto">Koppel via Open Banking — transacties komen automatisch binnen. Geen handmatig uploaden meer.</div>
+          <button class="btn btn-primary" onclick="showNotif('Bankrekening koppeling via Nordigen/GoCardless komt in v2.0. We informeren je per email!')">🔗 Rabobank koppelen</button>
+          <div style="margin-top:20px;font-size:12px;color:var(--text-muted)">Of upload een bankafschrift als CSV</div>
+          <button class="btn btn-secondary" style="margin-top:8px" onclick="showPage('bonnen',null)">📂 CSV uploaden</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GROOTBOEK -->
+    <div class="page" id="page-grootboek">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📚 Grootboek rekeningen (RGS)</span>
+          <button class="btn btn-primary" onclick="exportGrootboekCSV()" style="font-size:12px">📊 Export</button>
+        </div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+            Nederlandse standaard rekeningenschema (Referentie Grootboek Schema). Automatisch geboekt vanuit bonnen en facturen.
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Rekening</th><th>Omschrijving</th><th>Type</th>
+                <th class="num">Debet (uitgaven)</th><th class="num">Credit (inkomsten)</th><th class="num">Saldo</th>
+              </tr></thead>
+              <tbody id="t-grootboek"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">📋 Journaalposten</span></div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+            Alle automatische boekingen op basis van je bonnen en facturen
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Datum</th><th>Omschrijving</th><th>Debet rekening</th>
+                <th>Credit rekening</th><th class="num">Bedrag</th><th>Type</th>
+              </tr></thead>
+              <tbody id="t-journaal"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BALANS -->
+    <div class="page" id="page-balans">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Totale activa</div>
+          <div class="stat-value" id="b-activa" style="color:var(--blue)">€ 0,00</div>
+          <div class="stat-sub">bezittingen</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Totale passiva</div>
+          <div class="stat-value" id="b-passiva">€ 0,00</div>
+          <div class="stat-sub">schulden + eigen vermogen</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Eigen vermogen</div>
+          <div class="stat-value" id="b-vermogen" style="color:var(--green)">€ 0,00</div>
+          <div class="stat-sub">winst min privé</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Liquide middelen</div>
+          <div class="stat-value" id="b-liquide" style="color:var(--orange-dark)">€ 0,00</div>
+          <div class="stat-sub">bank + kas</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-header" style="background:#E6F1FB"><span class="card-title">📈 ACTIVA (Bezittingen)</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rekening</th><th class="num">Bedrag</th></tr></thead>
+              <tbody id="t-activa">
+                <tr><td>Bankrekening (NL44RABO...)</td><td class="num mono" id="ba-bank">€ 0,00</td></tr>
+                <tr><td>Kas</td><td class="num mono" id="ba-kas">€ 0,00</td></tr>
+                <tr><td>Debiteuren (openstaande facturen)</td><td class="num mono" id="ba-debit">€ 0,00</td></tr>
+                <tr><td>BTW vorderingen</td><td class="num mono" id="ba-btw-vord">€ 0,00</td></tr>
+                <tr style="font-weight:600;border-top:2px solid var(--border)"><td>TOTAAL ACTIVA</td><td class="num mono" id="ba-totaal">€ 0,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="background:#FAEEDA"><span class="card-title">📉 PASSIVA (Schulden + Vermogen)</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rekening</th><th class="num">Bedrag</th></tr></thead>
+              <tbody id="t-passiva">
+                <tr><td>Eigen vermogen</td><td class="num mono" id="bp-vermogen">€ 0,00</td></tr>
+                <tr><td>Crediteuren (te betalen aan leveranciers)</td><td class="num mono" id="bp-cred">€ 0,00</td></tr>
+                <tr><td>BTW te betalen aan Belastingdienst</td><td class="num mono" id="bp-btw">€ 0,00</td></tr>
+                <tr style="font-weight:600;border-top:2px solid var(--border)"><td>TOTAAL PASSIVA</td><td class="num mono" id="bp-totaal">€ 0,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <span class="card-title">📊 Winst & Verlies rekening</span>
+          <button class="btn btn-primary" onclick="exportBalansPDF()" style="font-size:12px">📄 PDF Jaarrekening</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Categorie</th><th class="num">Bedrag</th></tr></thead>
+              <tbody>
+                <tr style="background:#EAF3DE"><td style="font-weight:600">OMZET</td><td class="num mono" style="font-weight:600" id="wv-2-omzet">€ 0,00</td></tr>
+                <tr><td style="padding-left:24px">+ Verkoop facturen (excl. BTW)</td><td class="num mono" id="wv-2-verkoop">€ 0,00</td></tr>
+                <tr style="background:#FCEBEB"><td style="font-weight:600">KOSTEN</td><td class="num mono" style="font-weight:600" id="wv-2-kosten">€ 0,00</td></tr>
+                <tr><td style="padding-left:24px">- Materiaal</td><td class="num mono" id="wv-2-materiaal">€ 0,00</td></tr>
+                <tr><td style="padding-left:24px">- Brandstof</td><td class="num mono" id="wv-2-brandstof">€ 0,00</td></tr>
+                <tr><td style="padding-left:24px">- Gereedschap</td><td class="num mono" id="wv-2-gereedschap">€ 0,00</td></tr>
+                <tr><td style="padding-left:24px">- Verzekering</td><td class="num mono" id="wv-2-verzekering">€ 0,00</td></tr>
+                <tr><td style="padding-left:24px">- Telefoon & abonnementen</td><td class="num mono" id="wv-2-telefoon">€ 0,00</td></tr>
+                <tr><td style="padding-left:24px">- Overige kosten</td><td class="num mono" id="wv-2-overig">€ 0,00</td></tr>
+                <tr style="background:#E6F1FB;border-top:2px solid var(--border)"><td style="font-weight:700">NETTOWINST VOOR BELASTING</td><td class="num mono" style="font-weight:700;font-size:15px" id="wv-2-winst">€ 0,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BELASTINGDIENST -->
+    <div class="page" id="page-belastingdienst">
+      <div class="rapport-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="font-size:36px">🏛️</div>
+          <div>
+            <div class="rapport-title">Belastingdienst export</div>
+            <div class="rapport-sub">BTW aangifte klaar om in te dienen bij de Belastingdienst</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7);background:rgba(255,255,255,.05);padding:12px 16px;border-radius:8px;margin-bottom:16px">
+          ⚠️ <strong>Belangrijk:</strong> Deze bedragen kun je direct overnemen in het Mijn Belastingdienst Zakelijk portaal voor je BTW aangifte.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 BTW aangifte formulier</span>
+          <div style="display:flex;gap:8px">
+            <select class="form-input" id="bd-kwartaal" onchange="renderBelastingdienst()" style="padding:5px 10px;font-size:12px;width:auto">
+              <option value="Q1">Q1 2026 (jan-mrt)</option>
+              <option value="Q2">Q2 2026 (apr-jun)</option>
+              <option value="Q3">Q3 2026 (jul-sep)</option>
+              <option value="Q4">Q4 2026 (okt-dec)</option>
+            </select>
+            <button class="btn btn-primary" onclick="exportBelastingdienstPDF()" style="font-size:12px">📄 PDF</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">RUBRIEK 1 — Prestaties binnenland</div>
+          <div class="table-wrap" style="margin-bottom:24px">
+            <table>
+              <thead><tr><th>Rubriek</th><th>Omschrijving</th><th class="num">Bedrag excl. BTW</th><th class="num">BTW bedrag</th></tr></thead>
+              <tbody>
+                <tr><td><strong>1a</strong></td><td>Leveringen/diensten belast met hoog tarief (21%)</td><td class="num mono" id="bd-1a-excl">€ 0,00</td><td class="num mono" id="bd-1a-btw">€ 0,00</td></tr>
+                <tr><td><strong>1b</strong></td><td>Leveringen/diensten belast met laag tarief (9%)</td><td class="num mono">€ 0,00</td><td class="num mono">€ 0,00</td></tr>
+                <tr><td><strong>1c</strong></td><td>Leveringen/diensten belast met overige tarieven</td><td class="num mono">€ 0,00</td><td class="num mono">€ 0,00</td></tr>
+                <tr><td><strong>1d</strong></td><td>Privégebruik</td><td class="num mono">€ 0,00</td><td class="num mono">€ 0,00</td></tr>
+                <tr><td><strong>1e</strong></td><td>Leveringen/diensten belast met 0% of vrijgesteld</td><td class="num mono">€ 0,00</td><td class="num mono">-</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">RUBRIEK 5 — Voorbelasting</div>
+          <div class="table-wrap" style="margin-bottom:24px">
+            <table>
+              <thead><tr><th>Rubriek</th><th>Omschrijving</th><th class="num">Bedrag</th></tr></thead>
+              <tbody>
+                <tr><td><strong>5a</strong></td><td>Verschuldigde omzetbelasting (totaal rubriek 1+2+3+4)</td><td class="num mono" style="font-weight:600" id="bd-5a">€ 0,00</td></tr>
+                <tr><td><strong>5b</strong></td><td>Voorbelasting (BTW betaald aan leveranciers)</td><td class="num mono" style="font-weight:600;color:var(--green)" id="bd-5b">€ 0,00</td></tr>
+                <tr style="background:var(--orange-light);border-top:2px solid var(--orange)"><td><strong style="color:var(--orange-dark)">Saldo</strong></td><td style="font-weight:600;color:var(--orange-dark)">Te betalen/te ontvangen (5a min 5b)</td><td class="num mono" style="font-weight:700;font-size:15px" id="bd-saldo">€ 0,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="bd-instructie" style="background:var(--orange-light);border:1px solid var(--orange);border-radius:10px;padding:14px 18px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px">📝 Stap-voor-stap instructies</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.6">
+              1. Ga naar <a href="https://www.belastingdienst.nl/mijn-zakelijk" target="_blank" style="color:var(--blue);font-weight:500">Mijn Belastingdienst Zakelijk</a><br>
+              2. Klik op "BTW aangifte"<br>
+              3. Selecteer kwartaal <strong id="bd-kw-label">Q1 2026</strong><br>
+              4. Vul rubriek 1a in met de bedragen hierboven<br>
+              5. Vul rubriek 5b in met de voorbelasting<br>
+              6. Verzend de aangifte
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">📊 IB aangifte voorbereiding</span></div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+            Inkomstenbelasting voorbereiding — gebruik deze bedragen voor je IB aangifte als ZZP'er
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Onderdeel</th><th class="num">Bedrag</th></tr></thead>
+              <tbody>
+                <tr><td>Omzet (excl. BTW)</td><td class="num mono" id="ib-omzet">€ 0,00</td></tr>
+                <tr><td>Inkoopkosten (excl. BTW)</td><td class="num mono" id="ib-inkoop">€ 0,00</td></tr>
+                <tr><td>Brutowinst</td><td class="num mono" id="ib-bruto">€ 0,00</td></tr>
+                <tr><td style="color:var(--text-muted);font-size:12px">- Zelfstandigenaftrek (€ 5.030 in 2026)</td><td class="num mono" style="color:var(--text-muted)">€ 5.030,00</td></tr>
+                <tr><td style="color:var(--text-muted);font-size:12px">- Startersaftrek indien van toepassing (€ 2.123)</td><td class="num mono" style="color:var(--text-muted)">€ 0,00</td></tr>
+                <tr style="background:var(--orange-light);border-top:2px solid var(--orange)"><td style="font-weight:600">Belastbaar inkomen ZZP</td><td class="num mono" style="font-weight:700" id="ib-belastbaar">€ 0,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:12px">
+            ⚠️ Dit is een indicatie. Voor je definitieve IB aangifte: gebruik <a href="https://www.belastingdienst.nl/online" target="_blank" style="color:var(--orange)">Mijn Belastingdienst</a> of overleg met je boekhouder.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KLANTEN -->
+    <div class="page" id="page-klanten">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="voegKlantToe()">+ Nieuwe klant</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Naam</th><th>Bedrijf</th><th>Email</th><th>Telefoon</th><th>Facturen</th></tr></thead>
+            <tbody id="t-klanten"><tr><td colspan="5" class="empty">Nog geen klanten</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSTELLINGEN -->
+    <div class="page" id="page-instellingen">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Bedrijfsgegevens</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Bedrijfsnaam</label><input class="form-input" id="s-naam" value="Pro Stukadoors"></div>
+            <div class="form-group"><label class="form-label">KvK nummer</label><input class="form-input" id="s-kvk" value="64165965"></div>
+            <div class="form-group"><label class="form-label">BTW nummer</label><input class="form-input" id="s-btwnr" placeholder="NL000000000B01"></div>
+            <div class="form-group"><label class="form-label">IBAN</label><input class="form-input" id="s-iban" value="NL44RABO0368249190"></div>
+            <div class="form-group"><label class="form-label">Telefoon</label><input class="form-input" id="s-tel" value="0628806783"></div>
+            <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="s-email" value="singhparm0808@gmail.com"></div>
+            <div class="form-group full"><label class="form-label">Adres</label><input class="form-input" id="s-adres" value="Cartagenapad 42, Rotterdam"></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="slaInstellingenOp()">💾 Opslaan</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Anthropic API key</span></div>
+        <div class="card-body">
+          <div class="form-group" style="max-width:500px">
+            <label class="form-label">API key (voor AI agenten)</label>
+            <input class="form-input" type="password" id="api-key-input" placeholder="sk-ant-...">
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Haal je key op via <a href="https://console.anthropic.com" target="_blank" style="color:var(--orange)">console.anthropic.com</a></div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="slaApiKeyOp()">💾 Opslaan</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Account</span></div>
+        <div class="card-body" style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="toggleDark()">🌙 Donkere modus</button>
+          <button class="btn btn-ghost" style="color:var(--red);border-color:var(--red)" onclick="uitloggen()">← Uitloggen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOOGLE DRIVE -->
+    <div class="page" id="page-gdrive">
+      <div id="gdrive-disconnected">
+        <div class="gdrive-connect" id="gdrive-connect-box">
+          <div class="gdrive-icon">📁</div>
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px">Google Drive koppelen</div>
+          <div style="font-size:14px;color:var(--text-muted);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto">
+            Koppel je Google Drive om foto's van bonnen en PDF facturen automatisch te importeren in SlimBoekhoud.
+          </div>
+          <button class="btn btn-primary" onclick="koppelGoogleDrive()" style="font-size:15px;padding:12px 28px">
+            <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#fff" d="M6.28 3l5.72 9.9L6.28 3zm11.44 0L12 12.9 17.72 3zM1 21l5-8.66L12 21H1zm11 0l5.72-9.9L23 21H12z"/></svg>
+            Verbinden met Google Drive
+          </button>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:14px">Je geeft SlimBoekhoud alleen leestoegang tot bestanden die jij selecteert</div>
+        </div>
+      </div>
+
+      <div id="gdrive-connected" style="display:none">
+        <div class="gdrive-connect connected" style="padding:20px;display:flex;align-items:center;gap:16px;text-align:left;margin-bottom:20px">
+          <div style="font-size:32px">✅</div>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:600;color:var(--green)">Google Drive verbonden</div>
+            <div style="font-size:12px;color:var(--text-muted)" id="gdrive-account-info">singhparm0808@gmail.com</div>
+          </div>
+          <button class="btn btn-ghost" onclick="ontkoppelDrive()" style="font-size:12px">Ontkoppelen</button>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header">
+            <span class="card-title">📂 Bonnen map selecteren</span>
+            <button class="btn btn-secondary" onclick="refreshDriveFiles()" style="font-size:12px">🔄 Vernieuwen</button>
+          </div>
+          <div class="card-body">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Selecteer de map in Google Drive waar je bonnen en facturen opslaat. SlimBoekhoud importeert automatisch nieuwe bestanden.</div>
+            <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+              <input class="form-input" id="drive-folder-input" placeholder="Map naam bijv. Bonnen 2026" style="flex:1">
+              <button class="btn btn-primary" onclick="selecteerMap()" style="font-size:13px">Map selecteren</button>
+            </div>
+            <div id="drive-folder-selected" style="display:none;background:var(--orange-light);border:1px solid var(--orange);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px">
+              📁 Geselecteerde map: <strong id="drive-folder-naam"></strong>
+              <span style="color:var(--green);margin-left:8px">✓ Actief</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Bestanden in Google Drive</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span id="drive-file-count" style="font-size:12px;color:var(--text-muted)">0 bestanden</span>
+              <button class="btn btn-primary" onclick="importeerGeselecteerd()" id="import-btn" disabled style="font-size:12px">⬇️ Importeer geselecteerde</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="gdrive-files" id="drive-files-grid">
+              <div class="empty" style="grid-column:1/-1">Selecteer een map om bestanden te zien</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Auto-sync instellingen</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-size:13px;font-weight:500">Automatisch importeren</div>
+                <div style="font-size:12px;color:var(--text-muted)">Nieuwe bestanden in de map worden automatisch verwerkt</div>
+              </div>
+              <label style="cursor:pointer;display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="auto-sync" onchange="toggleAutoSync(this)" style="width:16px;height:16px">
+                <span style="font-size:13px" id="auto-sync-label">Uit</span>
+              </label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+              <div>
+                <div style="font-size:13px;font-weight:500">Laatste sync</div>
+                <div style="font-size:12px;color:var(--text-muted)" id="last-sync-time">Nog niet gesynchroniseerd</div>
+              </div>
+              <button class="btn btn-secondary" onclick="syncNu()" style="font-size:12px">🔄 Nu synchroniseren</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOEKHOUDER PORTAL -->
+    <div class="page" id="page-boekhouder">
+
+      <div class="rapport-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="font-size:36px">👩‍💼</div>
+          <div>
+            <div class="rapport-title">Boekhouder portal</div>
+            <div class="rapport-sub">Geef je boekhouder een read-only link om jouw administratie te bekijken</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="rapport-btn rapport-btn-primary" onclick="genereerPortalLink()">🔗 Genereer link</button>
+          <button class="rapport-btn rapport-btn-secondary" onclick="genereerKwartaalRapport()">📊 Kwartaal rapport PDF</button>
+          <button class="rapport-btn rapport-btn-secondary" onclick="emailNaarBoekhouder()">📧 Email naar boekhouder</button>
+        </div>
+      </div>
+
+      <div class="portal-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Boekhouder gegevens</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Vul de gegevens in van je boekhouder zodat je direct kunt emailen</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Naam boekhouder</label>
+            <input class="form-input" id="bk-naam" placeholder="bijv. Administratiekantoor Jansen">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email boekhouder</label>
+            <input class="form-input" id="bk-email" placeholder="boekhouder@kantoor.nl">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="slaBoekhouderOp()" style="margin-top:12px">💾 Opslaan</button>
+      </div>
+
+      <div class="portal-card" id="portal-link-card" style="display:none">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">🔗 Jouw boekhouder link</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Stuur deze link naar je boekhouder. Zij kan alles bekijken maar niets aanpassen.</div>
+        <div class="portal-link-box">
+          <span class="portal-link-url" id="portal-url"></span>
+          <button class="btn btn-primary" onclick="kopieerLink()" style="font-size:12px;flex-shrink:0">📋 Kopieer</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="emailLinkNaarBoekhouder()" style="font-size:12px">📧 Email link</button>
+          <button class="btn btn-ghost" onclick="nieuweLinkGenereren()" style="font-size:12px">🔄 Nieuwe link</button>
+          <button class="btn btn-ghost" onclick="toonPortalPreview()" style="font-size:12px">👁️ Preview</button>
+        </div>
+      </div>
+
+      <div class="portal-card" id="portal-preview-card" style="display:none">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">👁️ Zo ziet je boekhouder het</div>
+        <div class="portal-preview">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="width:32px;height:32px;background:var(--orange);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">SB</div>
+            <div>
+              <div class="portal-preview-title">SlimBoekhoud — Pro Stukadoors</div>
+              <div class="portal-preview-sub">Administratie overzicht • Alleen bekijken</div>
+            </div>
+          </div>
+          <div>
+            <div class="portal-stat" id="pv-bonnen">🧾 0 bonnen</div>
+            <div class="portal-stat" id="pv-facturen">📄 0 facturen</div>
+            <div class="portal-stat" id="pv-btw">📅 BTW: € 0,00</div>
+            <div class="portal-stat" id="pv-omzet">💰 Omzet: € 0,00</div>
+          </div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.4)">
+            🔒 Read-only toegang • Bijgewerkt: <span id="pv-datum"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">📊 Kwartaal rapporten</span></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="kwartaal-rapporten">
+            <div class="kw-card" onclick="downloadKwRapport('Q1')" style="cursor:pointer">
+              <div class="kw-title">Q1 2026</div>
+              <div style="font-size:20px;margin-bottom:8px">📄</div>
+              <div style="font-size:12px;color:var(--text-muted)">Rapport downloaden</div>
+            </div>
+            <div class="kw-card" onclick="downloadKwRapport('Q2')" style="cursor:pointer">
+              <div class="kw-title">Q2 2026</div>
+              <div style="font-size:20px;margin-bottom:8px">📄</div>
+              <div style="font-size:12px;color:var(--text-muted)">Rapport downloaden</div>
+            </div>
+            <div class="kw-card" onclick="downloadKwRapport('Q3')" style="cursor:pointer">
+              <div class="kw-title">Q3 2026</div>
+              <div style="font-size:20px;margin-bottom:8px">📄</div>
+              <div style="font-size:12px;color:var(--text-muted)">Rapport downloaden</div>
+            </div>
+            <div class="kw-card" onclick="downloadKwRapport('Q4')" style="cursor:pointer">
+              <div class="kw-title">Q4 2026</div>
+              <div style="font-size:20px;margin-bottom:8px">📄</div>
+              <div style="font-size:12px;color:var(--text-muted)">Rapport downloaden</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
 <script>
+// DATA
 const DEMO=[
-  {datum:'2026-01-08',leverancier:'Gamma Rotterdam',cat:'Materiaal',excl:287.50,pct:21,note:'Stucmaterialen'},
-  {datum:'2026-01-15',leverancier:'Shell A16',cat:'Brandstof',excl:94.20,pct:21,note:'VF-340-P tanken'},
-  {datum:'2026-02-03',leverancier:'Karwei',cat:'Gereedschap',excl:156.00,pct:21,note:'Spaan en lade'},
-  {datum:'2026-02-19',leverancier:'Univé Verzekering',cat:'Verzekering',excl:210.00,pct:21,note:'Transporter premie Q1'},
-  {datum:'2026-03-11',leverancier:'Praxis',cat:'Materiaal',excl:412.80,pct:21,note:'Gipsplaten'},
-  {datum:'2026-04-02',leverancier:'Shell A16',cat:'Brandstof',excl:88.40,pct:21,note:'Brandstof'},
-  {datum:'2026-04-22',leverancier:'T-Mobile Zakelijk',cat:'Telefoon',excl:45.00,pct:21,note:'Abonnement april'},
-  {datum:'2026-05-07',leverancier:'Gamma Rotterdam',cat:'Materiaal',excl:520.00,pct:21,note:'Cement en kalk'},
-  {datum:'2026-06-14',leverancier:'Resto De Ster',cat:'Eten & drinken',excl:67.20,pct:21,note:'Zakelijke lunch'},
-  {datum:'2026-07-03',leverancier:'Bouwmaat',cat:'Materiaal',excl:890.00,pct:21,note:'Groot order stucco'},
-  {datum:'2026-07-03',leverancier:'Bouwmaat',cat:'Materiaal',excl:890.00,pct:21,note:'Mogelijk duplicaat'},
-  {datum:'2026-08-19',leverancier:'Karwei',cat:'Gereedschap',excl:234.50,pct:21,note:'Schuurmachine'},
+  {datum:'2026-01-08',leverancier:'Gamma Rotterdam',cat:'Materiaal',excl:287.50,pct:21},
+  {datum:'2026-01-15',leverancier:'Shell A16',cat:'Brandstof',excl:94.20,pct:21},
+  {datum:'2026-02-03',leverancier:'Karwei',cat:'Gereedschap',excl:156.00,pct:21},
+  {datum:'2026-02-19',leverancier:'Univé Verzekering',cat:'Verzekering',excl:210.00,pct:21},
+  {datum:'2026-03-11',leverancier:'Praxis',cat:'Materiaal',excl:412.80,pct:21},
+  {datum:'2026-04-02',leverancier:'Shell A16',cat:'Brandstof',excl:88.40,pct:21},
+  {datum:'2026-04-22',leverancier:'T-Mobile Zakelijk',cat:'Telefoon',excl:45.00,pct:21},
+  {datum:'2026-05-07',leverancier:'Gamma Rotterdam',cat:'Materiaal',excl:520.00,pct:21},
+  {datum:'2026-06-14',leverancier:'Resto De Ster',cat:'Eten & drinken',excl:67.20,pct:21},
+  {datum:'2026-07-03',leverancier:'Bouwmaat',cat:'Materiaal',excl:890.00,pct:21},
+  {datum:'2026-07-03',leverancier:'Bouwmaat',cat:'Materiaal',excl:890.00,pct:21},
+  {datum:'2026-08-19',leverancier:'Karwei',cat:'Gereedschap',excl:234.50,pct:21},
 ];
 const CAT_BADGE={Materiaal:'b-blue',Brandstof:'b-amber',Gereedschap:'b-purple',Verzekering:'b-green',Telefoon:'b-gray','Eten & drinken':'b-gray',Transport:'b-amber',Subcontractor:'b-blue',Overig:'b-gray'};
-let bonnen=[];
-let pendingFiles=[];
+let bonnen=[],facturen=[],offertes=[],klanten=[];
+let factuurNr=1,offerteNr=1;
+let deferredPrompt=null;
 
 const fmt=n=>'€\u00A0'+Number(n).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
 const kw=d=>{const m=new Date(d).getMonth()+1;return m<=3?'Q1':m<=6?'Q2':m<=9?'Q3':'Q4'};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const setAgent=(id,st,lbl)=>{
-  document.getElementById('d-'+id).className='dot '+st;
-  document.getElementById('l-'+id).textContent=lbl;
-};
-const setProgress=p=>{document.getElementById('prog').style.width=p+'%'};
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-function handleFiles(files){
-  pendingFiles=[...files];
-  if(pendingFiles.length){
-    document.getElementById('upload-text').textContent=pendingFiles.length+' bestand(en) klaar';
-    document.getElementById('run-btn').disabled=false;
+// AUTH
+function doLogin(){
+  const pass=document.getElementById('login-pass').value;
+  if(pass==='demo123'||pass==='prostukadoors'){
+    document.getElementById('login-screen').style.display='none';
+    localStorage.setItem('sb_logged_in','1');
+    checkBTWDeadline();
+    showNotif('Welkom terug, Parminder! 👋');
+  } else {
+    document.getElementById('login-error').style.display='block';
+  }
+}
+function doGoogleLogin(){
+  document.getElementById('login-screen').style.display='none';
+  localStorage.setItem('sb_logged_in','1');
+  showNotif('Ingelogd via Google ✓');
+}
+function uitloggen(){
+  localStorage.removeItem('sb_logged_in');
+  location.reload();
+}
+if(localStorage.getItem('sb_logged_in')){
+  document.getElementById('login-screen').style.display='none';
+}
+
+// NAVIGATION
+function showPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const titles={dashboard:'Dashboard',bonnen:'Bonnen',offertes:'Offertes',facturen:'Facturen',wv:'Winst & verlies',btw:'BTW aangifte',bank:'Bankrekening',klanten:'Klanten',instellingen:'Instellingen'};
+  document.getElementById('page-title').textContent=titles[name]||name;
+  if(el)el.classList.add('active');
+  if(window.innerWidth<768)document.getElementById('sidebar').classList.remove('open');
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open')}
+
+// DARK MODE
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  document.getElementById('dark-btn').textContent=document.body.classList.contains('dark')?'☀️':'🌙';
+  localStorage.setItem('sb_dark',document.body.classList.contains('dark')?'1':'0');
+}
+if(localStorage.getItem('sb_dark')==='1'){document.body.classList.add('dark');document.getElementById('dark-btn').textContent='☀️'}
+
+// NOTIFICATIONS
+function showNotif(msg,warn=false){
+  const old=document.querySelector('.notif-toast');if(old)old.remove();
+  const n=document.createElement('div');
+  n.className='notif notif-toast'+(warn?' notif-warn':'');
+  n.innerHTML=`<span>${msg}</span><button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;line-height:1">×</button>`;
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(),5000);
+}
+
+// BTW DEADLINE CHECK
+function checkBTWDeadline(){
+  const m=new Date().getMonth()+1;
+  const warnings={4:'BTW aangifte Q1 deadline: 30 april!',7:'BTW aangifte Q2 deadline: 31 juli!',10:'BTW aangifte Q3 deadline: 31 oktober!',1:'BTW aangifte Q4 deadline: 31 januari!'};
+  if(warnings[m]){
+    const w=document.getElementById('btw-warning');
+    document.getElementById('btw-warning-text').textContent=warnings[m];
+    w.style.display='flex';w.style.position='relative';w.style.top='0';w.style.right='0';w.style.animation='none';
   }
 }
 
-const dz=document.getElementById('drop-zone');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
-dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});
+// PWA INSTALL
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('install-banner').style.display='flex';
+});
+function installApp(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;document.getElementById('install-banner').style.display='none';}
+  else showNotif('Open SlimBoekhoud in Chrome op je telefoon en tik op "Toevoegen aan startscherm"');
+}
+
+// AUTOSAVE
+function autoSave(){
+  try{
+    localStorage.setItem('sb_bonnen',JSON.stringify(bonnen));
+    localStorage.setItem('sb_facturen',JSON.stringify(facturen));
+    localStorage.setItem('sb_offertes',JSON.stringify(offertes));
+    localStorage.setItem('sb_klanten',JSON.stringify(klanten));
+  }catch(e){}
+}
+function autoLoad(){
+  try{
+    const b=localStorage.getItem('sb_bonnen');if(b)bonnen=JSON.parse(b);
+    const f=localStorage.getItem('sb_facturen');if(f)facturen=JSON.parse(f);
+    const o=localStorage.getItem('sb_offertes');if(o)offertes=JSON.parse(o);
+    const k=localStorage.getItem('sb_klanten');if(k)klanten=JSON.parse(k);
+    if(bonnen.length||facturen.length){renderAll();showNotif('Gegevens hersteld ✓');}
+  }catch(e){}
+}
+setInterval(autoSave,30000);
+
+// AGENTS
+function setAgent(id,st,lbl){document.getElementById('d-'+id).className='dot '+st;document.getElementById('l-'+id).textContent=lbl}
+function setProgress(p){document.getElementById('prog').style.width=p+'%'}
+
+function handleFiles(files){
+  if(!files.length)return;
+  const names=[...files].map(f=>f.name).join(', ');
+  document.getElementById('upload-status').style.display='block';
+  document.getElementById('upload-status').textContent=files.length+' bestand(en) klaar: '+names;
+  document.getElementById('run-btn').disabled=false;
+  document.getElementById('run-btn').textContent='▶ Verwerk '+files.length+' bestand(en)';
+}
+
+['cam-input','file-input'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('change',()=>handleFiles(el.files));
+});
 
 function processBonnen(raw){
-  const seen=new Map();const flagged=new Set();
-  raw.forEach(b=>{const k=b.datum+b.leverancier+b.excl;if(seen.has(k))flagged.add(k);seen.set(k,true)});
-  return raw.map(b=>({
-    ...b,
-    incl:parseFloat((b.excl*(1+b.pct/100)).toFixed(2)),
-    btw:parseFloat((b.excl*b.pct/100).toFixed(2)),
-    kwartaal:kw(b.datum),
-    status:flagged.has(b.datum+b.leverancier+b.excl)?'vlag':'ok'
-  }));
+  const seen=new Map();const fl=new Set();
+  raw.forEach(b=>{const k=b.datum+b.leverancier+b.excl;if(seen.has(k))fl.add(k);seen.set(k,true)});
+  return raw.map(b=>({...b,incl:parseFloat((b.excl*(1+b.pct/100)).toFixed(2)),btw:parseFloat((b.excl*b.pct/100).toFixed(2)),kwartaal:kw(b.datum),status:fl.has(b.datum+b.leverancier+b.excl)?'vlag':'ok'}));
 }
 
 async function runAgents(){
-  const btn=document.getElementById('run-btn');
-  btn.disabled=true;btn.textContent='⏳ Agenten aan het werk...';
+  const btn=document.getElementById('run-btn');btn.disabled=true;btn.textContent='⏳ Agenten aan het werk...';
   setProgress(5);
 
-  setAgent('scan','running','Scannen...');await sleep(700);setProgress(25);
+  // Check if real files were uploaded
+  const hasRealFiles = pendingFiles && pendingFiles.length > 0;
+
+  setAgent('scan','running','Scannen...');
+  await sleep(400);
+  setProgress(20);
 
   let raw=[];
-  try{
-    const names=pendingFiles.length?pendingFiles.map(f=>f.name).join(', '):'demo bonnen Pro Stukadoors';
-    const r=await fetch('/.netlify/functions/claude',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:[{role:'user',content:`Genereer 10-12 realistische zakelijke bonnen voor stukadoorsbedrijf Pro Stukadoors Rotterdam (${names}). JSON array alleen:\n[{"datum":"2026-MM-DD","leverancier":"naam","cat":"Materiaal/Brandstof/Gereedschap/Verzekering/Telefoon/Eten & drinken/Transport/Subcontractor/Overig","excl":getal,"pct":21,"note":"kort"}]\nEchte NL leveranciers, spreiding over alle kwartalen. Alleen JSON.`}]})
-    });
-    const d=await r.json();
-    const txt=d.content?.map(b=>b.text||'').join('');
-    raw=JSON.parse(txt.replace(/```json|```/g,'').trim());
-  }catch(e){
-    raw=DEMO;
-    document.getElementById('setup-banner').classList.remove('hidden');
+
+  if (hasRealFiles) {
+    // ECHTE FOTO ANALYSE met Claude Vision API
+    showNotif('🔍 Echte foto wordt geanalyseerd door AI...');
+
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const file = pendingFiles[i];
+      setAgent('scan','running',`Bon ${i+1}/${pendingFiles.length} analyseren...`);
+      setProgress(20 + (i / pendingFiles.length) * 30);
+
+      try {
+        // Convert file to base64
+        const base64 = await fileToBase64(file);
+
+        // Bepaal content type voor Claude API
+        let contentBlock;
+        const isImage = file.type.startsWith('image/');
+        const isPDF = file.type === 'application/pdf';
+
+        if (isImage) {
+          contentBlock = {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: file.type,
+              data: base64.split(',')[1]
+            }
+          };
+        } else if (isPDF) {
+          contentBlock = {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: base64.split(',')[1]
+            }
+          };
+        } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+          showNotif('⚠️ CSV upload nog niet ondersteund. Gebruik JPG/PNG/PDF.', true);
+          continue;
+        } else {
+          showNotif('⚠️ ' + file.name + ' type niet ondersteund. Gebruik JPG/PNG/PDF.', true);
+          continue;
+        }
+
+        // Call Claude API met de echte foto/PDF
+        const response = await fetch('/.netlify/functions/claude', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            messages: [{
+              role: 'user',
+              content: [
+                contentBlock,
+                {
+                  type: 'text',
+                  text: `Analyseer deze Nederlandse bon/factuur en haal er de volgende gegevens uit. Antwoord ALLEEN met JSON, geen uitleg:
+
+{
+  "datum": "YYYY-MM-DD (datum op de bon, gebruik vandaag als niet leesbaar)",
+  "leverancier": "naam van het bedrijf",
+  "cat": "een van: Materiaal/Brandstof/Gereedschap/Verzekering/Telefoon/Eten & drinken/Transport/Subcontractor/Overig",
+  "excl": getal (bedrag exclusief BTW),
+  "pct": 21 (BTW percentage, meestal 21),
+  "note": "korte beschrijving wat er gekocht is"
+}
+
+Bepaal de categorie op basis van het bedrijf:
+- Gamma, Praxis, Karwei, Bouwmaat, Hornbach → Materiaal of Gereedschap
+- Shell, BP, Esso, Tinq, Tango, TotalEnergies → Brandstof
+- Univé, ASR, Achmea, Centraal Beheer → Verzekering
+- T-Mobile, KPN, Vodafone, Ziggo → Telefoon
+- Restaurant, café, bakker → Eten & drinken
+
+Als je iets niet kunt lezen, gok op basis van het bedrijf. Geef ALLEEN de JSON terug, geen uitleg.`
+                }
+              ]
+            }]
+          })
+        });
+
+        const data = await response.json();
+
+        // Check voor API errors
+        if (data.error) {
+          showNotif('❌ API fout: ' + (data.error.message || data.error), true);
+          console.error('API Error:', data.error);
+          continue;
+        }
+
+        const text = data.content?.map(b => b.text || '').join('').trim();
+        if (!text) {
+          showNotif('⚠️ Geen antwoord van AI voor bon ' + (i+1), true);
+          continue;
+        }
+
+        const cleanText = text.replace(/```json|```/g, '').trim();
+        const bonData = JSON.parse(cleanText);
+
+        raw.push(bonData);
+        showNotif(`✓ Bon ${i+1}: ${bonData.leverancier} — €${(bonData.excl * 1.21).toFixed(2)}`);
+
+      } catch(e) {
+        console.error('Fout bij verwerken bon:', e);
+        showNotif('⚠️ Bon ' + (i+1) + ' fout: ' + e.message, true);
+      }
+    }
+
+    if (raw.length === 0) {
+      showNotif('❌ Geen bonnen konden worden gelezen. Probeer een duidelijkere foto.', true);
+      btn.disabled=false;
+      btn.textContent='▶ Verwerk bonnen met agenten';
+      setProgress(0);
+      ['scan','sort','kw','acc'].forEach(id=>setAgent(id,'idle','Wacht op bon'));
+      return;
+    }
+
+  } else {
+    // Demo modus (geen echte bestanden)
+    setAgent('scan','running','Demo data genereren...');
+    try {
+      const r = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({messages: [{role: 'user', content: 'Genereer 10-12 realistische zakelijke bonnen voor Pro Stukadoors Rotterdam. JSON:\n[{"datum":"2026-MM-DD","leverancier":"naam","cat":"Materiaal/Brandstof/Gereedschap/Verzekering/Telefoon/Eten & drinken/Transport/Subcontractor/Overig","excl":getal,"pct":21}]\nAlleen JSON.'}]})
+      });
+      const d = await r.json();
+      raw = JSON.parse(d.content?.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+    } catch(e) { raw = DEMO; }
   }
 
-  setProgress(50);setAgent('scan','done','Klaar');
-  setAgent('sort','running','Categoriseren...');await sleep(500);
-  setProgress(65);setAgent('sort','done','Klaar');
-  setAgent('kw','running','Kwartalen...');await sleep(500);
-  setProgress(80);setAgent('kw','done','Klaar');
-  setAgent('acc','running','Controleren...');await sleep(600);
+  setProgress(60);setAgent('scan','done','Klaar');
+  setAgent('sort','running','Categoriseren...');await sleep(400);setProgress(75);setAgent('sort','done','Klaar');
+  setAgent('kw','running','Kwartalen berekenen...');await sleep(400);setProgress(85);setAgent('kw','done','Klaar');
+  setAgent('acc','running','Controleren...');await sleep(500);
 
-  bonnen=processBonnen(raw);
-  setAgent('acc','done','Klaar');
-  setProgress(100);
-  renderAll();
-  document.getElementById('results').classList.remove('hidden');
+  // Voeg toe aan bestaande bonnen ipv vervangen
+  const nieuweBonnen = processBonnen(raw);
+  bonnen = [...bonnen, ...nieuweBonnen];
+
+  setAgent('acc','done','Klaar');setProgress(100);
+  renderAll();document.getElementById('bonnen-results').style.display='block';
+  document.getElementById('bonnen-badge').textContent=bonnen.length;
+  document.getElementById('bonnen-count').textContent=bonnen.length+' verwerkte bonnen';
   btn.disabled=false;btn.textContent='↺ Opnieuw verwerken';
+  autoSave();
+  pendingFiles = [];
+  document.getElementById('upload-status').style.display='none';
+  showNotif(`✅ ${nieuweBonnen.length} bon${nieuweBonnen.length!==1?'nen':''} toegevoegd!`);
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function loadDemo(){
   bonnen=processBonnen(DEMO);
+  facturen=[{id:1,nummer:'2026-001',klant:'Frank Arnold',datum:'2026-03-15',verval:'2026-04-14',project:'Stucwerk woonkamer',totaalExcl:29567.15,btwBedrag:6209.10,totaal:35776.25,status:'Betaald'},{id:2,nummer:'2026-002',klant:'M. Jansen',datum:'2026-05-01',verval:'2026-05-31',project:'Schilderwerk buiten',totaalExcl:4500,btwBedrag:945,totaal:5445,status:'Openstaand'}];
+  factuurNr=3;
   ['scan','sort','kw','acc'].forEach(id=>setAgent(id,'done','Klaar'));
-  setProgress(100);
-  renderAll();
-  document.getElementById('results').classList.remove('hidden');
+  setProgress(100);renderAll();
+  document.getElementById('bonnen-results').style.display='block';
+  document.getElementById('bonnen-badge').textContent=bonnen.length;
   document.getElementById('run-btn').disabled=false;
   document.getElementById('run-btn').textContent='↺ Opnieuw verwerken';
+  autoSave();showNotif('Demo data geladen ✓');
 }
 
-function renderAll(){
-  const ti=bonnen.reduce((s,b)=>s+b.incl,0);
-  const te=bonnen.reduce((s,b)=>s+b.excl,0);
-  const tb=bonnen.reduce((s,b)=>s+b.btw,0);
-  document.getElementById('s-total').textContent=bonnen.length;
-  document.getElementById('s-incl').textContent=fmt(ti);
-  document.getElementById('s-excl').textContent=fmt(te);
-  document.getElementById('s-btw').textContent=fmt(tb);
-  renderBonnen();renderKwartaal();renderCategorie();renderFlags();
-}
+// RENDER
+function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderBTW();renderWV();renderOffertes();}
 
-function renderBonnen(){
-  document.getElementById('t-bonnen').innerHTML=bonnen.map(b=>`
-    <tr>
-      <td class="mono" style="color:#888">${b.datum}</td>
-      <td style="font-weight:500">${b.leverancier}</td>
-      <td><span class="badge ${CAT_BADGE[b.cat]||'b-gray'}">${b.cat}</span></td>
+function renderBonnen(lijst){
+  const data = lijst || bonnen;
+  document.getElementById('t-bonnen').innerHTML = data.map((b,i) => `
+    <tr id="bon-row-${i}">
+      <td class="mono" style="color:var(--text-muted);font-size:12px">${b.datum}</td>
+      <td style="font-weight:500">${esc(b.leverancier)}</td>
+      <td>
+        <select class="badge ${CAT_BADGE[b.cat]||'b-gray'}" onchange="wijzigCat(${i},this.value)"
+          style="border:none;cursor:pointer;font-size:11px;font-weight:500;padding:3px 6px;border-radius:20px;appearance:none;-webkit-appearance:none">
+          ${['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig']
+            .map(c=>`<option value="${c}" ${b.cat===c?'selected':''}>${CAT_EMOJI[c]||''} ${c}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input type="text" value="${esc(b.note||b.notitie||'')}"
+          placeholder="+ notitie toevoegen..."
+          onchange="wijzigNotitie(${i},this.value)"
+          style="border:none;background:transparent;font-size:12px;color:var(--text-muted);width:160px;outline:none;cursor:pointer"
+          onfocus="this.style.background='var(--bg)';this.style.padding='3px 6px';this.style.borderRadius='6px'"
+          onblur="this.style.background='transparent';this.style.padding='0'">
+      </td>
       <td><span class="badge b-gray">${b.kwartaal}</span></td>
       <td class="num mono">${fmt(b.excl)}</td>
       <td class="num mono" style="color:#BA7517">${fmt(b.btw)}</td>
       <td class="num mono" style="font-weight:500">${fmt(b.incl)}</td>
-      <td><span class="badge ${b.status==='vlag'?'b-flag':'b-ok'}">${b.status==='vlag'?'Vlag':'OK'}</span></td>
-    </tr>`).join('');
+      <td>
+        <span class="badge ${b.status==='vlag'?'b-red':'b-green'}">${b.status==='vlag'?'⚠️ Vlag':'✓ OK'}</span>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="9" class="empty">Geen bonnen</td></tr>';
 }
 
-function renderKwartaal(){
+function wijzigCat(index, nieuwecat) {
+  bonnen[index].cat = nieuwecat;
+  // Update badge kleur
+  const select = document.querySelector(`#bon-row-${index} select`);
+  if (select) select.className = `badge ${CAT_BADGE[nieuwecat]||'b-gray'}`;
+  autoSave();
+  renderLeveranciers();
+  showNotif('Categorie gewijzigd naar ' + nieuwecat + ' ✓');
+}
+
+function wijzigNotitie(index, notitie) {
+  bonnen[index].note = notitie;
+  bonnen[index].notitie = notitie;
+  autoSave();
+}
+
+function filterBonnen() {
+  const search = (document.getElementById('bon-search')?.value||'').toLowerCase();
+  const cat = document.getElementById('bon-cat-filter')?.value||'';
+  const kw2 = document.getElementById('bon-kw-filter')?.value||'';
+  let gefilterd = bonnen;
+  if (search) gefilterd = gefilterd.filter(b => b.leverancier.toLowerCase().includes(search) || (b.note||'').toLowerCase().includes(search));
+  if (cat) gefilterd = gefilterd.filter(b => b.cat === cat);
+  if (kw2) gefilterd = gefilterd.filter(b => b.kwartaal === kw2);
+  renderBonnen(gefilterd);
+  const count = document.getElementById('bon-filter-count');
+  if (count) count.textContent = (search||cat||kw2) ? gefilterd.length + ' van ' + bonnen.length + ' bonnen' : '';
+}
+
+function resetBonFilter() {
+  document.getElementById('bon-search').value = '';
+  document.getElementById('bon-cat-filter').value = '';
+  document.getElementById('bon-kw-filter').value = '';
+  renderBonnen();
+  document.getElementById('bon-filter-count').textContent = '';
+}
+
+
+function renderDashboard(){
+  const totKosten=bonnen.reduce((s,b)=>s+b.incl,0);
+  const totBtw=bonnen.reduce((s,b)=>s+b.btw,0);
+  const totOmzet=facturen.reduce((s,f)=>s+f.totaal,0);
+  const nettowinst=totOmzet-bonnen.reduce((s,b)=>s+b.excl,0);
+  document.getElementById('d-omzet').textContent=fmt(totOmzet);
+  document.getElementById('d-kosten').textContent=fmt(totKosten);
+  document.getElementById('d-btw').textContent=fmt(totBtw);
+  document.getElementById('d-winst').textContent=fmt(nettowinst);
+  const qs=['Q1','Q2','Q3','Q4'];
+  const kwT=qs.map(q=>bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0));
+  const max=Math.max(...kwT,1);
+  document.getElementById('chart-bars').innerHTML=kwT.map((v,i)=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="width:100%;background:var(--orange);border-radius:4px 4px 0 0;height:${Math.round(v/max*90)}px;opacity:.8"></div>
+      <div style="font-size:10px;color:var(--text-muted)">${qs[i]}</div>
+      <div style="font-size:10px;font-weight:500">${fmt(v)}</div>
+    </div>`).join('');
+  document.getElementById('recent-bonnen').innerHTML=bonnen.slice(-5).reverse().map(b=>`
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
+      <div><div style="font-size:12px;font-weight:500">${esc(b.leverancier)}</div><div style="font-size:11px;color:var(--text-muted)">${b.datum}</div></div>
+      <div style="font-size:12px;font-weight:500">${fmt(b.incl)}</div>
+    </div>`).join('')||'<div class="empty">Geen bonnen</div>';
+  // reminder check
+  const overdue=facturen.filter(f=>{return f.status==='Openstaand'&&new Date(f.verval)<new Date()});
+  if(overdue.length)showNotif(`⚠️ ${overdue.length} factuur(en) zijn verlopen!`,true);
+}
+
+function renderBTW(){
   const qs=['Q1','Q2','Q3','Q4'];
   const max=Math.max(...qs.map(q=>bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0)),1);
-  document.getElementById('kw-grid').innerHTML=qs.map(q=>{
+  document.getElementById('kw-grid-btw').innerHTML=qs.map(q=>{
     const items=bonnen.filter(b=>b.kwartaal===q);
     const i=items.reduce((s,b)=>s+b.incl,0);
     const e=items.reduce((s,b)=>s+b.excl,0);
     const t=items.reduce((s,b)=>s+b.btw,0);
-    const pct=Math.round(i/max*100);
-    return`<div class="kw-card">
-      <div class="kw-title">${q} 2026 &bull; ${items.length} bonnen</div>
-      <div class="kw-amount">${fmt(i)}</div>
-      <div class="kw-ex">excl. BTW: ${fmt(e)}</div>
+    return`<div class="kw-card"><div class="kw-title">${q} 2026 &bull; ${items.length} bonnen</div>
+      <div class="kw-amount">${fmt(i)}</div><div class="kw-sub">excl: ${fmt(e)}</div>
       <div class="kw-btw">BTW: ${fmt(t)}</div>
-      <div class="kw-bar-bg"><div class="kw-bar-fill" style="width:${pct}%"></div></div>
-    </div>`;
+      <div class="kw-bar-bg"><div class="kw-bar-fill" style="width:${Math.round(i/max*100)}%"></div></div></div>`;
+  }).join('');
+  document.getElementById('t-btw').innerHTML=qs.map(q=>{
+    const ke=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.excl,0);
+    const kb=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.btw,0);
+    const oe=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.totaalExcl,0);
+    const ob=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0);
+    const saldo=kb-ob;
+    return`<tr><td><span class="badge b-gray">${q}</span></td>
+      <td class="num mono">${fmt(oe)}</td><td class="num mono" style="color:var(--green)">${fmt(ob)}</td>
+      <td class="num mono">${fmt(ke)}</td><td class="num mono" style="color:#BA7517">${fmt(kb)}</td>
+      <td class="num mono" style="font-weight:600;color:${saldo>0?'var(--red)':'var(--green)'}">
+        ${saldo>0?'Te betalen '+fmt(saldo):'Te ontvangen '+fmt(Math.abs(saldo))}</td></tr>`;
   }).join('');
 }
 
-function renderCategorie(){
-  const cats={};
-  bonnen.forEach(b=>{if(!cats[b.cat])cats[b.cat]={n:0,e:0,t:0,i:0};cats[b.cat].n++;cats[b.cat].e+=b.excl;cats[b.cat].t+=b.btw;cats[b.cat].i+=b.incl});
-  document.getElementById('t-cat').innerHTML=Object.entries(cats).sort((a,b)=>b[1].i-a[1].i).map(([c,d])=>`
-    <tr>
-      <td><span class="badge ${CAT_BADGE[c]||'b-gray'}">${c}</span></td>
-      <td class="num">${d.n}</td>
-      <td class="num mono">${fmt(d.e)}</td>
-      <td class="num mono" style="color:#BA7517">${fmt(d.t)}</td>
-      <td class="num mono" style="font-weight:500">${fmt(d.i)}</td>
-    </tr>`).join('');
+function renderWV(){
+  const totOmzet=facturen.reduce((s,f)=>s+f.totaal,0);
+  const totKosten=bonnen.reduce((s,b)=>s+b.incl,0);
+  const nettowinst=totOmzet-bonnen.reduce((s,b)=>s+b.excl,0);
+  document.getElementById('wv-omzet').textContent=fmt(totOmzet);
+  document.getElementById('wv-kosten').textContent=fmt(totKosten);
+  document.getElementById('wv-winst').textContent=fmt(nettowinst);
+  const qs=['Q1','Q2','Q3','Q4'];
+  document.getElementById('t-wv').innerHTML=qs.map(q=>{
+    const omzet=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.totaal,0);
+    const kosten=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0);
+    const btwSaldo=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.btw,0)-facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0);
+    const winst=omzet-kosten;
+    return`<tr><td><span class="badge b-gray">${q}</span></td>
+      <td class="num mono" style="color:var(--green)">${fmt(omzet)}</td>
+      <td class="num mono" style="color:var(--red)">${fmt(kosten)}</td>
+      <td class="num mono">${fmt(btwSaldo)}</td>
+      <td class="num mono" style="font-weight:600;color:${winst>=0?'var(--blue)':'var(--red)'}">
+        ${fmt(winst)}</td></tr>`;
+  }).join('')||'<tr><td colspan="5" class="empty">Laad demo data</td></tr>';
 }
 
-function renderFlags(){
-  const flags=bonnen.filter(b=>b.status==='vlag');
-  document.getElementById('flags-list').innerHTML=(flags.length?flags.map(b=>`
-    <div class="flag-card">
-      <div class="flag-icon">⚠️</div>
-      <div><div class="flag-title">${b.leverancier} — ${b.datum}</div>
-      <div class="flag-sub">Mogelijke duplicaat &bull; ${fmt(b.incl)} incl. BTW &bull; ${b.kwartaal}</div></div>
-    </div>`).join(''):`<div class="flag-card"><div class="flag-icon">✅</div><div><div class="flag-title">Geen aandachtspunten</div><div class="flag-sub">Alle bonnen zien er correct uit.</div></div></div>`)+
-    `<div class="flag-card" style="background:#E6F1FB;border-color:#B5D4F4">
-      <div class="flag-icon">ℹ️</div>
-      <div><div class="flag-title" style="color:#185FA5">Tip accountant agent</div>
-      <div class="flag-sub" style="color:#185FA5">Controleer gemarkeerde bonnen voor de kwartaal aangifte bij de Belastingdienst.</div></div>
-    </div>`;
+function renderFacturen(){
+  document.getElementById('t-facturen').innerHTML=facturen.length?facturen.map(f=>`
+    <tr><td class="mono" style="color:var(--text-muted)">${f.nummer}</td>
+    <td style="font-weight:500">${esc(f.klant)}</td><td>${f.datum}</td><td>${f.verval}</td>
+    <td class="num mono" style="font-weight:500">${fmt(f.totaal)}</td>
+    <td><span class="badge ${f.status==='Betaald'?'b-green':f.status==='Openstaand'?'b-orange':'b-red'}">${f.status}</span></td>
+    <td style="display:flex;gap:4px">
+      <button onclick="markeerBetaald(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">✓</button>
+      <button onclick="emailFactuurId(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">📧</button>
+    </td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nog geen facturen</td></tr>';
 }
 
-function switchTab(name,btn){
-  ['bonnen','kwartaal','categorie','vlaggen'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==name));
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+function renderOffertes(){
+  document.getElementById('t-offertes').innerHTML=offertes.length?offertes.map(o=>`
+    <tr><td class="mono" style="color:var(--text-muted)">${o.nummer}</td>
+    <td style="font-weight:500">${esc(o.klant)}</td><td>${o.datum}</td>
+    <td class="num mono" style="font-weight:500">${fmt(o.totaal)}</td>
+    <td><span class="badge ${o.status==='Geaccepteerd'?'b-green':o.status==='Verzonden'?'b-orange':'b-gray'}">${o.status}</span></td>
+    <td style="display:flex;gap:4px">
+      <button onclick="offerteNaarFactuurId(${o.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">→ Factuur</button>
+    </td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nog geen offertes</td></tr>';
 }
+
+// FACTUUR FUNCTIES
+function nieuwFactuur(){
+  document.getElementById('facturen-list').style.display='none';
+  document.getElementById('factuur-form').style.display='block';
+  const today=new Date().toISOString().split('T')[0];
+  const due=new Date(Date.now()+30*86400000).toISOString().split('T')[0];
+  document.getElementById('f-datum').value=today;
+  document.getElementById('f-verval').value=due;
+  document.getElementById('f-nummer').value='2026-'+String(factuurNr).padStart(3,'0');
+  document.getElementById('f-klant').value='';
+  document.getElementById('f-project').value='';
+  berekenFactuur();
+}
+function toonFacturenList(){
+  document.getElementById('facturen-list').style.display='block';
+  document.getElementById('factuur-form').style.display='none';
+}
+
+function berekenDoc(bodyId,exclId,btwId,inclId){
+  const regels=document.querySelectorAll('#'+bodyId+' tr');
+  let te=0,tb=0;
+  regels.forEach(r=>{
+    const inp=r.querySelectorAll('input');
+    const excl=(parseFloat(inp[1]?.value)||0)*(parseFloat(inp[2]?.value)||0);
+    const btw=excl*(parseFloat(inp[3]?.value)||21)/100;
+    if(inp[4])inp[4].value=excl+btw>0?fmt(excl+btw):'';
+    te+=excl;tb+=btw;
+  });
+  document.getElementById(exclId).textContent=fmt(te);
+  document.getElementById(btwId).textContent=fmt(tb);
+  document.getElementById(inclId).textContent=fmt(te+tb);
+}
+function berekenFactuur(){berekenDoc('factuur-regels','tot-excl','tot-btw','tot-incl')}
+function berekenOfferte(){berekenDoc('offerte-regels','o-tot-excl','o-tot-btw','o-tot-incl')}
+
+function voegRegelToe(tbodyId,calcFn){
+  const tbody=document.getElementById(tbodyId);
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input class="form-input" oninput="${calcFn}()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="${calcFn}()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="${calcFn}()"></td><td><input class="form-input num" type="number" value="21" oninput="${calcFn}()"></td><td><input class="form-input num" readonly style="background:var(--bg)"></td>`;
+  tbody.appendChild(tr);
+}
+function voegOfferteRegelToe(){voegRegelToe('offerte-regels','berekenOfferte')}
+
+function getDocTotals(bodyId){
+  const regels=document.querySelectorAll('#'+bodyId+' tr');
+  let te=0,tb=0;
+  regels.forEach(r=>{
+    const inp=r.querySelectorAll('input');
+    const excl=(parseFloat(inp[1]?.value)||0)*(parseFloat(inp[2]?.value)||0);
+    te+=excl;tb+=excl*(parseFloat(inp[3]?.value)||21)/100;
+  });
+  return{excl:te,btw:tb,incl:te+tb};
+}
+
+function slaFactuurOp(){
+  const klant=document.getElementById('f-klant').value;
+  if(!klant){showNotif('⚠️ Vul een klantnaam in',true);return}
+  const t=getDocTotals('factuur-regels');
+  facturen.push({id:factuurNr,nummer:document.getElementById('f-nummer').value,klant,datum:document.getElementById('f-datum').value,verval:document.getElementById('f-verval').value,project:document.getElementById('f-project').value,totaalExcl:t.excl,btwBedrag:t.btw,totaal:t.incl,status:'Openstaand'});
+  factuurNr++;renderFacturen();renderDashboard();renderBTW();renderWV();
+  toonFacturenList();autoSave();showNotif('Factuur opgeslagen ✓');
+}
+function markeerBetaald(id){const f=facturen.find(f=>f.id===id);if(f){f.status='Betaald';renderFacturen();renderDashboard();autoSave();showNotif('Factuur gemarkeerd als betaald ✓')}}
+function emailFactuurId(id){const f=facturen.find(f=>f.id===id);if(f)emailFactuurData(f)}
+function emailFactuurData(f){
+  const subject=encodeURIComponent('Factuur '+f.nummer+' — Pro Stukadoors');
+  const body=encodeURIComponent(`Geachte ${f.klant},\n\nHierbij ontvangt u factuur ${f.nummer} voor ${f.project}.\n\nBedrag: ${fmt(f.totaal)}\nVervaldatum: ${f.verval}\n\nIBAN: NL44RABO0368249190 t.n.v. Pro Stukadoors\n\nMet vriendelijke groet,\nParminder Singh\nPro Stukadoors\nTel: 0628806783`);
+  window.open(`mailto:?subject=${subject}&body=${body}`);
+}
+function emailFactuur(){
+  const klant=document.getElementById('f-klant').value||'klant';
+  const t=getDocTotals('factuur-regels');
+  emailFactuurData({nummer:document.getElementById('f-nummer').value,klant,project:document.getElementById('f-project').value,totaal:t.incl,verval:document.getElementById('f-verval').value});
+}
+
+// OFFERTE FUNCTIES
+function nieuweOfferte(){
+  document.getElementById('offerte-list').style.display='none';
+  document.getElementById('offerte-form').style.display='block';
+  const today=new Date().toISOString().split('T')[0];
+  const geldig=new Date(Date.now()+14*86400000).toISOString().split('T')[0];
+  document.getElementById('o-datum').value=today;
+  document.getElementById('o-geldig').value=geldig;
+  document.getElementById('o-nummer').value='2026-O'+String(offerteNr).padStart(3,'0');
+  berekenOfferte();
+}
+function toonOfferteList(){
+  document.getElementById('offerte-list').style.display='block';
+  document.getElementById('offerte-form').style.display='none';
+}
+function slaOfferteOp(){
+  const klant=document.getElementById('o-klant').value;
+  if(!klant){showNotif('⚠️ Vul een klantnaam in',true);return}
+  const t=getDocTotals('offerte-regels');
+  offertes.push({id:offerteNr,nummer:document.getElementById('o-nummer').value,klant,datum:document.getElementById('o-datum').value,geldig:document.getElementById('o-geldig').value,project:document.getElementById('o-project').value,totaalExcl:t.excl,btwBedrag:t.btw,totaal:t.incl,status:'Concept'});
+  offerteNr++;renderOffertes();toonOfferteList();autoSave();showNotif('Offerte opgeslagen ✓');
+}
+function offerteNaarFactuur(){
+  const klant=document.getElementById('o-klant').value;
+  if(!klant){showNotif('⚠️ Sla offerte eerst op',true);return}
+  slaOfferteOp();
+  const o=offertes[offertes.length-1];
+  facturen.push({id:factuurNr,nummer:'2026-'+String(factuurNr).padStart(3,'0'),klant:o.klant,datum:new Date().toISOString().split('T')[0],verval:new Date(Date.now()+30*86400000).toISOString().split('T')[0],project:o.project,totaalExcl:o.totaalExcl,btwBedrag:o.btwBedrag,totaal:o.totaal,status:'Openstaand'});
+  factuurNr++;renderFacturen();renderDashboard();
+  showPage('facturen',null);autoSave();showNotif('Offerte omgezet naar factuur ✓');
+}
+function offerteNaarFactuurId(id){
+  const o=offertes.find(o=>o.id===id);if(!o)return;
+  facturen.push({id:factuurNr,nummer:'2026-'+String(factuurNr).padStart(3,'0'),klant:o.klant,datum:new Date().toISOString().split('T')[0],verval:new Date(Date.now()+30*86400000).toISOString().split('T')[0],project:o.project,totaalExcl:o.totaalExcl,btwBedrag:o.btwBedrag,totaal:o.totaal,status:'Openstaand'});
+  factuurNr++;o.status='Geaccepteerd';renderFacturen();renderOffertes();renderDashboard();autoSave();showNotif('Offerte omgezet naar factuur ✓');
+}
+
+// KLANTEN
+function voegKlantToe(){
+  const naam=prompt('Naam klant:');if(!naam)return;
+  klanten.push({naam,bedrijf:prompt('Bedrijf:')||'',email:prompt('Email:')||'',tel:prompt('Telefoon:')||''});
+  document.getElementById('t-klanten').innerHTML=klanten.map(k=>`<tr><td style="font-weight:500">${esc(k.naam)}</td><td>${esc(k.bedrijf)||'-'}</td><td>${esc(k.email)||'-'}</td><td>${esc(k.tel)||'-'}</td><td>0</td></tr>`).join('');
+  autoSave();showNotif('Klant toegevoegd ✓');
+}
+
+// PDF
+function downloadFactuurPDF(){
+  try{
+    const {jsPDF}=window.jspdf;const doc=new jsPDF();
+    const bedrijf=document.getElementById('s-naam').value||'Pro Stukadoors';
+    const klant=document.getElementById('f-klant').value||'Klant';
+    const nummer=document.getElementById('f-nummer').value;
+    const datum=document.getElementById('f-datum').value;
+    const project=document.getElementById('f-project').value;
+    const t=getDocTotals('factuur-regels');
+    doc.setFillColor(244,164,24);doc.rect(0,0,210,28,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(20);doc.setFont('helvetica','bold');
+    doc.text(bedrijf,14,18);
+    doc.setFontSize(11);doc.setFont('helvetica','normal');doc.text('FACTUUR',14,26);
+    doc.setTextColor(0,0,0);doc.setFontSize(10);
+    doc.text('KvK: '+(document.getElementById('s-kvk').value||'64165965'),14,40);
+    doc.text('IBAN: '+(document.getElementById('s-iban').value||'NL44RABO0368249190'),14,48);
+    doc.text('Tel: '+(document.getElementById('s-tel').value||'0628806783'),14,56);
+    doc.setFont('helvetica','bold');doc.text('Aan:',120,40);
+    doc.setFont('helvetica','normal');doc.text(klant,120,48);
+    doc.setFont('helvetica','bold');doc.text('Factuurnummer: '+nummer,14,72);
+    doc.setFont('helvetica','normal');doc.text('Datum: '+datum,14,80);doc.text('Project: '+project,14,88);
+    doc.setFillColor(247,247,245);doc.rect(14,96,182,8,'F');
+    doc.setFont('helvetica','bold');doc.text('Omschrijving',16,102);doc.text('Bedrag',170,102,'right');
+    doc.setFont('helvetica','normal');let y=115;
+    document.querySelectorAll('#factuur-regels tr').forEach(r=>{
+      const inp=r.querySelectorAll('input');
+      const desc=inp[0]?.value;const excl=(parseFloat(inp[1]?.value)||0)*(parseFloat(inp[2]?.value)||0);
+      if(desc){doc.text(desc,16,y);doc.text(fmt(excl),196,y,'right');y+=10;}
+    });
+    doc.line(14,y+2,196,y+2);y+=10;
+    doc.text('Subtotaal excl. BTW',14,y);doc.text(fmt(t.excl),196,y,'right');y+=8;
+    doc.text('BTW 21%',14,y);doc.text(fmt(t.btw),196,y,'right');y+=8;
+    doc.setFont('helvetica','bold');doc.setFontSize(12);
+    doc.text('TOTAAL incl. BTW',14,y);doc.text(fmt(t.incl),196,y,'right');
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);
+    doc.text('Betaling binnen 30 dagen op IBAN '+( document.getElementById('s-iban').value||'NL44RABO0368249190')+' t.n.v. '+bedrijf,14,y+20);
+    doc.save('factuur-'+nummer+'.pdf');
+    showNotif('PDF gedownload ✓');
+  }catch(e){showNotif('PDF: installeer de pagina opnieuw om PDFs te genereren',true)}
+}
+
+function exportBonnenPDF(){
+  try{
+    const {jsPDF}=window.jspdf;const doc=new jsPDF('landscape');
+    doc.setFillColor(244,164,24);doc.rect(0,0,297,20,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
+    doc.text('SlimBoekhoud — Bonnen overzicht 2026',14,14);
+    doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont('helvetica','normal');
+    const headers=['Datum','Leverancier','Categorie','Kwartaal','Excl. BTW','BTW','Incl. BTW','Status'];
+    const widths=[25,50,30,20,28,25,28,20];
+    let x=14,y=32;
+    doc.setFillColor(247,247,245);doc.rect(14,26,268,8,'F');
+    doc.setFont('helvetica','bold');
+    headers.forEach((h,i)=>{doc.text(h,x,y);x+=widths[i]});
+    doc.setFont('helvetica','normal');y+=10;
+    bonnen.forEach(b=>{
+      x=14;
+      [b.datum,b.leverancier,b.cat,b.kwartaal,fmt(b.excl),fmt(b.btw),fmt(b.incl),b.status].forEach((v,i)=>{
+        doc.text(String(v).substring(0,18),x,y);x+=widths[i];
+      });
+      y+=8;if(y>190){doc.addPage('landscape');y=20;}
+    });
+    const tot=bonnen.reduce((s,b)=>s+b.incl,0);
+    doc.setFont('helvetica','bold');doc.text('Totaal: '+fmt(tot),14,y+8);
+    doc.save('bonnen-2026.pdf');showNotif('PDF gedownload ✓');
+  }catch(e){showNotif('PDF generatie mislukt',true)}
+}
+
+function exportBTWPDF(){showNotif('BTW aangifte PDF: gebruik de CSV export voor nu');exportCSV()}
+function exportWVPDF(){showNotif('W&V rapport PDF: gebruik de CSV export voor nu');exportCSV()}
+function downloadOffertePDF(){showNotif('Offerte PDF: dezelfde functie als factuur PDF ✓');downloadFactuurPDF()}
 
 function exportCSV(){
   const h=['Datum','Leverancier','Categorie','Kwartaal','Excl BTW','BTW','Incl BTW','Status'];
@@ -391,11 +1896,804 @@ function exportCSV(){
   const csv=[h,...rows].map(r=>r.join(';')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download='slimboekhoud-'+document.getElementById('year-sel').value+'.csv';
-  a.click();
+  a.download='slimboekhoud-2026.csv';a.click();showNotif('CSV geëxporteerd ✓');
 }
 
-function printReport(){window.print()}
+// ===== INKOPEN MODULE =====
+let handmatigInkopen=[];
+
+function switchInkoopTab(name,btn){
+  ['leveranciers','producten','vergelijk','handmatig'].forEach(t=>{
+    document.getElementById('inkoop-tab-'+t).style.display=t===name?'block':'none';
+  });
+  document.querySelectorAll('.inkoop-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='leveranciers')renderLeveranciers();
+  if(name==='producten')renderProducten();
+  if(name==='vergelijk')renderVergelijking();
+  if(name==='handmatig')renderHandmatig();
+}
+
+const CAT_EMOJI={Materiaal:'🧱',Brandstof:'⛽',Gereedschap:'🔧',Verzekering:'🛡️',Telefoon:'📱','Eten & drinken':'🍽️',Transport:'🚐',Subcontractor:'👷',Overig:'📦'};
+
+function alleInkopen(){
+  const uitBonnen=bonnen.map(b=>({...b,bron:'bon',product:b.note||b.cat}));
+  return[...uitBonnen,...handmatigInkopen.map(h=>({...h,bron:'handmatig',kwartaal:kw(h.datum)}))];
+}
+
+function getLeveranciers(){
+  const map={};
+  alleInkopen().forEach(b=>{
+    if(!map[b.leverancier])map[b.leverancier]={naam:b.leverancier,cat:b.cat,bonnen:[],totaalExcl:0,totaalIncl:0,totaalBtw:0};
+    map[b.leverancier].bonnen.push(b);
+    map[b.leverancier].totaalExcl+=b.excl||0;
+    map[b.leverancier].totaalIncl+=b.incl||0;
+    map[b.leverancier].totaalBtw+=b.btw||0;
+  });
+  return Object.values(map).sort((a,b)=>b.totaalIncl-a.totaalIncl);
+}
+
+function renderLeveranciers(){
+  const search=(document.getElementById('lev-search')?.value||'').toLowerCase();
+  const filter=document.getElementById('lev-filter')?.value||'';
+  let levs=getLeveranciers();
+  if(search)levs=levs.filter(l=>l.naam.toLowerCase().includes(search));
+  if(filter)levs=levs.filter(l=>l.cat===filter);
+  const max=Math.max(...levs.map(l=>l.totaalIncl),1);
+  document.getElementById('inkopen-badge').textContent=getLeveranciers().length;
+  if(!levs.length){document.getElementById('lev-grid').innerHTML='';document.getElementById('lev-empty').style.display='block';return}
+  document.getElementById('lev-empty').style.display='none';
+  document.getElementById('lev-grid').innerHTML=levs.map(l=>`
+    <div class="lev-card" onclick="toonDetail('${esc(l.naam)}')">
+      <div class="lev-header">
+        <div class="lev-avatar">${CAT_EMOJI[l.cat]||'📦'}</div>
+        <div><div class="lev-name">${esc(l.naam)}</div><div class="lev-cat">${l.cat} &bull; ${l.bonnen.length} bonnen</div></div>
+      </div>
+      <div class="lev-stats">
+        <div class="lev-stat"><div class="lev-stat-label">Incl. BTW</div><div class="lev-stat-val">${fmt(l.totaalIncl)}</div></div>
+        <div class="lev-stat"><div class="lev-stat-label">Excl. BTW</div><div class="lev-stat-val">${fmt(l.totaalExcl)}</div></div>
+        <div class="lev-stat"><div class="lev-stat-label">BTW</div><div class="lev-stat-val" style="color:#BA7517">${fmt(l.totaalBtw)}</div></div>
+        <div class="lev-stat"><div class="lev-stat-label">Gem./bon</div><div class="lev-stat-val">${fmt(l.totaalIncl/l.bonnen.length)}</div></div>
+      </div>
+      <div style="margin-top:12px"><div class="lev-bar-bg"><div class="lev-bar-fill" style="width:${Math.round(l.totaalIncl/max*100)}%"></div></div></div>
+    </div>`).join('');
+  document.getElementById('leverancier-suggestions').innerHTML=levs.map(l=>`<option value="${esc(l.naam)}">`).join('');
+}
+
+function toonDetail(naam){
+  const alle=alleInkopen().filter(b=>b.leverancier===naam);
+  const totI=alle.reduce((s,b)=>s+b.incl,0);
+  const totE=alle.reduce((s,b)=>s+b.excl,0);
+  const totB=alle.reduce((s,b)=>s+b.btw,0);
+  document.getElementById('detail-title').textContent=naam;
+  document.getElementById('detail-sub').textContent=alle.length+' aankopen \u2022 '+fmt(totI)+' totaal';
+  document.getElementById('detail-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+      <div class="lev-stat"><div class="lev-stat-label">Totaal incl.</div><div class="lev-stat-val">${fmt(totI)}</div></div>
+      <div class="lev-stat"><div class="lev-stat-label">Excl. BTW</div><div class="lev-stat-val">${fmt(totE)}</div></div>
+      <div class="lev-stat"><div class="lev-stat-label">BTW</div><div class="lev-stat-val" style="color:#BA7517">${fmt(totB)}</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:10px">ALLE AANKOPEN</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;font-size:10px;color:var(--text-muted)">Datum</th>
+        <th style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;font-size:10px;color:var(--text-muted)">Product</th>
+        <th style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:10px;color:var(--text-muted)">Incl. BTW</th>
+        <th style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;font-size:10px;color:var(--text-muted)">Bron</th>
+      </tr></thead>
+      <tbody>${alle.sort((a,b)=>b.datum.localeCompare(a.datum)).map(b=>`
+        <tr>
+          <td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px">${b.datum}</td>
+          <td style="padding:7px 8px;border-bottom:1px solid var(--border)">${esc(b.product||b.cat)}</td>
+          <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:500">${fmt(b.incl)}</td>
+          <td style="padding:7px 8px;border-bottom:1px solid var(--border)"><span class="badge ${b.bron==='bon'?'b-blue':'b-purple'}">${b.bron}</span></td>
+        </tr>`).join('')}</tbody>
+    </table>
+    <button class="btn btn-ghost" style="margin-top:14px;font-size:12px" onclick="exportDetailCSV('${esc(naam)}')">📊 Export ${esc(naam)}</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function sluitDetail(){document.getElementById('detail-overlay').classList.remove('open')}
+
+function renderProducten(){
+  const search=(document.getElementById('prod-search')?.value||'').toLowerCase();
+  const alle=alleInkopen();
+  const cats={};
+  alle.forEach(b=>{if(!cats[b.cat])cats[b.cat]={naam:b.cat,count:0,totaal:0};cats[b.cat].count++;cats[b.cat].totaal+=b.incl;});
+  document.getElementById('prod-grid').innerHTML=Object.values(cats).sort((a,b)=>b.totaal-a.totaal).map(c=>`
+    <div class="prod-card">
+      <div class="prod-icon">${CAT_EMOJI[c.naam]||'📦'}</div>
+      <div class="prod-name">${c.naam}</div>
+      <div class="prod-amount">${fmt(c.totaal)}</div>
+      <div class="prod-count">${c.count} aankopen</div>
+    </div>`).join('')||'<div class="empty">Laad bonnen om producten te zien</div>';
+  const filtered=search?alle.filter(b=>(b.product||b.cat||'').toLowerCase().includes(search)||b.leverancier.toLowerCase().includes(search)):alle;
+  document.getElementById('t-producten').innerHTML=filtered.sort((a,b)=>b.datum.localeCompare(a.datum)).map(b=>`
+    <tr>
+      <td class="mono" style="color:var(--text-muted)">${b.datum}</td>
+      <td style="font-weight:500">${esc(b.product||b.cat)}</td>
+      <td>${esc(b.leverancier)}</td>
+      <td><span class="badge ${CAT_BADGE[b.cat]||'b-gray'}">${b.cat}</span></td>
+      <td class="num mono">${fmt(b.excl)}</td>
+      <td class="num mono" style="font-weight:500">${fmt(b.incl)}</td>
+    </tr>`).join('')||'<tr><td colspan="6" class="empty">Geen producten</td></tr>';
+}
+
+function renderVergelijking(){
+  const levs=getLeveranciers();
+  const max=Math.max(...levs.map(l=>l.totaalIncl),1);
+  document.getElementById('vergelijk-chart').innerHTML=levs.slice(0,10).map(l=>`
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:140px;font-size:12px;font-weight:500;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.naam)}</div>
+      <div style="flex:1;background:var(--border);border-radius:4px;height:24px;cursor:pointer" onclick="toonDetail('${esc(l.naam)}')">
+        <div style="height:100%;background:var(--orange);border-radius:4px;width:${Math.round(l.totaalIncl/max*100)}%;display:flex;align-items:center;padding:0 8px;font-size:11px;color:#fff;font-weight:500">${fmt(l.totaalIncl)}</div>
+      </div>
+      <div style="width:60px;font-size:11px;color:var(--text-muted)">${l.bonnen.length} bon${l.bonnen.length!==1?'nen':''}</div>
+    </div>`).join('')||'<div class="empty">Laad bonnen om vergelijking te zien</div>';
+  document.getElementById('t-vergelijk').innerHTML=levs.map((l,i)=>`
+    <tr onclick="toonDetail('${esc(l.naam)}')" style="cursor:pointer">
+      <td style="font-weight:600;color:var(--text-muted)">#${i+1}</td>
+      <td style="font-weight:500">${esc(l.naam)}</td>
+      <td><span class="badge ${CAT_BADGE[l.cat]||'b-gray'}">${l.cat}</span></td>
+      <td class="num">${l.bonnen.length}</td>
+      <td class="num mono">${fmt(l.totaalExcl)}</td>
+      <td class="num mono" style="font-weight:500">${fmt(l.totaalIncl)}</td>
+      <td class="num mono" style="color:var(--text-muted)">${fmt(l.totaalIncl/l.bonnen.length)}</td>
+    </tr>`).join('')||'<tr><td colspan="7" class="empty">Laad bonnen</td></tr>';
+}
+
+function berekenHandmatig(){
+  const excl=parseFloat(document.getElementById('h-excl').value)||0;
+  const pct=parseFloat(document.getElementById('h-pct').value)||21;
+  document.getElementById('h-incl').value=excl>0?fmt(excl*(1+pct/100)):'';
+}
+
+function voegInkoopToe(){
+  const lev=document.getElementById('h-leverancier').value.trim();
+  const datum=document.getElementById('h-datum').value;
+  const excl=parseFloat(document.getElementById('h-excl').value)||0;
+  if(!lev||!datum||!excl){showNotif('⚠️ Vul leverancier, datum en bedrag in',true);return}
+  const pct=parseFloat(document.getElementById('h-pct').value)||21;
+  const btw=excl*pct/100;
+  handmatigInkopen.push({leverancier:lev,datum,product:document.getElementById('h-product').value||document.getElementById('h-cat').value,cat:document.getElementById('h-cat').value,excl,pct,btw,incl:parseFloat((excl+btw).toFixed(2)),notitie:document.getElementById('h-notitie').value,status:'ok'});
+  autoSave();renderHandmatig();renderLeveranciers();resetHandmatig();
+  showNotif('Inkoop toegevoegd ✓');
+}
+
+function resetHandmatig(){
+  ['h-leverancier','h-product','h-excl','h-incl','h-notitie'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('h-datum').value=new Date().toISOString().split('T')[0];
+}
+
+function renderHandmatig(){
+  document.getElementById('handmatig-count').textContent=handmatigInkopen.length+' handmatig ingevoerde inkopen';
+  document.getElementById('t-handmatig').innerHTML=handmatigInkopen.length?handmatigInkopen.slice().reverse().map((h,i)=>`
+    <tr>
+      <td class="mono" style="color:var(--text-muted)">${h.datum}</td>
+      <td style="font-weight:500">${esc(h.leverancier)}</td>
+      <td>${esc(h.product||h.cat)}</td>
+      <td><span class="badge ${CAT_BADGE[h.cat]||'b-gray'}">${h.cat}</span></td>
+      <td class="num mono">${fmt(h.excl)}</td>
+      <td class="num mono" style="color:#BA7517">${fmt(h.btw)}</td>
+      <td class="num mono" style="font-weight:500">${fmt(h.incl)}</td>
+      <td><button onclick="verwijderHandmatig(${handmatigInkopen.length-1-i})" style="background:none;border:none;cursor:pointer;color:var(--red)">×</button></td>
+    </tr>`).join(''):'<tr><td colspan="8" class="empty">Nog geen handmatige inkopen</td></tr>';
+}
+
+function verwijderHandmatig(i){handmatigInkopen.splice(i,1);renderHandmatig();renderLeveranciers();autoSave();showNotif('Verwijderd')}
+
+function exportLeverancierCSV(){
+  const levs=getLeveranciers();
+  const h=['Leverancier','Categorie','Bonnen','Excl. BTW','BTW','Incl. BTW','Gem./bon'];
+  const rows=levs.map(l=>[l.naam,l.cat,l.bonnen.length,l.totaalExcl.toFixed(2),l.totaalBtw.toFixed(2),l.totaalIncl.toFixed(2),(l.totaalIncl/l.bonnen.length).toFixed(2)]);
+  const csv=[h,...rows].map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));a.download='leveranciers-2026.csv';a.click();
+  showNotif('Geëxporteerd ✓');
+}
+
+function exportDetailCSV(naam){
+  const alle=alleInkopen().filter(b=>b.leverancier===naam);
+  const h=['Datum','Product','Categorie','Excl.','BTW','Incl.','Bron'];
+  const rows=alle.map(b=>[b.datum,b.product||b.cat,b.cat,b.excl?.toFixed(2),b.btw?.toFixed(2),b.incl?.toFixed(2),b.bron||'bon']);
+  const csv=[h,...rows].map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));a.download=naam.replace(/\s+/g,'-')+'.csv';a.click();
+}
+
+function exportHandmatigCSV(){
+  const h=['Datum','Leverancier','Product','Categorie','Excl.','BTW','Incl.','Notitie'];
+  const rows=handmatigInkopen.map(h=>[h.datum,h.leverancier,h.product||'',h.cat,h.excl?.toFixed(2),h.btw?.toFixed(2),h.incl?.toFixed(2),h.notitie||'']);
+  const csv=[h,...rows].map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));a.download='handmatige-inkopen.csv';a.click();
+}
+
+// Datum initialiseren
+document.getElementById('h-datum').value=new Date().toISOString().split('T')[0];
+
+// autoSave uitbreiden
+const _origAutoSave=autoSave;
+autoSave=function(){_origAutoSave();try{localStorage.setItem('sb_handmatig',JSON.stringify(handmatigInkopen));}catch(e){}};
+try{const h=localStorage.getItem('sb_handmatig');if(h)handmatigInkopen=JSON.parse(h);}catch(e){}
+
+// showPage uitbreiden voor inkopen
+const _origShowPage=showPage;
+showPage=function(name,el){
+  _origShowPage(name,el);
+  if(name==='inkopen'){renderLeveranciers();document.getElementById('inkopen-badge').textContent=getLeveranciers().length;}
+};
+
+function slaInstellingenOp(){
+  document.getElementById('sb-company').textContent=document.getElementById('s-naam').value;
+  localStorage.setItem('sb_settings',JSON.stringify({naam:document.getElementById('s-naam').value,kvk:document.getElementById('s-kvk').value,iban:document.getElementById('s-iban').value,tel:document.getElementById('s-tel').value,email:document.getElementById('s-email').value,adres:document.getElementById('s-adres').value}));
+  showNotif('Instellingen opgeslagen ✓');
+}
+function slaApiKeyOp(){
+  const key=document.getElementById('api-key-input').value;
+  if(key){localStorage.setItem('sb_api_key',key);showNotif('API key opgeslagen ✓');}
+}
+
+// ===== GOOGLE DRIVE MODULE =====
+let driveConnected = false;
+let driveFiles = [];
+let selectedFiles = new Set();
+let portalToken = null;
+
+// Demo drive files
+const DEMO_DRIVE_FILES = [
+  {id:'1',name:'bon_gamma_jan.jpg',type:'image',size:'1.2 MB',date:'2026-01-08',icon:'🖼️'},
+  {id:'2',name:'factuur_shell_jan.pdf',type:'pdf',size:'0.3 MB',date:'2026-01-15',icon:'📄'},
+  {id:'3',name:'bon_karwei_feb.jpg',type:'image',size:'2.1 MB',date:'2026-02-03',icon:'🖼️'},
+  {id:'4',name:'factuur_unive_feb.pdf',type:'pdf',size:'0.5 MB',date:'2026-02-19',icon:'📄'},
+  {id:'5',name:'bon_praxis_mrt.jpg',type:'image',size:'1.8 MB',date:'2026-03-11',icon:'🖼️'},
+  {id:'6',name:'bon_shell_apr.jpg',type:'image',size:'0.9 MB',date:'2026-04-02',icon:'🖼️'},
+  {id:'7',name:'factuur_tmobile_apr.pdf',type:'pdf',size:'0.2 MB',date:'2026-04-22',icon:'📄'},
+  {id:'8',name:'bon_gamma_mei.jpg',type:'image',size:'1.5 MB',date:'2026-05-07',icon:'🖼️'},
+];
+
+function koppelGoogleDrive() {
+  // In productie: Google OAuth flow
+  // Nu: simuleer koppeling
+  showNotif('Google Drive koppelen...');
+  setTimeout(() => {
+    driveConnected = true;
+    localStorage.setItem('sb_drive_connected', '1');
+    document.getElementById('gdrive-disconnected').style.display = 'none';
+    document.getElementById('gdrive-connected').style.display = 'block';
+    showNotif('Google Drive verbonden ✓ (demo modus)');
+  }, 1500);
+}
+
+function ontkoppelDrive() {
+  if (!confirm('Google Drive ontkoppelen?')) return;
+  driveConnected = false;
+  localStorage.removeItem('sb_drive_connected');
+  document.getElementById('gdrive-disconnected').style.display = 'block';
+  document.getElementById('gdrive-connected').style.display = 'none';
+  showNotif('Google Drive ontkoppeld');
+}
+
+function selecteerMap() {
+  const naam = document.getElementById('drive-folder-input').value.trim() || 'Bonnen 2026';
+  document.getElementById('drive-folder-naam').textContent = naam;
+  document.getElementById('drive-folder-selected').style.display = 'block';
+  localStorage.setItem('sb_drive_folder', naam);
+  refreshDriveFiles();
+  showNotif('Map geselecteerd: ' + naam + ' ✓');
+}
+
+function refreshDriveFiles() {
+  // Demo: toon demo bestanden
+  driveFiles = DEMO_DRIVE_FILES;
+  selectedFiles.clear();
+  renderDriveFiles();
+  document.getElementById('drive-file-count').textContent = driveFiles.length + ' bestanden';
+  showNotif('Bestanden geladen uit Google Drive ✓');
+}
+
+function renderDriveFiles() {
+  const grid = document.getElementById('drive-files-grid');
+  if (!driveFiles.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Geen bestanden gevonden</div>'; return; }
+  grid.innerHTML = driveFiles.map(f => `
+    <div class="gdrive-file ${selectedFiles.has(f.id)?'selected':''}" onclick="toggleDriveFile('${f.id}')">
+      <div class="gdrive-file-icon">${f.icon}</div>
+      <div class="gdrive-file-name">${esc(f.name)}</div>
+      <div class="gdrive-file-size">${f.size} • ${f.date}</div>
+      ${selectedFiles.has(f.id)?'<div style="color:var(--orange);font-size:11px;margin-top:4px;font-weight:500">✓ Geselecteerd</div>':''}
+    </div>`).join('');
+  document.getElementById('import-btn').disabled = selectedFiles.size === 0;
+}
+
+function toggleDriveFile(id) {
+  if (selectedFiles.has(id)) selectedFiles.delete(id);
+  else selectedFiles.add(id);
+  renderDriveFiles();
+  document.getElementById('import-btn').disabled = selectedFiles.size === 0;
+  document.getElementById('import-btn').textContent = `⬇️ Importeer ${selectedFiles.size} bestand${selectedFiles.size!==1?'en':''}`;
+}
+
+function importeerGeselecteerd() {
+  if (!selectedFiles.size) return;
+  const geselecteerd = driveFiles.filter(f => selectedFiles.has(f.id));
+  showNotif(`${geselecteerd.length} bestanden importeren...`);
+  setTimeout(() => {
+    // Voeg toe als bonnen (demo)
+    const nieuw = geselecteerd.map(f => ({
+      datum: f.date,
+      leverancier: f.name.replace(/bon_|factuur_|\.jpg|\.pdf/g,'').replace(/_/g,' ').split(' ')[0].charAt(0).toUpperCase() + f.name.replace(/bon_|factuur_|\.jpg|\.pdf/g,'').replace(/_/g,' ').split(' ')[0].slice(1),
+      cat: f.type==='pdf' ? 'Overig' : 'Materiaal',
+      excl: Math.round(50 + Math.random()*400),
+      pct: 21,
+      note: 'Geïmporteerd uit Google Drive: ' + f.name,
+      status: 'ok'
+    }));
+    const processed = nieuw.map(b => ({...b, incl: parseFloat((b.excl*1.21).toFixed(2)), btw: parseFloat((b.excl*0.21).toFixed(2)), kwartaal: kw(b.datum)}));
+    bonnen = [...bonnen, ...processed];
+    document.getElementById('bonnen-badge').textContent = bonnen.length;
+    document.getElementById('inkopen-badge').textContent = getLeveranciers().length;
+    renderBonnen();
+    renderDashboard();
+    renderBTW();
+    document.getElementById('bonnen-results').style.display = 'block';
+    selectedFiles.clear();
+    renderDriveFiles();
+    autoSave();
+    showNotif(`✓ ${geselecteerd.length} bestanden geïmporteerd als bonnen!`);
+    localStorage.setItem('sb_last_sync', new Date().toLocaleString('nl-NL'));
+    document.getElementById('last-sync-time').textContent = 'Zojuist: ' + new Date().toLocaleTimeString('nl-NL');
+  }, 1200);
+}
+
+function toggleAutoSync(el) {
+  document.getElementById('auto-sync-label').textContent = el.checked ? 'Aan' : 'Uit';
+  showNotif(el.checked ? 'Auto-sync ingeschakeld ✓' : 'Auto-sync uitgeschakeld');
+}
+
+function syncNu() {
+  showNotif('Synchroniseren met Google Drive...');
+  setTimeout(() => {
+    document.getElementById('last-sync-time').textContent = 'Zojuist: ' + new Date().toLocaleTimeString('nl-NL');
+    showNotif('Synchronisatie voltooid ✓');
+  }, 1000);
+}
+
+// Init drive state
+if (localStorage.getItem('sb_drive_connected')) {
+  driveConnected = true;
+  document.getElementById('gdrive-disconnected').style.display = 'none';
+  document.getElementById('gdrive-connected').style.display = 'block';
+  const folder = localStorage.getItem('sb_drive_folder');
+  if (folder) {
+    document.getElementById('drive-folder-naam').textContent = folder;
+    document.getElementById('drive-folder-selected').style.display = 'block';
+    document.getElementById('drive-folder-input').value = folder;
+  }
+  const lastSync = localStorage.getItem('sb_last_sync');
+  if (lastSync) document.getElementById('last-sync-time').textContent = lastSync;
+}
+
+// ===== BOEKHOUDER PORTAL =====
+function genereerPortalToken() {
+  return 'sb-' + Math.random().toString(36).substr(2,9) + '-' + Date.now().toString(36);
+}
+
+function genereerPortalLink() {
+  portalToken = portalToken || localStorage.getItem('sb_portal_token') || genereerPortalToken();
+  localStorage.setItem('sb_portal_token', portalToken);
+  const baseUrl = window.location.href.split('?')[0];
+  const url = baseUrl + '?portal=' + portalToken + '&view=boekhouder';
+  document.getElementById('portal-url').textContent = url;
+  document.getElementById('portal-link-card').style.display = 'block';
+  showNotif('Portal link gegenereerd ✓');
+}
+
+function kopieerLink() {
+  const url = document.getElementById('portal-url').textContent;
+  navigator.clipboard.writeText(url).then(() => showNotif('Link gekopieerd! ✓')).catch(() => {
+    prompt('Kopieer deze link:', url);
+  });
+}
+
+function nieuweLinkGenereren() {
+  if (!confirm('Nieuwe link genereren? De oude link werkt dan niet meer.')) return;
+  portalToken = genereerPortalToken();
+  localStorage.setItem('sb_portal_token', portalToken);
+  genereerPortalLink();
+  showNotif('Nieuwe link gegenereerd ✓');
+}
+
+function toonPortalPreview() {
+  const totBtw = bonnen.reduce((s,b)=>s+b.btw,0);
+  const totOmzet = facturen.reduce((s,f)=>s+f.totaal,0);
+  document.getElementById('pv-bonnen').textContent = '🧾 ' + bonnen.length + ' bonnen';
+  document.getElementById('pv-facturen').textContent = '📄 ' + facturen.length + ' facturen';
+  document.getElementById('pv-btw').textContent = '📅 BTW: ' + fmt(totBtw);
+  document.getElementById('pv-omzet').textContent = '💰 Omzet: ' + fmt(totOmzet);
+  document.getElementById('pv-datum').textContent = new Date().toLocaleDateString('nl-NL');
+  document.getElementById('portal-preview-card').style.display = 'block';
+}
+
+function slaBoekhouderOp() {
+  const naam = document.getElementById('bk-naam').value;
+  const email = document.getElementById('bk-email').value;
+  localStorage.setItem('sb_boekhouder', JSON.stringify({naam, email}));
+  showNotif('Boekhouder opgeslagen ✓');
+}
+
+function emailLinkNaarBoekhouder() {
+  const bk = JSON.parse(localStorage.getItem('sb_boekhouder')||'{}');
+  const url = document.getElementById('portal-url').textContent;
+  const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+  const subject = encodeURIComponent('Toegang tot SlimBoekhoud administratie — ' + naam);
+  const body = encodeURIComponent(`Beste ${bk.naam||'boekhouder'},\n\nHierbij stuur ik je de link om mijn SlimBoekhoud administratie te bekijken.\n\nLink: ${url}\n\nJe kunt hiermee mijn bonnen, facturen en BTW aangifte bekijken. Je kunt niets aanpassen.\n\nMet vriendelijke groet,\n${naam}\nTel: ${document.getElementById('s-tel').value||'0628806783'}`);
+  window.open(`mailto:${bk.email||''}?subject=${subject}&body=${body}`);
+}
+
+function emailNaarBoekhouder() {
+  genereerPortalLink();
+  setTimeout(emailLinkNaarBoekhouder, 500);
+}
+
+function genereerKwartaalRapport() {
+  downloadKwRapport('Q' + Math.ceil((new Date().getMonth()+1)/3));
+}
+
+function downloadKwRapport(q) {
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+    const kvk = document.getElementById('s-kvk').value || '64165965';
+    const jaar = document.getElementById('year-sel').value || '2026';
+
+    // Header
+    doc.setFillColor(244,164,24); doc.rect(0,0,210,28,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
+    doc.text(naam, 14, 17);
+    doc.setFontSize(11); doc.setFont('helvetica','normal');
+    doc.text('Kwartaalrapport ' + q + ' ' + jaar, 14, 25);
+
+    // Info
+    doc.setTextColor(0,0,0); doc.setFontSize(10);
+    doc.text('KvK: ' + kvk, 14, 42);
+    doc.text('Gegenereerd: ' + new Date().toLocaleDateString('nl-NL'), 14, 50);
+    doc.text('Periode: ' + q + ' ' + jaar, 14, 58);
+
+    // BTW Samenvatting
+    const qBonnen = bonnen.filter(b=>b.kwartaal===q);
+    const qFacturen = facturen.filter(f=>kw(f.datum)===q);
+    const kosten_excl = qBonnen.reduce((s,b)=>s+b.excl,0);
+    const btw_betaald = qBonnen.reduce((s,b)=>s+b.btw,0);
+    const omzet_excl = qFacturen.reduce((s,f)=>s+f.totaalExcl,0);
+    const btw_ontvangen = qFacturen.reduce((s,f)=>s+f.btwBedrag,0);
+    const nettowinst = omzet_excl - kosten_excl;
+    const btw_saldo = btw_betaald - btw_ontvangen;
+
+    let y = 72;
+    doc.setFillColor(247,247,245); doc.rect(14,y-6,182,8,'F');
+    doc.setFont('helvetica','bold'); doc.text('FINANCIEEL OVERZICHT ' + q + ' ' + jaar, 14, y);
+    y += 12;
+    doc.setFont('helvetica','normal');
+    const rows = [
+      ['Omzet excl. BTW', fmt(omzet_excl)],
+      ['Kosten excl. BTW', fmt(kosten_excl)],
+      ['Nettowinst', fmt(nettowinst)],
+      ['BTW ontvangen (van klanten)', fmt(btw_ontvangen)],
+      ['BTW betaald (aan leveranciers)', fmt(btw_betaald)],
+      ['BTW saldo (te betalen/ontvangen)', (btw_saldo>0?'Te betalen: ':'Te ontvangen: ')+fmt(Math.abs(btw_saldo))],
+    ];
+    rows.forEach(([label,val],i)=>{
+      if(i===2||i===5){doc.setFont('helvetica','bold')}else{doc.setFont('helvetica','normal')}
+      doc.text(label, 14, y);
+      doc.text(val, 196, y, {align:'right'});
+      doc.line(14,y+3,196,y+3);
+      y+=10;
+    });
+
+    // Bonnen tabel
+    y += 8;
+    doc.setFont('helvetica','bold');
+    doc.text('BONNEN ' + q + ' (' + qBonnen.length + ' stuks)', 14, y); y+=8;
+    doc.setFillColor(247,247,245); doc.rect(14,y-4,182,7,'F');
+    doc.setFontSize(8);
+    doc.text('Datum',16,y);doc.text('Leverancier',40,y);doc.text('Categorie',90,y);doc.text('Excl.',140,y);doc.text('Incl.',172,y);
+    y+=6; doc.setFont('helvetica','normal');
+    qBonnen.slice(0,15).forEach(b=>{
+      doc.text(b.datum,16,y);
+      doc.text(b.leverancier.substring(0,20),40,y);
+      doc.text(b.cat,90,y);
+      doc.text(fmt(b.excl),140,y);
+      doc.text(fmt(b.incl),172,y);
+      y+=6;if(y>270){doc.addPage();y=20;}
+    });
+
+    // Footer
+    doc.setFontSize(8); doc.setTextColor(150,150,150);
+    doc.text('SlimBoekhoud — Vertrouwelijk document voor ' + naam + ' — KvK ' + kvk, 14, 285);
+
+    doc.save('kwartaalrapport-' + q + '-' + jaar + '-' + naam.replace(/\s/g,'-') + '.pdf');
+    showNotif('Kwartaalrapport ' + q + ' gedownload ✓');
+  } catch(e) {
+    showNotif('PDF fout: herlaad de pagina en probeer opnieuw', true);
+  }
+}
+
+// Load boekhouder settings
+const savedBk = localStorage.getItem('sb_boekhouder');
+if (savedBk) {
+  try {
+    const bk = JSON.parse(savedBk);
+    if (bk.naam) document.getElementById('bk-naam').value = bk.naam;
+    if (bk.email) document.getElementById('bk-email').value = bk.email;
+  } catch(e) {}
+}
+portalToken = localStorage.getItem('sb_portal_token');
+
+// showPage uitbreiden voor gdrive en boekhouder
+const _origShowPage2 = showPage;
+showPage = function(name, el) {
+  _origShowPage2(name, el);
+  if (name === 'boekhouder') {
+    if (portalToken) genereerPortalLink();
+  }
+};
+
+// ===== GROOTBOEK MODULE =====
+const GROOTBOEK_REKENINGEN = {
+  '1000': {naam:'Kas', type:'Activa'},
+  '1100': {naam:'Bank — Rabobank', type:'Activa'},
+  '1300': {naam:'Debiteuren', type:'Activa'},
+  '1530': {naam:'Te vorderen BTW', type:'Activa'},
+  '0500': {naam:'Eigen vermogen', type:'Passiva'},
+  '1600': {naam:'Crediteuren', type:'Passiva'},
+  '1500': {naam:'Te betalen BTW', type:'Passiva'},
+  '8000': {naam:'Omzet hoog tarief (21%)', type:'Omzet'},
+  '4000': {naam:'Inkoop materiaal', type:'Kosten'},
+  '4100': {naam:'Brandstof voertuig', type:'Kosten'},
+  '4200': {naam:'Gereedschap', type:'Kosten'},
+  '4300': {naam:'Verzekeringen', type:'Kosten'},
+  '4400': {naam:'Telefoon & abonnementen', type:'Kosten'},
+  '4500': {naam:'Eten & drinken zakelijk', type:'Kosten'},
+  '4600': {naam:'Transportkosten', type:'Kosten'},
+  '4700': {naam:'Uitbesteed werk', type:'Kosten'},
+  '4900': {naam:'Overige kosten', type:'Kosten'},
+};
+const CAT_NAAR_REKENING = {'Materiaal':'4000','Brandstof':'4100','Gereedschap':'4200','Verzekering':'4300','Telefoon':'4400','Eten & drinken':'4500','Transport':'4600','Subcontractor':'4700','Overig':'4900'};
+
+function renderGrootboek() {
+  const saldi = {};
+  Object.keys(GROOTBOEK_REKENINGEN).forEach(rek => saldi[rek] = {debet:0, credit:0});
+  bonnen.forEach(b => {
+    const rek = CAT_NAAR_REKENING[b.cat] || '4900';
+    saldi[rek].debet += b.excl;
+    saldi['1530'].debet += b.btw;
+    saldi['1100'].credit += b.incl;
+  });
+  facturen.forEach(f => {
+    saldi['8000'].credit += f.totaalExcl;
+    saldi['1500'].credit += f.btwBedrag;
+    if (f.status === 'Betaald') saldi['1100'].debet += f.totaal;
+    else saldi['1300'].debet += f.totaal;
+  });
+  document.getElementById('t-grootboek').innerHTML = Object.entries(GROOTBOEK_REKENINGEN).map(([rek,info]) => {
+    const s = saldi[rek];
+    const saldo = s.debet - s.credit;
+    if (s.debet === 0 && s.credit === 0) return '';
+    const tc = info.type==='Activa'?'b-blue':info.type==='Passiva'?'b-amber':info.type==='Omzet'?'b-green':'b-purple';
+    return `<tr><td class="mono"><strong>${rek}</strong></td><td>${info.naam}</td><td><span class="badge ${tc}">${info.type}</span></td><td class="num mono">${s.debet>0?fmt(s.debet):'-'}</td><td class="num mono">${s.credit>0?fmt(s.credit):'-'}</td><td class="num mono" style="font-weight:600;color:${saldo>=0?'var(--green)':'var(--red)'}">${fmt(Math.abs(saldo))} ${saldo>=0?'D':'C'}</td></tr>`;
+  }).filter(Boolean).join('') || '<tr><td colspan="6" class="empty">Geen boekingen</td></tr>';
+
+  const journaal = [];
+  bonnen.forEach(b => {
+    const rek = CAT_NAAR_REKENING[b.cat] || '4900';
+    journaal.push({datum:b.datum, omschr:b.leverancier+' — '+b.cat, debet:rek+' ('+GROOTBOEK_REKENINGEN[rek].naam+')', credit:'1100 (Bank)', bedrag:b.incl, type:'Bon'});
+  });
+  facturen.forEach(f => {
+    journaal.push({datum:f.datum, omschr:f.nummer+' '+f.klant, debet:f.status==='Betaald'?'1100 (Bank)':'1300 (Debiteuren)', credit:'8000 (Omzet)', bedrag:f.totaal, type:'Factuur'});
+  });
+  journaal.sort((a,b) => b.datum.localeCompare(a.datum));
+  document.getElementById('t-journaal').innerHTML = journaal.length ? journaal.slice(0,30).map(j => `<tr><td class="mono" style="color:var(--text-muted);font-size:12px">${j.datum}</td><td style="font-weight:500">${esc(j.omschr)}</td><td style="font-size:11px;font-family:monospace">${j.debet}</td><td style="font-size:11px;font-family:monospace">${j.credit}</td><td class="num mono" style="font-weight:500">${fmt(j.bedrag)}</td><td><span class="badge ${j.type==='Bon'?'b-purple':'b-blue'}">${j.type}</span></td></tr>`).join('') : '<tr><td colspan="6" class="empty">Geen boekingen</td></tr>';
+}
+
+function exportGrootboekCSV() {
+  const h = ['Rekening','Omschrijving','Type','Debet','Credit','Saldo'];
+  const saldi = {};
+  Object.keys(GROOTBOEK_REKENINGEN).forEach(rek => saldi[rek] = {debet:0, credit:0});
+  bonnen.forEach(b => {
+    const rek = CAT_NAAR_REKENING[b.cat] || '4900';
+    saldi[rek].debet += b.excl; saldi['1530'].debet += b.btw; saldi['1100'].credit += b.incl;
+  });
+  facturen.forEach(f => {
+    saldi['8000'].credit += f.totaalExcl; saldi['1500'].credit += f.btwBedrag;
+    if (f.status==='Betaald') saldi['1100'].debet += f.totaal; else saldi['1300'].debet += f.totaal;
+  });
+  const rows = Object.entries(GROOTBOEK_REKENINGEN).map(([rek,info]) => {
+    const s = saldi[rek];
+    if (s.debet === 0 && s.credit === 0) return null;
+    return [rek, info.naam, info.type, s.debet.toFixed(2), s.credit.toFixed(2), (s.debet-s.credit).toFixed(2)];
+  }).filter(Boolean);
+  const csv = [h, ...rows].map(r=>r.join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download = 'grootboek-2026.csv'; a.click();
+  showNotif('Grootboek geëxporteerd ✓');
+}
+
+// ===== BALANS MODULE =====
+function renderBalans() {
+  const debiteuren = facturen.filter(f=>f.status!=='Betaald').reduce((s,f)=>s+f.totaal,0);
+  const bankSaldo = facturen.filter(f=>f.status==='Betaald').reduce((s,f)=>s+f.totaal,0) - bonnen.reduce((s,b)=>s+b.incl,0);
+  const btwVorderingen = bonnen.reduce((s,b)=>s+b.btw,0);
+  const totaalActiva = bankSaldo + debiteuren + btwVorderingen;
+  const omzet = facturen.reduce((s,f)=>s+f.totaalExcl,0);
+  const kosten = bonnen.reduce((s,b)=>s+b.excl,0);
+  const eigenVermogen = omzet - kosten;
+  const btwTeBetalen = facturen.reduce((s,f)=>s+f.btwBedrag,0);
+  const totaalPassiva = eigenVermogen + btwTeBetalen;
+
+  document.getElementById('b-activa').textContent = fmt(totaalActiva);
+  document.getElementById('b-passiva').textContent = fmt(totaalPassiva);
+  document.getElementById('b-vermogen').textContent = fmt(eigenVermogen);
+  document.getElementById('b-liquide').textContent = fmt(bankSaldo);
+  document.getElementById('ba-bank').textContent = fmt(bankSaldo);
+  document.getElementById('ba-kas').textContent = fmt(0);
+  document.getElementById('ba-debit').textContent = fmt(debiteuren);
+  document.getElementById('ba-btw-vord').textContent = fmt(btwVorderingen);
+  document.getElementById('ba-totaal').textContent = fmt(totaalActiva);
+  document.getElementById('bp-vermogen').textContent = fmt(eigenVermogen);
+  document.getElementById('bp-cred').textContent = fmt(0);
+  document.getElementById('bp-btw').textContent = fmt(btwTeBetalen);
+  document.getElementById('bp-totaal').textContent = fmt(totaalPassiva);
+
+  const catT = {Materiaal:0,Brandstof:0,Gereedschap:0,Verzekering:0,Telefoon:0,Overig:0};
+  bonnen.forEach(b => {
+    if (catT[b.cat] !== undefined) catT[b.cat] += b.excl;
+    else catT.Overig += b.excl;
+  });
+  document.getElementById('wv-2-omzet').textContent = fmt(omzet);
+  document.getElementById('wv-2-verkoop').textContent = fmt(omzet);
+  document.getElementById('wv-2-kosten').textContent = fmt(kosten);
+  document.getElementById('wv-2-materiaal').textContent = fmt(catT.Materiaal);
+  document.getElementById('wv-2-brandstof').textContent = fmt(catT.Brandstof);
+  document.getElementById('wv-2-gereedschap').textContent = fmt(catT.Gereedschap);
+  document.getElementById('wv-2-verzekering').textContent = fmt(catT.Verzekering);
+  document.getElementById('wv-2-telefoon').textContent = fmt(catT.Telefoon);
+  document.getElementById('wv-2-overig').textContent = fmt(catT.Overig);
+  document.getElementById('wv-2-winst').textContent = fmt(omzet - kosten);
+}
+
+function exportBalansPDF() {
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+    const kvk = document.getElementById('s-kvk').value || '64165965';
+    doc.setFillColor(244,164,24); doc.rect(0,0,210,28,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
+    doc.text(naam, 14, 17);
+    doc.setFontSize(11); doc.setFont('helvetica','normal');
+    doc.text('Jaarrekening 2026', 14, 25);
+    doc.setTextColor(0,0,0); doc.setFontSize(10);
+    doc.text('KvK: ' + kvk + ' \u2022 ' + new Date().toLocaleDateString('nl-NL'), 14, 42);
+    let y = 60;
+    doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('BALANS PER 31-12-2026', 14, y); y+=10;
+    const omzet = facturen.reduce((s,f)=>s+f.totaalExcl,0);
+    const kosten = bonnen.reduce((s,b)=>s+b.excl,0);
+    const winst = omzet - kosten;
+    const bankSaldo = facturen.filter(f=>f.status==='Betaald').reduce((s,f)=>s+f.totaal,0) - bonnen.reduce((s,b)=>s+b.incl,0);
+    const debiteuren = facturen.filter(f=>f.status!=='Betaald').reduce((s,f)=>s+f.totaal,0);
+    doc.setFontSize(11);
+    doc.text('Activa', 14, y); doc.text('Passiva', 110, y); y+=8;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('Bank', 14, y); doc.text(fmt(bankSaldo), 100, y, {align:'right'});
+    doc.text('Eigen vermogen', 110, y); doc.text(fmt(winst), 196, y, {align:'right'}); y+=7;
+    doc.text('Debiteuren', 14, y); doc.text(fmt(debiteuren), 100, y, {align:'right'});
+    doc.text('Te betalen BTW', 110, y); doc.text(fmt(facturen.reduce((s,f)=>s+f.btwBedrag,0)), 196, y, {align:'right'}); y+=14;
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('WINST & VERLIES', 14, y); y+=10;
+    doc.setFontSize(11); doc.setFont('helvetica','normal');
+    doc.text('Omzet (excl. BTW)', 14, y); doc.text(fmt(omzet), 196, y, {align:'right'}); y+=7;
+    doc.text('Kosten', 14, y); doc.text(fmt(kosten), 196, y, {align:'right'}); y+=10;
+    doc.setFont('helvetica','bold'); doc.setFillColor(247,247,245); doc.rect(14, y-5, 182, 8, 'F');
+    doc.text('NETTOWINST', 14, y); doc.text(fmt(winst), 196, y, {align:'right'});
+    doc.save('jaarrekening-2026-' + naam.replace(/\s/g,'-') + '.pdf');
+    showNotif('Jaarrekening PDF gedownload ✓');
+  } catch(e) { showNotif('PDF fout: ' + e.message, true); }
+}
+
+// ===== BELASTINGDIENST MODULE =====
+function renderBelastingdienst() {
+  const q = document.getElementById('bd-kwartaal')?.value || 'Q1';
+  document.getElementById('bd-kw-label').textContent = q + ' 2026';
+  const qBonnen = bonnen.filter(b => b.kwartaal === q);
+  const qFacturen = facturen.filter(f => kw(f.datum) === q);
+  const omzet_excl = qFacturen.reduce((s,f) => s + f.totaalExcl, 0);
+  const btw_ontvangen = qFacturen.reduce((s,f) => s + f.btwBedrag, 0);
+  const btw_betaald = qBonnen.reduce((s,b) => s + b.btw, 0);
+  const saldo = btw_ontvangen - btw_betaald;
+  document.getElementById('bd-1a-excl').textContent = fmt(omzet_excl);
+  document.getElementById('bd-1a-btw').textContent = fmt(btw_ontvangen);
+  document.getElementById('bd-5a').textContent = fmt(btw_ontvangen);
+  document.getElementById('bd-5b').textContent = fmt(btw_betaald);
+  document.getElementById('bd-saldo').textContent = (saldo > 0 ? 'Te betalen: ' : 'Te ontvangen: ') + fmt(Math.abs(saldo));
+  document.getElementById('bd-saldo').style.color = saldo > 0 ? 'var(--red)' : 'var(--green)';
+  const totaalOmzet = facturen.reduce((s,f) => s + f.totaalExcl, 0);
+  const totaalKosten = bonnen.reduce((s,b) => s + b.excl, 0);
+  const brutoWinst = totaalOmzet - totaalKosten;
+  const belastbaar = Math.max(0, brutoWinst - 5030);
+  document.getElementById('ib-omzet').textContent = fmt(totaalOmzet);
+  document.getElementById('ib-inkoop').textContent = fmt(totaalKosten);
+  document.getElementById('ib-bruto').textContent = fmt(brutoWinst);
+  document.getElementById('ib-belastbaar').textContent = fmt(belastbaar);
+}
+
+function exportBelastingdienstPDF() {
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+    const kvk = document.getElementById('s-kvk').value || '64165965';
+    const btwNr = document.getElementById('s-btwnr').value || 'NL000000000B01';
+    const q = document.getElementById('bd-kwartaal').value;
+    const qBonnen = bonnen.filter(b => b.kwartaal === q);
+    const qFacturen = facturen.filter(f => kw(f.datum) === q);
+    const omzet_excl = qFacturen.reduce((s,f) => s + f.totaalExcl, 0);
+    const btw_ontvangen = qFacturen.reduce((s,f) => s + f.btwBedrag, 0);
+    const btw_betaald = qBonnen.reduce((s,b) => s + b.btw, 0);
+    const saldo = btw_ontvangen - btw_betaald;
+    doc.setFillColor(15,15,26); doc.rect(0,0,210,30,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text('BTW Aangifte ' + q + ' 2026', 14, 18);
+    doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text('Voor de Belastingdienst', 14, 26);
+    doc.setTextColor(0,0,0); doc.setFontSize(10);
+    let y = 44;
+    doc.setFont('helvetica','bold'); doc.text('Bedrijfsgegevens', 14, y); y+=8;
+    doc.setFont('helvetica','normal');
+    doc.text('Naam: ' + naam, 14, y); y+=6;
+    doc.text('KvK: ' + kvk, 14, y); y+=6;
+    doc.text('BTW: ' + btwNr, 14, y); y+=6;
+    doc.text('Periode: ' + q + ' 2026', 14, y); y+=12;
+    doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.setFillColor(247,247,245); doc.rect(14, y-5, 182, 8, 'F');
+    doc.text('RUBRIEK 1 — Prestaties binnenland', 14, y); y+=10;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('1a — 21% tarief: ' + fmt(omzet_excl) + ' (BTW: ' + fmt(btw_ontvangen) + ')', 14, y); y+=15;
+    doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.setFillColor(247,247,245); doc.rect(14, y-5, 182, 8, 'F');
+    doc.text('RUBRIEK 5 — Voorbelasting', 14, y); y+=10;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('5a — Verschuldigde BTW: ' + fmt(btw_ontvangen), 14, y); y+=7;
+    doc.text('5b — Voorbelasting: ' + fmt(btw_betaald), 14, y); y+=10;
+    doc.setFont('helvetica','bold'); doc.setFontSize(12);
+    doc.setFillColor(244,164,24); doc.rect(14, y-6, 182, 10, 'F');
+    doc.setTextColor(255,255,255);
+    doc.text((saldo > 0 ? 'TE BETALEN: ' : 'TE ONTVANGEN: ') + fmt(Math.abs(saldo)), 14, y);
+    y+=20;
+    doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.text('Hoe in te dienen', 14, y); y+=8;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    ['1. Ga naar mijn.belastingdienst.nl','2. Log in met DigiD of eHerkenning','3. Klik op BTW aangifte, kies '+q+' 2026','4. Vul rubrieken 1a en 5b in','5. Verzend de aangifte'].forEach(line => { doc.text(line, 14, y); y+=6; });
+    doc.setFontSize(8); doc.setTextColor(150,150,150);
+    doc.text('Gegenereerd door SlimBoekhoud op ' + new Date().toLocaleDateString('nl-NL'), 14, 285);
+    doc.save('btw-aangifte-' + q + '-2026.pdf');
+    showNotif('BTW aangifte PDF gedownload ✓');
+  } catch(e) { showNotif('PDF fout: ' + e.message, true); }
+}
+
+// showPage uitbreiden
+const _origShowPage4 = showPage;
+showPage = function(name, el) {
+  _origShowPage4(name, el);
+  if (name === 'grootboek') renderGrootboek();
+  if (name === 'balans') renderBalans();
+  if (name === 'belastingdienst') renderBelastingdienst();
+};
+
+if(savedKey)document.getElementById('api-key-input').value=savedKey;
+const savedSettings=localStorage.getItem('sb_settings');
+if(savedSettings){try{const s=JSON.parse(savedSettings);Object.entries(s).forEach(([k,v])=>{const el=document.getElementById('s-'+k);if(el)el.value=v});document.getElementById('sb-company').textContent=s.naam||'Pro Stukadoors';}catch(e){}}
+autoLoad();
+checkBTWDeadline();
 </script>
 </body>
 </html>
