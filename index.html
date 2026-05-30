@@ -1211,7 +1211,7 @@ const DEMO=[
   {datum:'2026-08-19',leverancier:'Karwei',cat:'Gereedschap',excl:234.50,pct:21},
 ];
 const CAT_BADGE={Materiaal:'b-blue',Brandstof:'b-amber',Gereedschap:'b-purple',Verzekering:'b-green',Telefoon:'b-gray','Eten & drinken':'b-gray',Transport:'b-amber',Subcontractor:'b-blue',Overig:'b-gray'};
-let bonnen=[],facturen=[],offertes=[],klanten=[];
+let bonnen=[],facturen=[],offertes=[],klanten=[],pendingFiles=[];
 let factuurNr=1,offerteNr=1;
 let deferredPrompt=null;
 
@@ -1321,7 +1321,7 @@ function setAgent(id,st,lbl){document.getElementById('d-'+id).className='dot '+s
 function setProgress(p){document.getElementById('prog').style.width=p+'%'}
 
 function handleFiles(files){
-  if(!files.length)return;
+  if(!files.length)return;  pendingFiles=Array.from(files);
   const names=[...files].map(f=>f.name).join(', ');
   document.getElementById('upload-status').style.display='block';
   document.getElementById('upload-status').textContent=files.length+' bestand(en) klaar: '+names;
@@ -2689,7 +2689,7 @@ showPage = function(name, el) {
   if (name === 'belastingdienst') renderBelastingdienst();
 };
 
-if(savedKey)document.getElementById('api-key-input').value=savedKey;
+const savedKey=localStorage.getItem('anthropic_key');if(savedKey)document.getElementById('api-key-input').value=savedKey;
 const savedSettings=localStorage.getItem('sb_settings');
 if(savedSettings){try{const s=JSON.parse(savedSettings);Object.entries(s).forEach(([k,v])=>{const el=document.getElementById('s-'+k);if(el)el.value=v});document.getElementById('sb-company').textContent=s.naam||'Pro Stukadoors';}catch(e){}}
 autoLoad();
