@@ -299,6 +299,10 @@ tr:hover td{background:var(--bg)}
     <!-- Signup mode -->
     <div id="signup-form" style="display:none">
       <input class="login-input" type="text" id="signup-bedrijf" placeholder="Bedrijfsnaam" autocomplete="organization">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input class="login-input" type="text" id="signup-kvk" placeholder="KvK nummer (optioneel)" style="margin-bottom:0;flex:1" maxlength="8">
+        <button type="button" onclick="kvkLookup()" style="padding:11px 14px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif" title="Auto-zoek bedrijfsgegevens">🔍</button>
+      </div>
       <input class="login-input" type="email" id="signup-email" placeholder="Email adres" autocomplete="email">
       <input class="login-input" type="password" id="signup-pass" placeholder="Wachtwoord (min 8 tekens)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignup()">
       <button class="login-btn" id="signup-btn-submit" onclick="doSignup()">14 dagen gratis proberen</button>
@@ -1312,10 +1316,20 @@ async function doLogin(){
   finally{ btn.disabled=false; btn.textContent='Inloggen'; }
 }
 
+function kvkLookup(){
+  const kvkInput=document.getElementById('signup-kvk');
+  const kvk=kvkInput.value.trim();
+  if(!kvk){ showAuthError('Vul eerst je KvK nummer in (8 cijfers)'); return; }
+  if(!/^\d{8}$/.test(kvk)){ showAuthError('KvK nummer moet 8 cijfers zijn'); return; }
+  showAuthError('🚧 Auto-lookup komt binnenkort — vul handmatig in voor nu', true);
+}
+
 async function doSignup(){
   const bedrijf=document.getElementById('signup-bedrijf').value.trim();
+  const kvk=document.getElementById('signup-kvk').value.trim();
   const email=document.getElementById('signup-email').value.trim();
   const pass=document.getElementById('signup-pass').value;
+  if(kvk && !/^\d{8}$/.test(kvk)){ showAuthError('KvK nummer moet 8 cijfers zijn (of leeg laten)'); return; }
   if(!bedrijf||!email||!pass){ showAuthError('Vul alle velden in'); return; }
   if(pass.length<8){ showAuthError('Wachtwoord moet minimaal 8 tekens zijn'); return; }
   if(!window.sb){ showAuthError('Verbinding wordt opgezet, probeer over 2 sec opnieuw'); return; }
@@ -1324,14 +1338,16 @@ async function doSignup(){
   try{
     const {data, error}=await window.sb.auth.signUp({
       email, password: pass,
-      options: { data: { bedrijfsnaam: bedrijf } }
+      options: { data: { bedrijfsnaam: bedrijf, kvk_nr: kvk || null } }
     });
     if(error){
       const msg = error.message==='User already registered' ? 'Dit email bestaat al — probeer in te loggen' : error.message;
       showAuthError(msg);
     } else {
       if(data.user){
-        try{ await window.sb.from('profiles').update({bedrijfsnaam: bedrijf}).eq('id', data.user.id); }catch(e){}
+        try{ await window.sb.from('profiles').update({bedrijfsnaam: bedrijf, kvk_nr: kvk || null}).eq('id', data.user.id); }catch(e){}
+        // Also save to localStorage as fallback for current session
+        try{ localStorage.setItem('sb_signup_kvk', kvk || ''); }catch(e){}
       }
       showAuthError('✓ Check je inbox om je email te bevestigen!', true);
     }
@@ -1660,6 +1676,122 @@ function loadDemo(){
 // RENDER
 function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderBTW();renderWV();renderOffertes();renderCategoryFolders();}
 
+function bewerkBon(index){
+  const b = bonnen[index];
+  if(!b) return;
+  
+  const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig'];
+  
+  const modal = document.createElement('div');
+  modal.id = 'bon-edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:14px;width:480px;max-width:100%;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:16px;font-weight:600">✏️ Bon bewerken</div>
+        <button onclick="document.getElementById('bon-edit-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);line-height:1">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">Datum</label>
+          <input id="edit-datum" type="date" class="form-input" value="${b.datum}" style="width:100%">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">Categorie</label>
+          <select id="edit-cat" class="form-input" style="width:100%">
+            ${cats.map(c => `<option value="${c}" ${b.cat===c?'selected':''}>${CAT_EMOJI[c]||''} ${c}</option>`).join('')}
+          </select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">Leverancier</label>
+          <input id="edit-lev" type="text" class="form-input" value="${esc(b.leverancier||'')}" style="width:100%">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">Excl. BTW (€)</label>
+          <input id="edit-excl" type="number" step="0.01" class="form-input" value="${b.excl}" style="width:100%" oninput="recalcBtw()">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">BTW % </label>
+          <select id="edit-pct" class="form-input" style="width:100%" onchange="recalcBtw()">
+            <option value="21" ${(!b.btw_pct||b.btw_pct===21)?'selected':''}>21%</option>
+            <option value="9" ${b.btw_pct===9?'selected':''}>9%</option>
+            <option value="0" ${b.btw_pct===0?'selected':''}>0% (vrijgesteld)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">BTW (€)</label>
+          <input id="edit-btw" type="number" step="0.01" class="form-input" value="${b.btw}" style="width:100%" readonly>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">Totaal incl. (€)</label>
+          <input id="edit-incl" type="number" step="0.01" class="form-input" value="${b.incl}" style="width:100%" readonly>
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">Notitie</label>
+          <input id="edit-note" type="text" class="form-input" value="${esc(b.note||b.notitie||'')}" placeholder="Optioneel" style="width:100%">
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">Status</label>
+          <select id="edit-status" class="form-input" style="width:100%">
+            <option value="ok" ${(!b.status||b.status==='ok')?'selected':''}>✓ OK</option>
+            <option value="vlag" ${b.status==='vlag'?'selected':''}>⚠️ Vlag (extra controle)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+        <button onclick="document.getElementById('bon-edit-modal').remove()" class="btn btn-secondary">Annuleren</button>
+        <button onclick="saveBonEdit(${index})" class="btn btn-primary">💾 Opslaan</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click',(e)=>{ if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function recalcBtw(){
+  const excl = parseFloat(document.getElementById('edit-excl').value) || 0;
+  const pct = parseFloat(document.getElementById('edit-pct').value) || 0;
+  const btw = +(excl * pct / 100).toFixed(2);
+  const incl = +(excl + btw).toFixed(2);
+  document.getElementById('edit-btw').value = btw.toFixed(2);
+  document.getElementById('edit-incl').value = incl.toFixed(2);
+}
+
+function saveBonEdit(index){
+  const b = bonnen[index];
+  if(!b) return;
+  b.datum = document.getElementById('edit-datum').value;
+  b.leverancier = document.getElementById('edit-lev').value.trim();
+  b.cat = document.getElementById('edit-cat').value;
+  b.excl = parseFloat(document.getElementById('edit-excl').value) || 0;
+  b.btw_pct = parseInt(document.getElementById('edit-pct').value) || 21;
+  b.btw = parseFloat(document.getElementById('edit-btw').value) || 0;
+  b.incl = parseFloat(document.getElementById('edit-incl').value) || 0;
+  b.note = document.getElementById('edit-note').value.trim();
+  b.status = document.getElementById('edit-status').value;
+  // Update kwartaal based on new date
+  if(b.datum){
+    const m = new Date(b.datum).getMonth() + 1;
+    b.kwartaal = m<=3?'Q1':m<=6?'Q2':m<=9?'Q3':'Q4';
+  }
+  document.getElementById('bon-edit-modal').remove();
+  autoSave();
+  renderAll();
+  showNotif('✓ Bon bijgewerkt');
+}
+
+function verwijderBon(index){
+  const b = bonnen[index];
+  if(!b) return;
+  if(!confirm(`Bon "${b.leverancier}" (${fmt(b.incl)}) verwijderen?\n\nDit kan niet ongedaan worden gemaakt.`)) return;
+  bonnen.splice(index, 1);
+  autoSave();
+  renderAll();
+  document.getElementById('bonnen-badge').textContent = bonnen.length;
+  document.getElementById('bonnen-count').textContent = bonnen.length + ' verwerkte bonnen';
+  showNotif('🗑️ Bon verwijderd');
+}
+
 function renderCategoryFolders(){
   const container = document.getElementById('cat-folders');
   if(!container) return;
@@ -1728,6 +1860,8 @@ function renderBonnen(lijst){
         <div style="display:flex;gap:6px;align-items:center">
           <span class="badge ${b.status==='vlag'?'b-red':'b-green'}">${b.status==='vlag'?'⚠️ Vlag':'✓ OK'}</span>
           ${b._fileData ? `<button onclick="bekijkBon(${i})" title="Bekijk bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px">👁️</button>` : ''}
+          <button onclick="bewerkBon(${i})" title="Bewerk bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px">✏️</button>
+          <button onclick="verwijderBon(${i})" title="Verwijder bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;color:var(--red)">🗑️</button>
         </div>
       </td>
     </tr>`).join('') || '<tr><td colspan="9" class="empty">Geen bonnen</td></tr>';
