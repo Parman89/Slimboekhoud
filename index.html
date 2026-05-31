@@ -258,6 +258,19 @@ tr:hover td{background:var(--bg)}
 
 /* OFFERTE */
 .offerte-badge{background:#EEEDFE;color:#534AB7}
+
+/* CATEGORIE FOLDERS */
+.cat-folders{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:1100px){.cat-folders{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:900px){.cat-folders{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:500px){.cat-folders{grid-template-columns:repeat(2,1fr)}}
+.cat-folder{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .15s;box-shadow:var(--shadow)}
+.cat-folder:hover{border-color:var(--orange);transform:translateY(-1px)}
+.cat-folder.active{border-color:var(--orange);background:var(--orange-light)}
+.cat-folder-icon{font-size:22px;margin-bottom:4px}
+.cat-folder-name{font-size:11px;font-weight:600;margin-bottom:2px;color:var(--text)}
+.cat-folder-count{font-size:10px;color:var(--text-muted);font-weight:500}
+.cat-folder-amount{font-size:11px;color:var(--orange-dark);font-weight:600;margin-top:2px}
 </style>
 </head>
 <body>
@@ -420,6 +433,7 @@ tr:hover td{background:var(--bg)}
         <div class="agent-card"><div class="agent-icon">🛡️</div><div class="agent-name">Accountant agent</div><div class="agent-desc">Controleert duplicaten en BTW fouten.</div><div class="agent-status"><div class="dot" id="d-acc"></div><span id="l-acc">Wacht op kwartaal agent</span></div></div>
       </div>
       <button class="btn btn-primary" id="run-btn" onclick="runAgents()" disabled style="width:100%;padding:12px;margin-bottom:20px;justify-content:center">▶ Verwerk bonnen met agenten</button>
+      <div id="cat-folders" class="cat-folders" style="display:none"></div>
       <div class="card" id="bonnen-results" style="display:none">
         <div class="card-header">
           <span class="card-title" id="bonnen-count">Verwerkte bonnen</span>
@@ -1644,7 +1658,46 @@ function loadDemo(){
 }
 
 // RENDER
-function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderBTW();renderWV();renderOffertes();}
+function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderBTW();renderWV();renderOffertes();renderCategoryFolders();}
+
+function renderCategoryFolders(){
+  const container = document.getElementById('cat-folders');
+  if(!container) return;
+  if(bonnen.length === 0){ container.style.display='none'; return; }
+  container.style.display='grid';
+
+  const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig'];
+  const counts = {}; const amounts = {};
+  bonnen.forEach(b => {
+    counts[b.cat] = (counts[b.cat] || 0) + 1;
+    amounts[b.cat] = (amounts[b.cat] || 0) + (b.incl || 0);
+  });
+  const totalAmount = bonnen.reduce((s,b)=>s+(b.incl||0),0);
+  const activeFilter = document.getElementById('bon-cat-filter')?.value || '';
+
+  container.innerHTML = `
+    <div class="cat-folder ${activeFilter === '' ? 'active' : ''}" onclick="filterByFolder('')">
+      <div class="cat-folder-icon">📂</div>
+      <div class="cat-folder-name">Alle</div>
+      <div class="cat-folder-count">${bonnen.length} bonnen</div>
+      <div class="cat-folder-amount">${fmt(totalAmount)}</div>
+    </div>
+    ${cats.filter(c => counts[c] > 0).map(c => `
+      <div class="cat-folder ${activeFilter === c ? 'active' : ''}" onclick="filterByFolder('${c}')">
+        <div class="cat-folder-icon">${CAT_EMOJI[c] || '📁'}</div>
+        <div class="cat-folder-name">${c}</div>
+        <div class="cat-folder-count">${counts[c]} bon${counts[c]!==1?'nen':''}</div>
+        <div class="cat-folder-amount">${fmt(amounts[c]||0)}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function filterByFolder(cat){
+  const sel = document.getElementById('bon-cat-filter');
+  if(sel){ sel.value = cat; filterBonnen(); }
+  renderCategoryFolders();
+}
 
 function renderBonnen(lijst){
   const data = lijst || bonnen;
