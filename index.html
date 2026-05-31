@@ -1565,6 +1565,10 @@ Als je iets niet kunt lezen, gok op basis van het bedrijf. Geef ALLEEN de JSON t
         const cleanText = text.replace(/```json|```/g, '').trim();
         const bonData = JSON.parse(cleanText);
 
+        // Attach original file data for preview
+        bonData._fileData = base64;
+        bonData._fileType = file.type;
+        bonData._fileName = file.name;
         raw.push(bonData);
         showNotif(`✓ Bon ${i+1}: ${bonData.leverancier} — €${(bonData.excl * 1.21).toFixed(2)}`);
 
@@ -1668,9 +1672,42 @@ function renderBonnen(lijst){
       <td class="num mono" style="color:#BA7517">${fmt(b.btw)}</td>
       <td class="num mono" style="font-weight:500">${fmt(b.incl)}</td>
       <td>
-        <span class="badge ${b.status==='vlag'?'b-red':'b-green'}">${b.status==='vlag'?'⚠️ Vlag':'✓ OK'}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge ${b.status==='vlag'?'b-red':'b-green'}">${b.status==='vlag'?'⚠️ Vlag':'✓ OK'}</span>
+          ${b._fileData ? `<button onclick="bekijkBon(${i})" title="Bekijk bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px">👁️</button>` : ''}
+        </div>
       </td>
     </tr>`).join('') || '<tr><td colspan="9" class="empty">Geen bonnen</td></tr>';
+}
+
+// View bon file (PDF or image) in modal
+function bekijkBon(index){
+  const b = bonnen[index];
+  if(!b || !b._fileData){ showNotif('Geen bestand opgeslagen voor deze bon', true); return; }
+  
+  // Build modal
+  const modal = document.createElement('div');
+  modal.id = 'bon-viewer-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+  
+  const isImage = b._fileType && b._fileType.startsWith('image/');
+  const isPDF = b._fileType === 'application/pdf';
+  
+  modal.innerHTML = `
+    <div style="position:absolute;top:14px;right:14px;display:flex;gap:8px">
+      <a href="${b._fileData}" download="${b._fileName||'bon.'+(isPDF?'pdf':'jpg')}" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;text-decoration:none;font-family:'Inter',sans-serif">⬇ Download</a>
+      <button onclick="document.getElementById('bon-viewer-modal').remove()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:'Inter',sans-serif">✕ Sluiten</button>
+    </div>
+    <div style="color:#fff;margin-bottom:14px;font-size:14px;font-weight:500">${esc(b.leverancier)} — ${b.datum} — ${fmt(b.incl)}</div>
+    <div style="background:#fff;border-radius:12px;max-width:90vw;max-height:80vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.5)">
+      ${isPDF 
+        ? `<iframe src="${b._fileData}" style="width:80vw;height:75vh;border:none;border-radius:12px" title="Bon PDF"></iframe>`
+        : `<img src="${b._fileData}" style="max-width:90vw;max-height:75vh;display:block;border-radius:12px" alt="Bon">`
+      }
+    </div>
+  `;
+  modal.addEventListener('click',(e)=>{ if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function wijzigCat(index, nieuwecat) {
