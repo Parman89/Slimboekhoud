@@ -594,12 +594,33 @@ tr:hover td{background:var(--bg)}
 
     <!-- BTW -->
     <div class="page" id="page-btw">
-      <div class="kwartaal-grid" id="kw-grid-btw"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="font-size:20px;font-weight:700">📅 BTW Aangifte</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="deelMetBoekhouder()" style="font-size:12px">📤 Deel met boekhouder</button>
+          <button class="btn btn-primary" onclick="printBTWAangifte()" style="font-size:12px">🖨️ Print / PDF</button>
+        </div>
+      </div>
+
+      <!-- Kwartaal selectie -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="kw-grid-btw"></div>
+
+      <!-- Belastingdienst-stijl formulier -->
+      <div class="card" id="btw-formulier-card">
+        <div class="card-header">
+          <span class="card-title" id="btw-formulier-titel">📋 BTW aangifte formulier — selecteer kwartaal</span>
+        </div>
+        <div id="btw-formulier-content" style="padding:20px">
+          <div class="empty">Klik op een kwartaal hierboven om het aangifte formulier te zien.</div>
+        </div>
+      </div>
+
+      <!-- Overzicht alle kwartalen -->
       <div class="card">
-        <div class="card-header"><span class="card-title">BTW aangifte overzicht</span><button class="btn btn-primary" onclick="exportBTWPDF()" style="font-size:12px">📥 PDF aangifte</button></div>
+        <div class="card-header"><span class="card-title">📊 Jaaroverzicht alle kwartalen</span></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Kwartaal</th><th class="num">Omzet excl.</th><th class="num">BTW ontvangen</th><th class="num">Kosten excl.</th><th class="num">BTW betaald</th><th class="num">Saldo</th></tr></thead>
+            <thead><tr><th>Kwartaal</th><th class="num">Omzet excl.</th><th class="num">BTW omzet</th><th class="num">Kosten excl.</th><th class="num">Voorbelasting</th><th class="num">Saldo</th></tr></thead>
             <tbody id="t-btw"><tr><td colspan="6" class="empty">Laad bonnen en facturen om BTW te berekenen</td></tr></tbody>
           </table>
         </div>
@@ -1991,31 +2012,192 @@ function renderDashboard(){
   if(overdue.length)showNotif(`⚠️ ${overdue.length} factuur(en) zijn verlopen!`,true);
 }
 
+// Track active BTW kwartaal
+window.__btwActiveQ = null;
+
 function renderBTW(){
   const qs=['Q1','Q2','Q3','Q4'];
-  const max=Math.max(...qs.map(q=>bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0)),1);
+  const jaar=document.getElementById('jaar-select')?.value||'2026';
+
+  // Kwartaal kaarten (klikbaar)
   document.getElementById('kw-grid-btw').innerHTML=qs.map(q=>{
     const items=bonnen.filter(b=>b.kwartaal===q);
-    const i=items.reduce((s,b)=>s+b.incl,0);
-    const e=items.reduce((s,b)=>s+b.excl,0);
-    const t=items.reduce((s,b)=>s+b.btw,0);
-    return`<div class="kw-card"><div class="kw-title">${q} 2026 &bull; ${items.length} bonnen</div>
-      <div class="kw-amount">${fmt(i)}</div><div class="kw-sub">excl: ${fmt(e)}</div>
-      <div class="kw-btw">BTW: ${fmt(t)}</div>
-      <div class="kw-bar-bg"><div class="kw-bar-fill" style="width:${Math.round(i/max*100)}%"></div></div></div>`;
+    const ke=items.reduce((s,b)=>s+b.excl,0);
+    const kb=items.reduce((s,b)=>s+b.btw,0);
+    const flist=facturen.filter(f=>kw(f.datum)===q);
+    const ob=flist.reduce((s,f)=>s+f.btwBedrag,0);
+    const saldo=ob-kb; // positief = te betalen, negatief = te ontvangen
+    const isActive=window.__btwActiveQ===q;
+    return`<div onclick="selectBTWKwartaal('${q}')" style="background:var(--white);border:2px solid ${isActive?'var(--orange)':'var(--border)'};border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .15s;box-shadow:${isActive?'0 4px 12px rgba(244,164,24,.2)':'var(--shadow)'}">
+      <div style="font-size:13px;font-weight:600;color:${isActive?'var(--orange)':'var(--text)'};margin-bottom:6px">${q} ${jaar}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">${items.length} bon${items.length!==1?'nen':''}</div>
+      <div style="font-size:15px;font-weight:700;color:${saldo<0?'var(--green)':saldo>0?'var(--red)':'var(--text-muted)'}">
+        ${saldo<0?'▲ '+fmt(Math.abs(saldo)):saldo>0?'▼ '+fmt(saldo):'—'}
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${saldo<0?'te ontvangen':saldo>0?'te betalen':'geen data'}</div>
+    </div>`;
   }).join('');
+
+  // Jaaroverzicht tabel
   document.getElementById('t-btw').innerHTML=qs.map(q=>{
     const ke=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.excl,0);
     const kb=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.btw,0);
     const oe=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.totaalExcl,0);
     const ob=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0);
-    const saldo=kb-ob;
-    return`<tr><td><span class="badge b-gray">${q}</span></td>
+    const saldo=ob-kb;
+    return`<tr><td><span class="badge b-gray" style="cursor:pointer" onclick="selectBTWKwartaal('${q}')">${q}</span></td>
       <td class="num mono">${fmt(oe)}</td><td class="num mono" style="color:var(--green)">${fmt(ob)}</td>
       <td class="num mono">${fmt(ke)}</td><td class="num mono" style="color:#BA7517">${fmt(kb)}</td>
       <td class="num mono" style="font-weight:600;color:${saldo>0?'var(--red)':'var(--green)'}">
-        ${saldo>0?'Te betalen '+fmt(saldo):'Te ontvangen '+fmt(Math.abs(saldo))}</td></tr>`;
+        ${saldo>0?'▼ Te betalen '+fmt(saldo):'▲ Te ontvangen '+fmt(Math.abs(saldo))}</td></tr>`;
   }).join('');
+
+  // Als er een actief kwartaal is, toon formulier
+  if(window.__btwActiveQ) renderBTWFormulier(window.__btwActiveQ);
+}
+
+function selectBTWKwartaal(q){
+  window.__btwActiveQ = q;
+  renderBTW();
+  document.getElementById('btw-formulier-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function renderBTWFormulier(q){
+  const jaar=document.getElementById('jaar-select')?.value||'2026';
+  const items=bonnen.filter(b=>b.kwartaal===q);
+  const flist=facturen.filter(f=>kw(f.datum)===q);
+
+  // 1a: omzet hoog tarief (21%) — uit facturen
+  const omzet1a=flist.reduce((s,f)=>s+(f.totaalExcl||0),0);
+  const btw1b=flist.reduce((s,f)=>s+(f.btwBedrag||0),0);
+
+  // 5b: voorbelasting — BTW uit bonnen
+  const voorbelasting5b=items.reduce((s,b)=>s+(b.btw||0),0);
+
+  // Saldo
+  const saldo=btw1b-voorbelasting5b;
+  const teBetalen=saldo>0;
+
+  document.getElementById('btw-formulier-titel').textContent=`📋 BTW aangifte ${q} ${jaar}`;
+  document.getElementById('btw-formulier-content').innerHTML=`
+    <div style="max-width:700px">
+      <!-- Waarschuwing / info -->
+      <div style="background:var(--orange-light);border:1px solid var(--orange);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px">
+        ⚡ <strong>Klaar om in te dienen!</strong> Vul de bedragen hieronder in op <a href="https://mijn.belastingdienst.nl" target="_blank" style="color:var(--orange-dark);font-weight:600">mijn.belastingdienst.nl</a> → BTW aangifte
+      </div>
+
+      <!-- Rubriek tabel -->
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+            <th style="padding:10px 12px;text-align:left;width:60px">Rubriek</th>
+            <th style="padding:10px 12px;text-align:left">Omschrijving</th>
+            <th style="padding:10px 12px;text-align:right;width:130px">Bedrag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-weight:700;color:var(--orange-dark)">1a</td>
+            <td style="padding:10px 12px">Leveringen/diensten belast met hoog tarief (21%)<br><span style="font-size:11px;color:var(--text-muted)">→ Jouw omzet excl. BTW uit facturen</span></td>
+            <td style="padding:10px 12px;text-align:right;font-family:monospace;font-size:14px;font-weight:600">${fmt(omzet1a)}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);background:rgba(244,164,24,0.05)">
+            <td style="padding:10px 12px;font-weight:700;color:var(--orange-dark)">1b</td>
+            <td style="padding:10px 12px">BTW hoog tarief (21% × 1a)<br><span style="font-size:11px;color:var(--text-muted)">→ BTW die jij hebt ontvangen van klanten</span></td>
+            <td style="padding:10px 12px;text-align:right;font-family:monospace;font-size:14px;font-weight:600;color:var(--red)">${fmt(btw1b)}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-weight:700;color:var(--text-muted)">2–4</td>
+            <td style="padding:10px 12px;color:var(--text-muted)">Niet van toepassing (geen intracommunautaire leveringen)</td>
+            <td style="padding:10px 12px;text-align:right;font-family:monospace;color:var(--text-muted)">€ 0,00</td>
+          </tr>
+          <tr style="border-bottom:2px solid var(--border);background:rgba(244,164,24,0.08)">
+            <td style="padding:10px 12px;font-weight:700">5a</td>
+            <td style="padding:10px 12px;font-weight:600">Totaal verschuldigde omzetbelasting (= 1b)</td>
+            <td style="padding:10px 12px;text-align:right;font-family:monospace;font-size:14px;font-weight:700;color:var(--red)">${fmt(btw1b)}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-weight:700;color:var(--green)">5b</td>
+            <td style="padding:10px 12px">Voorbelasting (BTW betaald aan leveranciers)<br><span style="font-size:11px;color:var(--text-muted)">→ BTW op jouw bonnen (kosten)</span></td>
+            <td style="padding:10px 12px;text-align:right;font-family:monospace;font-size:14px;font-weight:600;color:var(--green)">${fmt(voorbelasting5b)}</td>
+          </tr>
+          <tr style="background:${teBetalen?'rgba(226,76,76,0.1)':'rgba(29,213,117,0.1)'};border-top:3px solid ${teBetalen?'var(--red)':'var(--green)'}">
+            <td style="padding:14px 12px;font-weight:800;font-size:16px;color:${teBetalen?'var(--red)':'var(--green)'}">SALDO</td>
+            <td style="padding:14px 12px;font-weight:700;font-size:14px;color:${teBetalen?'var(--red)':'var(--green)'}">${teBetalen?'▼ Te BETALEN aan Belastingdienst (5a - 5b)':'▲ Te ONTVANGEN van Belastingdienst (5b - 5a)'}</td>
+            <td style="padding:14px 12px;text-align:right;font-family:monospace;font-size:18px;font-weight:800;color:${teBetalen?'var(--red)':'var(--green)'}">${fmt(Math.abs(saldo))}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Acties -->
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+        <a href="https://mijn.belastingdienst.nl" target="_blank" class="btn btn-primary" style="text-decoration:none">
+          🌐 Open mijn.belastingdienst.nl
+        </a>
+        <button onclick="printBTWAangifte()" class="btn btn-secondary">🖨️ Print / Sla op als PDF</button>
+        <button onclick="deelMetBoekhouder()" class="btn btn-secondary">📤 Stuur naar boekhouder</button>
+      </div>
+
+      <!-- Instructies -->
+      <div style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-top:16px;font-size:12px;color:var(--text-muted);line-height:1.8">
+        <strong style="color:var(--text)">📋 Stap-voor-stap indienen:</strong><br>
+        1. Ga naar <strong>mijn.belastingdienst.nl</strong> en log in met DigiD<br>
+        2. Klik op "BTW aangifte" (of "Omzetbelasting")<br>
+        3. Selecteer kwartaal: <strong>${q} ${jaar}</strong><br>
+        4. Rubriek <strong>1a</strong>: vul in → <strong>${omzet1a.toFixed(0)}</strong><br>
+        5. Rubriek <strong>1b</strong>: vul in → <strong>${btw1b.toFixed(0)}</strong> (of laat automatisch berekenen)<br>
+        6. Rubriek <strong>5b</strong>: vul in → <strong>${voorbelasting5b.toFixed(0)}</strong><br>
+        7. Controleer saldo en verzend ✓
+      </div>
+    </div>
+  `;
+}
+
+function printBTWAangifte(){
+  const q=window.__btwActiveQ;
+  if(!q){showNotif('Selecteer eerst een kwartaal'); return;}
+  const jaar=document.getElementById('jaar-select')?.value||'2026';
+  const items=bonnen.filter(b=>b.kwartaal===q);
+  const flist=facturen.filter(f=>kw(f.datum)===q);
+  const omzet1a=flist.reduce((s,f)=>s+(f.totaalExcl||0),0);
+  const btw1b=flist.reduce((s,f)=>s+(f.btwBedrag||0),0);
+  const voorbelasting5b=items.reduce((s,b)=>s+(b.btw||0),0);
+  const saldo=btw1b-voorbelasting5b;
+  const bedrijf=localStorage.getItem('sb_bedrijf')||'Pro Stukadoors';
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>BTW Aangifte ${q} ${jaar}</title>
+  <style>body{font-family:Arial,sans-serif;margin:40px;color:#111}h1{color:#F4A418}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #eee}th{background:#f5f5f5}.num{text-align:right;font-family:monospace}.saldo{background:${saldo>0?'#fee':'#efe'};font-weight:bold}.footer{margin-top:30px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:10px}@media print{.no-print{display:none}}</style>
+  </head><body>
+  <div class="no-print" style="margin-bottom:20px"><button onclick="window.print()" style="padding:10px 20px;background:#F4A418;border:none;border-radius:6px;cursor:pointer;font-size:14px;color:#fff">🖨️ Print / Sla op als PDF</button></div>
+  <h1>BTW Aangifte ${q} ${jaar}</h1>
+  <p><strong>Bedrijf:</strong> ${bedrijf}<br>
+  <strong>Periode:</strong> ${q==='Q1'?'Januari – Maart':q==='Q2'?'April – Juni':q==='Q3'?'Juli – September':'Oktober – December'} ${jaar}<br>
+  <strong>Gegenereerd:</strong> ${new Date().toLocaleDateString('nl-NL')} via SlimBoekhoud.com</p>
+  <table>
+    <thead><tr><th>Rubriek</th><th>Omschrijving</th><th class="num">Bedrag</th></tr></thead>
+    <tbody>
+      <tr><td><b>1a</b></td><td>Leveringen/diensten hoog tarief (21%) — omzet excl. BTW</td><td class="num">€ ${omzet1a.toFixed(2).replace('.',',')}</td></tr>
+      <tr><td><b>1b</b></td><td>BTW hoog tarief (21%)</td><td class="num">€ ${btw1b.toFixed(2).replace('.',',')}</td></tr>
+      <tr><td>2–4</td><td>Niet van toepassing</td><td class="num">€ 0,00</td></tr>
+      <tr><td><b>5a</b></td><td>Totaal verschuldigde BTW (= 1b)</td><td class="num">€ ${btw1b.toFixed(2).replace('.',',')}</td></tr>
+      <tr><td><b>5b</b></td><td>Voorbelasting (BTW betaald aan leveranciers)</td><td class="num">€ ${voorbelasting5b.toFixed(2).replace('.',',')}</td></tr>
+      <tr class="saldo"><td><b>SALDO</b></td><td>${saldo>0?'Te BETALEN aan Belastingdienst':'Te ONTVANGEN van Belastingdienst'}</td><td class="num">€ ${Math.abs(saldo).toFixed(2).replace('.',',')}</td></tr>
+    </tbody>
+  </table>
+  <div class="footer">SlimBoekhoud.com — Professionele boekhouding voor ZZP'ers · KvK 64165965</div>
+  </body></html>`);
+  win.document.close();
+}
+
+function deelMetBoekhouder(){
+  const q=window.__btwActiveQ;
+  if(!q){
+    showNotif('Selecteer eerst een kwartaal');
+    selectBTWKwartaal('Q'+Math.ceil(new Date().getMonth()/3)||'Q1');
+    return;
+  }
+  printBTWAangifte();
+  showNotif('✓ Print venster geopend — sla op als PDF en stuur naar je boekhouder');
 }
 
 function renderWV(){
@@ -2252,7 +2434,7 @@ function exportBonnenPDF(){
   }catch(e){showNotif('PDF generatie mislukt',true)}
 }
 
-function exportBTWPDF(){showNotif('BTW aangifte PDF: gebruik de CSV export voor nu');exportCSV()}
+function exportBTWPDF(){printBTWAangifte();}
 function exportWVPDF(){showNotif('W&V rapport PDF: gebruik de CSV export voor nu');exportCSV()}
 function downloadOffertePDF(){showNotif('Offerte PDF: dezelfde functie als factuur PDF ✓');downloadFactuurPDF()}
 
