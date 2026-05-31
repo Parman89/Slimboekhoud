@@ -1316,12 +1316,40 @@ async function doLogin(){
   finally{ btn.disabled=false; btn.textContent='Inloggen'; }
 }
 
-function kvkLookup(){
+async function kvkLookup(){
   const kvkInput=document.getElementById('signup-kvk');
   const kvk=kvkInput.value.trim();
   if(!kvk){ showAuthError('Vul eerst je KvK nummer in (8 cijfers)'); return; }
-  if(!/^\d{8}$/.test(kvk)){ showAuthError('KvK nummer moet 8 cijfers zijn'); return; }
-  showAuthError('🚧 Auto-lookup komt binnenkort — vul handmatig in voor nu', true);
+  if(!/^\d{8}$/.test(kvk)){ showAuthError('KvK nummer moet precies 8 cijfers zijn'); return; }
+
+  // Loading state
+  const btn=kvkInput.nextElementSibling;
+  btn.innerHTML='⏳'; btn.disabled=true;
+
+  try{
+    const res=await fetch(`/.netlify/functions/kvk?kvk=${kvk}`);
+    const data=await res.json();
+
+    if(!res.ok||data.error){
+      showAuthError(data.error||'Bedrijf niet gevonden — vul handmatig in');
+      return;
+    }
+
+    // Auto-fill bedrijfsnaam als leeg
+    const bedrijfInput=document.getElementById('signup-bedrijf');
+    if(!bedrijfInput.value.trim()&&data.naam){
+      bedrijfInput.value=data.naam;
+    }
+
+    // Toon succes
+    const loc=data.woonplaats?` · ${data.woonplaats}`:'';
+    showNotif(`✓ Gevonden: ${data.naam}${loc}`);
+
+  }catch(e){
+    showAuthError('KvK lookup mislukt — controleer je internetverbinding');
+  }finally{
+    btn.innerHTML='🔍'; btn.disabled=false;
+  }
 }
 
 async function doSignup(){
