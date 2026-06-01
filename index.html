@@ -355,7 +355,7 @@ tr:hover td{background:var(--bg)}
       </div>
       <input class="login-input" type="email" id="signup-email" placeholder="Email adres" autocomplete="email">
       <input class="login-input" type="password" id="signup-pass" placeholder="Wachtwoord (min 8 tekens)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignup()">
-      <button class="login-btn" id="signup-btn-submit" onclick="doSignup()">14 dagen gratis proberen</button>
+      <button class="login-btn" id="signup-btn-submit" onclick="doSignup()">30 dagen gratis proberen</button>
       <div style="font-size:11px;color:var(--text-muted);margin:10px 0">Geen creditcard nodig. Daarna €9/maand.</div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:14px">
         Al een account? <a href="#" onclick="toggleAuthMode('login');return false" style="color:var(--orange);text-decoration:none;font-weight:600">Inloggen</a>
@@ -1334,51 +1334,92 @@ tr:hover td{background:var(--bg)}
     <div class="page" id="page-pricing">
       <div style="text-align:center;padding:20px 0 30px">
         <div style="font-size:28px;font-weight:800;margin-bottom:8px">💳 Kies jouw plan</div>
-        <div style="font-size:14px;color:var(--text-muted)">14 dagen gratis proberen — geen creditcard nodig</div>
+        <div style="font-size:14px;color:var(--text-muted)">30 dagen gratis proberen — geen creditcard nodig</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px;margin:0 auto">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:720px;margin:0 auto">
         <!-- Starter -->
         <div class="card" style="padding:28px;text-align:center;position:relative">
-          <div style="font-size:14px;font-weight:700;color:var(--text-muted);margin-bottom:12px">STARTER</div>
-          <div style="font-size:42px;font-weight:800;margin-bottom:4px">€9</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">per maand excl. BTW</div>
-          <div style="text-align:left;margin-bottom:24px;font-size:13px;line-height:2">
+          <div style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:12px;letter-spacing:.05em">STARTER</div>
+          <div style="font-size:46px;font-weight:800;margin-bottom:2px;line-height:1">€9</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">per maand excl. BTW</div>
+
+          <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text-muted);line-height:1.6">
+            Ideaal voor ZZP'ers die starten
+          </div>
+
+          <div style="text-align:left;margin-bottom:20px;font-size:13px;line-height:2.1">
             ✅ Onbeperkt bonnen scannen<br>
             ✅ Onbeperkt facturen maken<br>
             ✅ BTW aangifte helper<br>
             ✅ Bank CSV import<br>
             ✅ eBoekhouden koppeling<br>
-            ✅ Cloud opslag
+            ✅ Cloud opslag<br>
+            ✅ 1 gebruiker<br>
+            ✅ Email support (48u)<br>
+            ❌ Boekhouder toegang<br>
+            ❌ WhatsApp support
           </div>
           <button onclick="startCheckout('starter')" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:600">
             🚀 Starter starten
           </button>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:10px">14 dagen gratis · Daarna €9/maand</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:10px">30 dagen gratis · Daarna €9/maand</div>
         </div>
 
         <!-- Pro -->
         <div class="card" style="padding:28px;text-align:center;border:2px solid var(--orange);position:relative">
-          <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;padding:3px 14px;border-radius:20px;font-size:12px;font-weight:700">POPULAIR</div>
-          <div style="font-size:14px;font-weight:700;color:var(--orange);margin-bottom:12px">PRO</div>
-          <div style="font-size:42px;font-weight:800;margin-bottom:4px">€19</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">per maand excl. BTW</div>
-          <div style="text-align:left;margin-bottom:24px;font-size:13px;line-height:2">
-            ✅ Alles van Starter<br>
-            ✅ Prioriteit support<br>
-            ✅ Meerdere bankrekeningen<br>
-            ✅ Uitgebreide rapporten<br>
-            ✅ Team toegang (2 gebruikers)<br>
-            ✅ WhatsApp support
+          <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;padding:3px 16px;border-radius:20px;font-size:12px;font-weight:700">⭐ MEEST GEKOZEN</div>
+          <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:12px;letter-spacing:.05em">PRO</div>
+          <div style="font-size:46px;font-weight:800;margin-bottom:2px;line-height:1">€19</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">per maand excl. BTW</div>
+
+          <div style="background:rgba(244,164,24,.1);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--orange);font-weight:600;line-height:1.6">
+            Voor serieuze ondernemers
           </div>
-          <button onclick="startCheckout('pro')" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:600;background:var(--orange)">
+
+          <div style="text-align:left;margin-bottom:20px;font-size:13px;line-height:2.1">
+            ✅ Onbeperkt bonnen scannen<br>
+            ✅ Onbeperkt facturen maken<br>
+            ✅ BTW aangifte helper<br>
+            ✅ Bank CSV import<br>
+            ✅ eBoekhouden koppeling<br>
+            ✅ Cloud opslag<br>
+            ✅ <strong>Jij + boekhouder toegang</strong><br>
+            ✅ <strong>WhatsApp direct support</strong><br>
+            ✅ Prioriteit hulp
+          </div>
+          <button onclick="startCheckout('pro')" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:700;background:var(--orange)">
             ⭐ Pro starten
           </button>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:10px">14 dagen gratis · Daarna €19/maand</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:10px">30 dagen gratis · Daarna €19/maand</div>
         </div>
       </div>
 
-      <div style="text-align:center;margin-top:30px;font-size:12px;color:var(--text-muted);line-height:1.8">
+      <!-- Vergelijking tabel -->
+      <div style="max-width:720px;margin:24px auto 0">
+        <div class="card" style="padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px;text-align:center">📊 Volledige vergelijking</div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border)">
+                <th style="text-align:left;padding:8px 4px;color:var(--text-muted)">Feature</th>
+                <th style="text-align:center;padding:8px;color:var(--text-muted)">Starter €9</th>
+                <th style="text-align:center;padding:8px;color:var(--orange)">Pro €19</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">Bonnen scannen</td><td style="text-align:center">✅ Onbeperkt</td><td style="text-align:center">✅ Onbeperkt</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">Facturen maken</td><td style="text-align:center">✅ Onbeperkt</td><td style="text-align:center">✅ Onbeperkt</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">eBoekhouden koppeling</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">Boekhouder toegang</td><td style="text-align:center">❌</td><td style="text-align:center;color:var(--orange);font-weight:700">✅</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">WhatsApp support</td><td style="text-align:center">❌</td><td style="text-align:center;color:var(--orange);font-weight:700">✅ Direct</td></tr>
+              <tr><td style="padding:8px 4px">Email support</td><td style="text-align:center">✅ 48u</td><td style="text-align:center">✅ Prioriteit</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted);line-height:1.8">
         🔒 Veilig betalen via iDEAL of creditcard &nbsp;·&nbsp; ✅ Maandelijks opzegbaar &nbsp;·&nbsp; 🇳🇱 Nederlandse BTW factuur
       </div>
 
@@ -1430,17 +1471,31 @@ tr:hover td{background:var(--bg)}
     <!-- GOOGLE DRIVE -->
     <div class="page" id="page-gdrive">
       <div id="gdrive-disconnected">
-        <div class="gdrive-connect" id="gdrive-connect-box">
-          <div class="gdrive-icon">📁</div>
-          <div style="font-size:18px;font-weight:600;margin-bottom:8px">Google Drive koppelen</div>
-          <div style="font-size:14px;color:var(--text-muted);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto">
-            Koppel je Google Drive om foto's van bonnen en PDF facturen automatisch te importeren in SlimBoekhoud.
+        <div class="card" style="padding:24px;max-width:560px;margin:0 auto">
+          <div style="text-align:center;margin-bottom:20px">
+            <div style="font-size:40px;margin-bottom:10px">📁</div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:8px">Google Drive koppelen</div>
+            <div style="font-size:13px;color:var(--text-muted)">Sla bonnen en facturen op in jouw eigen Google Drive map</div>
           </div>
-          <button class="btn btn-primary" onclick="koppelGoogleDrive()" style="font-size:15px;padding:12px 28px">
-            <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#fff" d="M6.28 3l5.72 9.9L6.28 3zm11.44 0L12 12.9 17.72 3zM1 21l5-8.66L12 21H1zm11 0l5.72-9.9L23 21H12z"/></svg>
-            Verbinden met Google Drive
+
+          <div style="margin-bottom:16px">
+            <label class="form-label">Jouw Google account email</label>
+            <input class="form-input" id="gdrive-email" type="email" placeholder="naam@gmail.com">
+          </div>
+
+          <div style="margin-bottom:16px">
+            <label class="form-label">Google Drive map link (optioneel)</label>
+            <input class="form-input" id="gdrive-folder" placeholder="https://drive.google.com/drive/folders/...">
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Maak een map aan in Drive → Rechtermuisknop → Koppeling ophalen</div>
+          </div>
+
+          <button class="btn btn-primary" onclick="slaGDriveOp()" style="width:100%;padding:12px;font-size:14px">
+            💾 Google Drive instelling opslaan
           </button>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:14px">Je geeft SlimBoekhoud alleen leestoegang tot bestanden die jij selecteert</div>
+
+          <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text-muted);line-height:1.8">
+            <strong>💡 Tip:</strong> Maak een map "SlimBoekhoud" in je Google Drive en upload je bonnen en facturen daar. Zo heb je alles op één plek.
+          </div>
         </div>
       </div>
 
@@ -1758,7 +1813,7 @@ async function doSignup(){
       showAuthError('✓ Check je inbox om je email te bevestigen!', true);
     }
   } catch(e){ showAuthError('Registratie mislukt — probeer opnieuw'); }
-  finally{ btn.disabled=false; btn.textContent='14 dagen gratis proberen'; }
+  finally{ btn.disabled=false; btn.textContent='30 dagen gratis proberen'; }
 }
 
 async function doForgotPassword(){
@@ -3372,6 +3427,7 @@ function renderFacturen(){
     <td><span class="badge ${f.status==='Betaald'?'b-green':f.status==='Openstaand'?'b-orange':'b-red'}">${f.status}</span></td>
     <td style="display:flex;gap:4px">
       <button onclick="markeerBetaald(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">✓</button>
+      <button onclick="stuurBetaallink(${f.id})" title="Stuur iDEAL betaallink" style="font-size:11px;padding:3px 8px;border:1px solid var(--orange);border-radius:6px;background:transparent;cursor:pointer;color:var(--orange)">💳</button>
       <button onclick="emailFactuurId(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">📧</button>
     </td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nog geen facturen</td></tr>';
 }
@@ -3449,6 +3505,56 @@ function slaFactuurOp(){
   factuurNr++;renderFacturen();renderDashboard();renderBTW();renderWV();
   toonFacturenList();autoSave();showNotif('Factuur opgeslagen ✓');
 }
+async function stuurBetaallink(id){
+  const f = facturen.find(f=>f.id===id);
+  if(!f){ showNotif('Factuur niet gevonden', true); return; }
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try{
+    // Create Stripe payment link for this invoice
+    const res = await fetch('/.netlify/functions/stripe', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        action: 'create_payment_link',
+        email: f.klantEmail || '',
+        amount: Math.round((f.totaalIncl || f.totaalExcl * 1.21) * 100),
+        description: 'Factuur ' + f.nummer + ' — ' + f.klant,
+        factuurNr: f.nummer
+      })
+    });
+    const data = await res.json();
+    if(data.url){
+      // Copy to clipboard
+      try{ await navigator.clipboard.writeText(data.url); }catch(e){}
+      // Show modal with link
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+      modal.innerHTML = `
+        <div style="background:var(--white);border-radius:14px;padding:24px;max-width:480px;width:100%">
+          <div style="font-size:18px;font-weight:700;margin-bottom:16px">💳 iDEAL Betaallink klaar!</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Stuur deze link naar <strong>${f.klant}</strong>. Zij betalen direct via iDEAL of creditcard.</div>
+          <div style="background:var(--bg);border-radius:8px;padding:12px;word-break:break-all;font-size:12px;margin-bottom:16px">${data.url}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button onclick="navigator.clipboard.writeText('${data.url}');showNotif('✓ Link gekopieerd!')" class="btn btn-secondary" style="flex:1">📋 Kopieer link</button>
+            <a href="mailto:${f.klantEmail||''}?subject=Factuur ${f.nummer}&body=Beste ${f.klant},%0D%0A%0D%0ABetaal factuur ${f.nummer} via:%0D%0A${data.url}%0D%0A%0D%0AMet vriendelijke groet,%0D%0APro Stukadoors" class="btn btn-primary" style="flex:1;text-decoration:none;text-align:center">📧 Email versturen</a>
+          </div>
+          <button onclick="this.closest('[style*=fixed]').remove()" style="margin-top:12px;width:100%;background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-muted)">Sluiten</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      showNotif('✓ Betaallink klaar — link gekopieerd!');
+    } else {
+      showNotif('❌ ' + (data.error || 'Fout bij aanmaken betaallink'), true);
+    }
+  }catch(e){
+    showNotif('❌ Verbinding mislukt', true);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '💳 iDEAL';
+}
+
 function markeerBetaald(id){const f=facturen.find(f=>f.id===id);if(f){f.status='Betaald';renderFacturen();renderDashboard();autoSave();showNotif('Factuur gemarkeerd als betaald ✓')}}
 function emailFactuurId(id){const f=facturen.find(f=>f.id===id);if(f)emailFactuurData(f)}
 function emailFactuurData(f){
