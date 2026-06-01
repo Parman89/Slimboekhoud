@@ -10,6 +10,7 @@
 <meta name="keywords" content="boekhouding ZZP, boekhoudapp Nederland, facturen maken ZZP, BTW aangifte ZZP, bonnen scannen, alternatief eBoekhouden, slimme boekhouding">
 <meta name="author" content="SlimBoekhoud">
 <meta name="robots" content="index, follow">
+<meta name="google-site-verification" content="AhnSc3UEe2wr4TGAyYwDfHfbHGU3fveruO-MCCmFCXE">
 <link rel="canonical" href="https://slimboekhoud.com/">
 
 <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
@@ -1638,7 +1639,7 @@ async function doLogin(){
     } else {
       currentUser=data.user;
       document.getElementById('login-screen').style.display='none';
-      showNotif('Welkom terug! 👋');
+      showNotif('Welkom terug! ☁️ Data laden...');
       if(typeof autoLoad==='function') autoLoad();
       if(typeof checkBTWDeadline==='function') checkBTWDeadline();
     }
@@ -1798,7 +1799,7 @@ function installApp(){
   else showNotif('Open SlimBoekhoud in Chrome op je telefoon en tik op "Toevoegen aan startscherm"');
 }
 
-// AUTOSAVE
+// AUTOSAVE — localStorage + Supabase cloud sync
 function autoSave(){
   try{
     localStorage.setItem('sb_bonnen',JSON.stringify(bonnen));
@@ -1806,15 +1807,199 @@ function autoSave(){
     localStorage.setItem('sb_offertes',JSON.stringify(offertes));
     localStorage.setItem('sb_klanten',JSON.stringify(klanten));
   }catch(e){}
+  // Async sync to Supabase cloud (debounced)
+  if(window._sbSyncTimer) clearTimeout(window._sbSyncTimer);
+  window._sbSyncTimer = setTimeout(syncToCloud, 2000);
 }
-function autoLoad(){
+
+async function syncToCloud(){
+  if(!window.sb || !currentUser) return;
+  try{
+    const uid = currentUser.id;
+    // Sync bonnen
+    if(bonnen.length){
+      const rows = bonnen.map(b=>({
+        user_id: uid,
+        datum: b.datum||null,
+        leverancier: b.leverancier||'',
+        categorie: b.cat||b.categorie||'Overig',
+        notitie: b.notitie||'',
+        kwartaal: b.kwartaal||kw(b.datum),
+        excl: parseFloat(b.excl)||0,
+        btw: parseFloat(b.btw)||0,
+        incl: parseFloat(b.incl)||0,
+        status: b.status||'ok',
+        bon_nr: b._localId||bonnen.indexOf(b)
+      }));
+      // Delete old and reinsert (simple upsert strategy)
+      await window.sb.from('bonnen').delete().eq('user_id', uid);
+      await window.sb.from('bonnen').insert(rows);
+    }
+    // Sync facturen
+    if(facturen.length){
+      const rows = facturen.map(f=>({
+        user_id: uid,
+        nummer: f.nummer||'',
+        klant: f.klant||'',
+        klant_email: f.klantEmail||'',
+        datum: f.datum||null,
+        vervaldatum: f.vervaldatum||null,
+        totaal_excl: parseFloat(f.totaalExcl)||0,
+        btw_bedrag: parseFloat(f.btwBedrag)||0,
+        totaal_incl: parseFloat(f.totaalIncl)||0,
+        status: f.status||'Concept',
+        notitie: f.notitie||''
+      }));
+      await window.sb.from('facturen').delete().eq('user_id', uid);
+      await window.sb.from('facturen').insert(rows);
+    }
+    // Sync klanten
+    if(klanten.length){
+      const rows = klanten.map(k=>({
+        user_id: uid,
+        code: k.code||'',
+        naam: k.naam||'',
+        bedrijf: k.bedrijf||'',
+        email: k.email||'',
+        email_herinneringen: k.email2||'',
+        telefoon: k.tel||'',
+        adres: k.adres||'',
+        postcode: k.postcode||'',
+        plaats: k.plaats||'',
+        kvk: k.kvk||'',
+        btw_nr: k.btwnr||'',
+        betalingstermijn: parseInt(k.betaaltermijn)||14,
+        notitie: k.notitie||''
+      }));
+      await window.sb.from('klanten').delete().eq('user_id', uid);
+      await window.sb.from('klanten').insert(rows);
+    }
+    // Sync offertes
+    if(offertes.length){
+      const rows = offertes.map(o=>({
+        user_id: uid,
+        nummer: o.nummer||'',
+        klant: o.klant||'',
+        datum: o.datum||null,
+        vervaldatum: o.vervaldatum||null,
+        totaal_excl: parseFloat(o.totaalExcl)||0,
+        btw_bedrag: parseFloat(o.btwBedrag)||0,
+        totaal_incl: parseFloat(o.totaalIncl)||0,
+        status: o.status||'Concept',
+        notitie: o.notitie||''
+      }));
+      await window.sb.from('offertes').delete().eq('user_id', uid);
+      await window.sb.from('offertes').insert(rows);
+    }
+  }catch(e){ console.warn('Cloud sync error:', e.message); }
+}
+
+async function autoLoad(){
+  // First load from localStorage (fast)
   try{
     const b=localStorage.getItem('sb_bonnen');if(b)bonnen=JSON.parse(b);
     const f=localStorage.getItem('sb_facturen');if(f)facturen=JSON.parse(f);
     const o=localStorage.getItem('sb_offertes');if(o)offertes=JSON.parse(o);
     const k=localStorage.getItem('sb_klanten');if(k)klanten=JSON.parse(k);
-    if(bonnen.length||facturen.length){renderAll();showNotif('Gegevens hersteld ✓');}
+    if(bonnen.length||facturen.length){renderAll();}
   }catch(e){}
+  // Then load from Supabase cloud (authoritative source)
+  await loadFromCloud();
+}
+
+async function loadFromCloud(){
+  if(!window.sb || !currentUser) return;
+  try{
+    const uid = currentUser.id;
+    let changed = false;
+    // Load bonnen
+    const {data:bData} = await window.sb.from('bonnen').select('*').eq('user_id', uid).order('datum', {ascending:false});
+    if(bData && bData.length > 0){
+      bonnen = bData.map(b=>({
+        datum: b.datum,
+        leverancier: b.leverancier,
+        cat: b.categorie,
+        notitie: b.notitie||'',
+        kwartaal: b.kwartaal||kw(b.datum),
+        excl: parseFloat(b.excl)||0,
+        btw: parseFloat(b.btw)||0,
+        incl: parseFloat(b.incl)||0,
+        status: b.status||'ok',
+        pct: Math.round((parseFloat(b.btw)/parseFloat(b.excl))*100)||21,
+        _cloudId: b.id
+      }));
+      changed = true;
+    }
+    // Load facturen
+    const {data:fData} = await window.sb.from('facturen').select('*').eq('user_id', uid).order('datum', {ascending:false});
+    if(fData && fData.length > 0){
+      facturen = fData.map(f=>({
+        id: f.id,
+        nummer: f.nummer,
+        klant: f.klant,
+        klantEmail: f.klant_email||'',
+        datum: f.datum,
+        vervaldatum: f.vervaldatum||'',
+        totaalExcl: parseFloat(f.totaal_excl)||0,
+        btwBedrag: parseFloat(f.btw_bedrag)||0,
+        totaalIncl: parseFloat(f.totaal_incl)||0,
+        status: f.status||'Concept',
+        notitie: f.notitie||'',
+        regels: f.regels||[]
+      }));
+      changed = true;
+    }
+    // Load klanten
+    const {data:kData} = await window.sb.from('klanten').select('*').eq('user_id', uid).order('code');
+    if(kData && kData.length > 0){
+      klanten = kData.map(k=>({
+        code: k.code,
+        naam: k.naam,
+        bedrijf: k.bedrijf||'',
+        email: k.email||'',
+        email2: k.email_herinneringen||'',
+        tel: k.telefoon||'',
+        adres: k.adres||'',
+        postcode: k.postcode||'',
+        plaats: k.plaats||'',
+        kvk: k.kvk||'',
+        btwnr: k.btw_nr||'',
+        betaaltermijn: k.betalingstermijn||14,
+        notitie: k.notitie||'',
+        type: k.type||'bedrijf'
+      }));
+      changed = true;
+    }
+    // Load offertes
+    const {data:oData} = await window.sb.from('offertes').select('*').eq('user_id', uid).order('datum', {ascending:false});
+    if(oData && oData.length > 0){
+      offertes = oData.map(o=>({
+        id: o.id,
+        nummer: o.nummer,
+        klant: o.klant,
+        datum: o.datum,
+        vervaldatum: o.vervaldatum||'',
+        totaalExcl: parseFloat(o.totaal_excl)||0,
+        btwBedrag: parseFloat(o.btw_bedrag)||0,
+        totaalIncl: parseFloat(o.totaal_incl)||0,
+        status: o.status||'Concept',
+        notitie: o.notitie||'',
+        regels: o.regels||[]
+      }));
+      changed = true;
+    }
+    if(changed){
+      // Save to localStorage as cache
+      localStorage.setItem('sb_bonnen',JSON.stringify(bonnen));
+      localStorage.setItem('sb_facturen',JSON.stringify(facturen));
+      localStorage.setItem('sb_offertes',JSON.stringify(offertes));
+      localStorage.setItem('sb_klanten',JSON.stringify(klanten));
+      renderAll();
+      showNotif('☁️ Data geladen vanuit cloud ✓');
+    } else if(!bonnen.length && !facturen.length){
+      showNotif('Welkom! Voeg je eerste bon of factuur toe. 🎉');
+    }
+  }catch(e){ console.warn('Cloud load error:', e.message); }
 }
 setInterval(autoSave,30000);
 
