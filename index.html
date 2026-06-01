@@ -1975,9 +1975,8 @@ function stuurWhatsApp(id){
     `Met vriendelijke groet,\n${bedrijf}\n📞 0628806783`
   );
   const tel = f.klantTel ? f.klantTel.replace(/[^0-9+]/g,'') : '';
-  const url = tel 
-    ? \`https://wa.me/\${tel.startsWith('+') ? tel.slice(1) : '31' + tel.replace(/^0/,'')}?text=\${msg}\`
-    : \`https://wa.me/?text=\${msg}\`;
+  const waBase = tel ? ('https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : '31' + tel.replace(/^0/,''))) : 'https://wa.me/';
+  const url = waBase + '?text=' + msg;
   window.open(url, '_blank');
   showNotif('📱 WhatsApp geopend met factuurtext!');
 }
@@ -4031,6 +4030,22 @@ const DEMO_DRIVE_FILES = [
   {id:'7',name:'factuur_tmobile_apr.pdf',type:'pdf',size:'0.2 MB',date:'2026-04-22',icon:'📄'},
   {id:'8',name:'bon_gamma_mei.jpg',type:'image',size:'1.5 MB',date:'2026-05-07',icon:'🖼️'},
 ];
+
+function slaGDriveOp(){
+  const email = document.getElementById('gdrive-email')?.value?.trim();
+  const folder = document.getElementById('gdrive-folder')?.value?.trim();
+  if(!email){ showNotif('Vul je Google email in', true); return; }
+  localStorage.setItem('sb_gdrive_email', email);
+  if(folder) localStorage.setItem('sb_gdrive_folder', folder);
+  showNotif('✓ Google Drive instellingen opgeslagen!');
+  document.getElementById('gdrive-disconnected').style.display='none';
+  const connected = document.getElementById('gdrive-connected');
+  if(connected){
+    connected.style.display='block';
+    const info = document.getElementById('gdrive-account-info');
+    if(info) info.textContent = email;
+  }
+}
 
 function koppelGoogleDrive() {
   // In productie: Google OAuth flow
