@@ -392,6 +392,7 @@ tr:hover td{background:var(--bg)}
     <div class="nav-item" onclick="showPage('balans',this)"><span class="nav-icon">⚖️</span>Balans</div>
     <div class="nav-item" onclick="showPage('belastingdienst',this)"><span class="nav-icon">🏛️</span>Belastingdienst</div>
     <div class="nav-section">Overig</div>
+    <div class="nav-item" onclick="showPage('pricing',this)"><span class="nav-icon">💳</span>Abonnement</div>
     <div class="nav-item" onclick="showPage('gdrive',this)"><span class="nav-icon">📁</span>Google Drive</div>
     <div class="nav-item" onclick="showPage('boekhouder',this)"><span class="nav-icon">👩‍💼</span>Boekhouder</div>
     <div class="nav-item" onclick="showPage('instellingen',this)"><span class="nav-icon">⚙️</span>Instellingen</div>
@@ -1329,6 +1330,66 @@ tr:hover td{background:var(--bg)}
       </div>
     </div>
 
+    <!-- PRICING / ABONNEMENT -->
+    <div class="page" id="page-pricing">
+      <div style="text-align:center;padding:20px 0 30px">
+        <div style="font-size:28px;font-weight:800;margin-bottom:8px">💳 Kies jouw plan</div>
+        <div style="font-size:14px;color:var(--text-muted)">14 dagen gratis proberen — geen creditcard nodig</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px;margin:0 auto">
+        <!-- Starter -->
+        <div class="card" style="padding:28px;text-align:center;position:relative">
+          <div style="font-size:14px;font-weight:700;color:var(--text-muted);margin-bottom:12px">STARTER</div>
+          <div style="font-size:42px;font-weight:800;margin-bottom:4px">€9</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">per maand excl. BTW</div>
+          <div style="text-align:left;margin-bottom:24px;font-size:13px;line-height:2">
+            ✅ Onbeperkt bonnen scannen<br>
+            ✅ Onbeperkt facturen maken<br>
+            ✅ BTW aangifte helper<br>
+            ✅ Bank CSV import<br>
+            ✅ eBoekhouden koppeling<br>
+            ✅ Cloud opslag
+          </div>
+          <button onclick="startCheckout('starter')" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:600">
+            🚀 Starter starten
+          </button>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:10px">14 dagen gratis · Daarna €9/maand</div>
+        </div>
+
+        <!-- Pro -->
+        <div class="card" style="padding:28px;text-align:center;border:2px solid var(--orange);position:relative">
+          <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;padding:3px 14px;border-radius:20px;font-size:12px;font-weight:700">POPULAIR</div>
+          <div style="font-size:14px;font-weight:700;color:var(--orange);margin-bottom:12px">PRO</div>
+          <div style="font-size:42px;font-weight:800;margin-bottom:4px">€19</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">per maand excl. BTW</div>
+          <div style="text-align:left;margin-bottom:24px;font-size:13px;line-height:2">
+            ✅ Alles van Starter<br>
+            ✅ Prioriteit support<br>
+            ✅ Meerdere bankrekeningen<br>
+            ✅ Uitgebreide rapporten<br>
+            ✅ Team toegang (2 gebruikers)<br>
+            ✅ WhatsApp support
+          </div>
+          <button onclick="startCheckout('pro')" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:600;background:var(--orange)">
+            ⭐ Pro starten
+          </button>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:10px">14 dagen gratis · Daarna €19/maand</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:30px;font-size:12px;color:var(--text-muted);line-height:1.8">
+        🔒 Veilig betalen via iDEAL of creditcard &nbsp;·&nbsp; ✅ Maandelijks opzegbaar &nbsp;·&nbsp; 🇳🇱 Nederlandse BTW factuur
+      </div>
+
+      <div id="pricing-success" style="display:none;margin-top:20px">
+        <div style="background:var(--green);color:#fff;padding:20px;border-radius:12px;text-align:center">
+          <div style="font-size:24px;margin-bottom:8px">🎉</div>
+          <div style="font-weight:700">Betaling geslaagd! Welkom bij SlimBoekhoud Pro!</div>
+        </div>
+      </div>
+    </div>
+
     <!-- INSTELLINGEN -->
     <div class="page" id="page-instellingen">
       <div class="card">
@@ -1783,6 +1844,41 @@ window.addEventListener('beforeinstallprompt',e=>{
 function installApp(){
   if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;document.getElementById('install-banner').style.display='none';}
   else showNotif('Open SlimBoekhoud in Chrome op je telefoon en tik op "Toevoegen aan startscherm"');
+}
+
+// STRIPE BETALINGEN
+async function startCheckout(plan){
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = '⏳ Even geduld...';
+  try{
+    const email = currentUser?.email || '';
+    const res = await fetch('/.netlify/functions/stripe', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'create_checkout', email, plan})
+    });
+    const data = await res.json();
+    if(data.url){
+      window.location.href = data.url;
+    } else {
+      showNotif('❌ Fout: ' + (data.error || 'Probeer opnieuw'), true);
+      btn.disabled = false;
+      btn.textContent = plan === 'pro' ? '⭐ Pro starten' : '🚀 Starter starten';
+    }
+  }catch(e){
+    showNotif('❌ Verbinding mislukt — probeer opnieuw', true);
+    btn.disabled = false;
+    btn.textContent = plan === 'pro' ? '⭐ Pro starten' : '🚀 Starter starten';
+  }
+}
+
+// Check betaald=true in URL
+if(window.location.search.includes('betaald=true')){
+  setTimeout(()=>{
+    showPage('pricing', null);
+    document.getElementById('pricing-success').style.display = 'block';
+  }, 1000);
 }
 
 // AUTOSAVE — localStorage + Supabase cloud sync
