@@ -836,104 +836,75 @@ tr:hover td{background:var(--bg)}
     <!-- BANK -->
     <div class="page" id="page-bank">
 
-      <!-- Gekoppelde rekeningen (als al gekoppeld) -->
+      <!-- Gekoppelde rekeningen -->
       <div id="bank-gekoppeld" style="display:none;margin-bottom:20px">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">✅ Gekoppelde rekeningen</span>
+            <span class="card-title">✅ Geïmporteerde transacties</span>
             <button class="btn btn-secondary" onclick="refreshTransacties()" style="font-size:12px">🔄 Vernieuwen</button>
           </div>
           <div id="bank-rekeningen-list" style="padding:16px"></div>
         </div>
       </div>
 
-      <!-- Stap-voor-stap koppeling -->
-      <div class="card" id="bank-kies-card">
+      <!-- CSV Import — Hoofdoptie -->
+      <div class="card">
         <div class="card-header">
-          <span class="card-title">🏦 Bank koppelen</span>
+          <span class="card-title">🏦 Bankafschrift importeren</span>
         </div>
         <div style="padding:20px">
 
-          <!-- Uitleg -->
-          <div style="background:var(--orange-light);border-left:4px solid var(--orange);border-radius:8px;padding:14px;margin-bottom:24px;font-size:13px;line-height:1.7">
-            <strong>Hoe werkt het?</strong><br>
-            1. Selecteer jouw bank hieronder<br>
-            2. Klik "Koppel mijn bank" → je gaat naar jouw <em>eigen bank</em> om in te loggen<br>
-            3. Geef toestemming om transacties te lezen<br>
-            4. Klaar — transacties komen automatisch in SlimBoekhoud
-          </div>
-
-          <!-- Bank selecteren — dropdown style -->
-          <div style="margin-bottom:20px">
-            <label class="form-label" style="font-size:14px;font-weight:600">Selecteer jouw bank:</label>
-            <select class="form-input" id="bank-select" onchange="onBankSelect()" style="font-size:15px;padding:12px;margin-top:8px">
-              <option value="">— Kies je bank —</option>
-              <optgroup label="🇳🇱 Grote Nederlandse banken">
-                <option value="ING|INGBNL2A|#F08000">🏦 ING</option>
-                <option value="Rabobank|RABONL2U|#FF6200">🏦 Rabobank</option>
-                <option value="ABN AMRO|ABNANL2A|#007A33">🏦 ABN AMRO</option>
-                <option value="SNS Bank|SNSBNL2A|#0095D4">🏦 SNS Bank</option>
-              </optgroup>
-              <optgroup label="💚 Duurzame banken">
-                <option value="ASN Bank|ASNBNL22|#00A65A">🌱 ASN Bank</option>
-                <option value="Triodos|TRIONL2U|#005C4A">🌱 Triodos Bank</option>
-              </optgroup>
-              <optgroup label="📱 Digitale banken">
-                <option value="bunq|BUNQNL2A|#00D4AA">📱 bunq</option>
-                <option value="Knab|KNABNL2H|#FF4200">📱 Knab</option>
-                <option value="Revolut|REVOLT21|#191C1F">📱 Revolut</option>
-                <option value="N26|N26BVAT2|#26272B">📱 N26</option>
-              </optgroup>
-              <optgroup label="🏛️ Overige banken">
-                <option value="RegioBank|RBRBNL21|#E4002B">🏛️ RegioBank</option>
-                <option value="Van Lanschot|FVLBNL22|#8B1A1A">🏛️ Van Lanschot</option>
-                <option value="Volksbank|SNSBNL2A|#0095D4">🏛️ Volksbank</option>
-              </optgroup>
-            </select>
-          </div>
-
-          <!-- Connect knop (verborgen tot bank gekozen) -->
-          <div id="bank-connect-sectie" style="display:none">
-            <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid var(--border)">
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-                <div id="bank-sel-badge" style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0"></div>
-                <div>
-                  <div style="font-weight:600;font-size:15px" id="bank-sel-naam">—</div>
-                  <div style="font-size:12px;color:var(--green)">✓ Veilige verbinding via PSD2 Open Banking</div>
-                </div>
-              </div>
-              <div style="font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:14px">
-                ✓ Je logt in bij <strong id="bank-sel-naam2"></strong> — niet bij SlimBoekhoud<br>
-                ✓ Jouw gegevens worden NOOIT opgeslagen<br>
-                ✓ Alleen lezen — wij kunnen NOOIT betalen of overboeken<br>
-                ✓ Toestemming is altijd opzegbaar via jouw bank
+          <!-- Uitleg per bank -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+            <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+              <div style="font-weight:700;margin-bottom:6px;font-size:13px">🏦 ING</div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.8">
+                1. Login op <strong>mijn.ing.nl</strong><br>
+                2. Betaalrekening → Exporteren<br>
+                3. Kies <strong>CSV</strong> → Downloaden
               </div>
             </div>
-            <button class="btn btn-primary" onclick="koppelBank()" id="bank-koppel-btn" style="width:100%;font-size:15px;padding:14px;font-weight:600">
-              🔗 Log in bij mijn bank en geef toestemming →
-            </button>
+            <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+              <div style="font-weight:700;margin-bottom:6px;font-size:13px">🏦 Rabobank</div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.8">
+                1. Login op <strong>bankieren.rabobank.nl</strong><br>
+                2. Afschriften → Downloaden<br>
+                3. Kies <strong>CSV</strong> → Downloaden
+              </div>
+            </div>
+            <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+              <div style="font-weight:700;margin-bottom:6px;font-size:13px">🏦 ABN AMRO</div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.8">
+                1. Login op <strong>abnamro.nl</strong><br>
+                2. Rekening → Transacties exporteren<br>
+                3. Kies <strong>CSV</strong> → Downloaden
+              </div>
+            </div>
+            <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+              <div style="font-weight:700;margin-bottom:6px;font-size:13px">📱 bunq / SNS / ASN</div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.8">
+                1. Open de <strong>bank app</strong><br>
+                2. Ga naar Transacties<br>
+                3. Exporteer als <strong>CSV</strong>
+              </div>
+            </div>
           </div>
 
-          <!-- CSV Import sectie -->
-          <div style="margin-top:20px;padding-top:20px;border-top:2px solid var(--orange);background:var(--orange-light);border-radius:10px;padding:18px;margin-top:20px">
-            <div style="font-size:14px;font-weight:700;margin-bottom:8px">📂 Bankafschrift uploaden — Geen registratie nodig!</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.7">
-              Download jouw bankafschrift als CSV via jouw bankapp:<br>
-              <strong>ING:</strong> Mijn ING → Betaalrekening → Exporteren → CSV<br>
-              <strong>Rabobank:</strong> Internetbankieren → Afschriften → Downloaden → CSV<br>
-              <strong>ABN AMRO:</strong> Mijn IB → Rekening → Transacties exporteren<br>
-              <strong>SNS/ASN/bunq:</strong> App → Exporteer transacties
-            </div>
-            <div id="bank-csv-drop" ondragover="event.preventDefault();this.style.background='rgba(244,164,24,.15)'" ondragleave="this.style.background=''" ondrop="handleBankCSV(event)" style="border:2px dashed var(--orange);border-radius:8px;padding:20px;text-align:center;cursor:pointer;background:var(--white)" onclick="document.getElementById('bank-csv-input').click()">
-              <div style="font-size:28px;margin-bottom:8px">📄</div>
-              <div style="font-size:13px;font-weight:600">Klik of sleep hier jouw bankafschrift</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">CSV, MT940 of TXT formaat</div>
-              <input type="file" id="bank-csv-input" accept=".csv,.mt940,.txt,.mt9" style="display:none" onchange="handleBankCSVFile(this.files[0])">
-            </div>
+          <!-- Upload box -->
+          <div id="bank-csv-drop"
+            ondragover="event.preventDefault();this.style.background='var(--orange-light)';this.style.borderColor='var(--orange)'"
+            ondragleave="this.style.background='';this.style.borderColor='var(--border)'"
+            ondrop="handleBankCSV(event)"
+            onclick="document.getElementById('bank-csv-input').click()"
+            style="border:3px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)">
+            <div style="font-size:48px;margin-bottom:12px">📂</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Klik of sleep hier jouw bankafschrift</div>
+            <div style="font-size:13px;color:var(--text-muted)">CSV, MT940 of TXT formaat — alle Nederlandse banken ondersteund</div>
+            <input type="file" id="bank-csv-input" accept=".csv,.mt940,.txt,.mt9" style="display:none" onchange="handleBankCSVFile(this.files[0])">
           </div>
 
-          <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text-muted)">
-            Of koppel automatisch via GoCardless (gratis account op nordigen.com)
+          <div style="margin-top:12px;padding:12px;background:var(--orange-light);border-radius:8px;font-size:12px;color:var(--text-muted);text-align:center">
+            🔒 <strong>Gratis en veilig</strong> — geen wachtwoord nodig, jouw data blijft lokaal
           </div>
         </div>
       </div>
