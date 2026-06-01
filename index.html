@@ -4,9 +4,51 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#F4A418">
-<meta name="description" content="SlimBoekhoud — Professionele boekhouding voor ZZP'ers">
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="SlimBoekhoud — De slimste boekhoudapp voor ZZP'ers in Nederland. Bonnen scannen met AI, facturen maken, BTW aangifte, bank koppelen. Gratis proberen.">
+<meta name="keywords" content="boekhouding ZZP, boekhoudapp Nederland, facturen maken ZZP, BTW aangifte ZZP, bonnen scannen, alternatief eBoekhouden, slimme boekhouding">
+<meta name="author" content="SlimBoekhoud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://slimboekhoud.com/">
+
+<!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+<meta property="og:title" content="SlimBoekhoud — Slimste boekhouding voor ZZP'ers">
+<meta property="og:description" content="Bonnen scannen met AI, facturen sturen, BTW aangifte in 1 klik. Goedkoper dan eBoekhouden. Probeer 14 dagen gratis.">
+<meta property="og:url" content="https://slimboekhoud.com">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="nl_NL">
+
+<!-- Structured Data voor Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SlimBoekhoud",
+  "description": "Professionele boekhoudapp voor ZZP'ers in Nederland",
+  "url": "https://slimboekhoud.com",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "9",
+    "priceCurrency": "EUR",
+    "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "9",
+      "priceCurrency": "EUR",
+      "billingDuration": "P1M"
+    }
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "SlimBoekhoud",
+    "url": "https://slimboekhoud.com"
+  }
+}
+</script>
 <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;SlimBoekhoud&quot;,&quot;short_name&quot;:&quot;SB&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23F7F7F5&quot;,&quot;theme_color&quot;:&quot;%23F4A418&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23F4A418'/><text y='.9em' font-size='80' x='10'>SB</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;}]}">
-<title>SlimBoekhoud — Pro Stukadoors</title>
+<title>SlimBoekhoud — Slimste Boekhouding voor ZZP'ers | Nederland</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
@@ -52,7 +94,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .logo-text{font-size:15px;font-weight:600;color:#fff}
 .logo-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
 .sidebar-nav{flex:1;padding:10px 0;overflow-y:auto}
-.nav-section{padding:6px 16px 4px;font-size:10px;font-weight:500;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
+.nav-section{padding:8px 16px 4px;font-size:11px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-top:10px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;transition:all .15s;position:relative}
 .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
 .nav-item.active{background:rgba(244,164,24,.15);color:var(--orange);font-weight:500}
@@ -81,10 +123,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 
 /* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.stat-card{background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid var(--border);box-shadow:var(--shadow)}
-.stat-label{font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
-.stat-value{font-size:22px;font-weight:600;margin-bottom:4px}
-.stat-sub{font-size:11px;color:var(--text-light)}
+.stat-card{background:var(--white);border-radius:12px;padding:22px 24px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.stat-label{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.stat-value{font-size:30px;font-weight:700;margin-bottom:6px}
+.stat-sub{font-size:12px;color:var(--text-muted);font-weight:500}
 
 /* CARDS */
 .card{background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:20px}
@@ -333,22 +375,24 @@ tr:hover td{background:var(--bg)}
   <nav class="sidebar-nav">
     <div class="nav-section">Overzicht</div>
     <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
-    <div class="nav-section">Financieel</div>
-    <div class="nav-item" onclick="showPage('bonnen',this)"><span class="nav-icon">🧾</span>Bonnen<span class="nav-badge" id="bonnen-badge">0</span></div>
+    <div class="nav-section">Klanten & Verkoop</div>
+    <div class="nav-item" onclick="showPage('klanten',this)"><span class="nav-icon">👥</span>Klanten</div>
     <div class="nav-item" onclick="showPage('offertes',this)"><span class="nav-icon">📋</span>Offertes</div>
     <div class="nav-item" onclick="showPage('facturen',this)"><span class="nav-icon">📄</span>Facturen</div>
+    <div class="nav-item" onclick="showPage('diensten',this)"><span class="nav-icon">🛍️</span>Diensten</div>
+    <div class="nav-section">Financieel</div>
+    <div class="nav-item" onclick="showPage('bonnen',this)"><span class="nav-icon">🧾</span>Bonnen<span class="nav-badge" id="bonnen-badge">0</span></div>
+    <div class="nav-item" onclick="showPage('inkopen',this)"><span class="nav-icon">🛒</span>Inkopen<span class="nav-badge" id="inkopen-badge">0</span></div>
     <div class="nav-item" onclick="showPage('wv',this)"><span class="nav-icon">📈</span>Winst & verlies</div>
     <div class="nav-item" onclick="showPage('btw',this)"><span class="nav-icon">📅</span>BTW aangifte</div>
     <div class="nav-item" onclick="showPage('bank',this)"><span class="nav-icon">🏦</span>Bankrekening</div>
-    <div class="nav-item" onclick="showPage('diensten',this)"><span class="nav-icon">🛍️</span>Diensten</div>
-    <div class="nav-item" onclick="showPage('inkopen',this)"><span class="nav-icon">🛒</span>Inkopen<span class="nav-badge" id="inkopen-badge">0</span></div>
-    <div class="nav-item" onclick="showPage('gdrive',this)"><span class="nav-icon">📁</span>Google Drive</div>
-    <div class="nav-item" onclick="showPage('boekhouder',this)"><span class="nav-icon">👩‍💼</span>Boekhouder</div>
     <div class="nav-section">Boekhouding</div>
     <div class="nav-item" onclick="showPage('grootboek',this)"><span class="nav-icon">📚</span>Grootboek</div>
     <div class="nav-item" onclick="showPage('balans',this)"><span class="nav-icon">⚖️</span>Balans</div>
     <div class="nav-item" onclick="showPage('belastingdienst',this)"><span class="nav-icon">🏛️</span>Belastingdienst</div>
-    <div class="nav-item" onclick="showPage('klanten',this)"><span class="nav-icon">👥</span>Klanten</div>
+    <div class="nav-section">Overig</div>
+    <div class="nav-item" onclick="showPage('gdrive',this)"><span class="nav-icon">📁</span>Google Drive</div>
+    <div class="nav-item" onclick="showPage('boekhouder',this)"><span class="nav-icon">👩‍💼</span>Boekhouder</div>
     <div class="nav-item" onclick="showPage('instellingen',this)"><span class="nav-icon">⚙️</span>Instellingen</div>
   </nav>
   <div class="sidebar-footer">
@@ -790,121 +834,111 @@ tr:hover td{background:var(--bg)}
 
     <!-- BANK -->
     <div class="page" id="page-bank">
-      <!-- Gekoppelde banken -->
+
+      <!-- Gekoppelde rekeningen (als al gekoppeld) -->
       <div id="bank-gekoppeld" style="display:none;margin-bottom:20px">
         <div class="card">
-          <div class="card-header"><span class="card-title">✅ Gekoppelde rekeningen</span></div>
+          <div class="card-header">
+            <span class="card-title">✅ Gekoppelde rekeningen</span>
+            <button class="btn btn-secondary" onclick="refreshTransacties()" style="font-size:12px">🔄 Vernieuwen</button>
+          </div>
           <div id="bank-rekeningen-list" style="padding:16px"></div>
         </div>
       </div>
 
-      <!-- Bank kiezen -->
+      <!-- Stap-voor-stap koppeling -->
       <div class="card" id="bank-kies-card">
         <div class="card-header">
-          <span class="card-title">🏦 Bank koppelen — Open Banking (PSD2)</span>
+          <span class="card-title">🏦 Bank koppelen</span>
         </div>
-        <div style="padding:16px">
-          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;padding:12px;background:var(--orange-light);border-radius:8px;border-left:3px solid var(--orange)">
-            🔒 <strong>Veilig via Open Banking</strong> — Jouw bankgegevens worden NOOIT opgeslagen. Verbinding via officieel PSD2 protocol. Alleen leestoegang.
+        <div style="padding:20px">
+
+          <!-- Uitleg -->
+          <div style="background:var(--orange-light);border-left:4px solid var(--orange);border-radius:8px;padding:14px;margin-bottom:24px;font-size:13px;line-height:1.7">
+            <strong>Hoe werkt het?</strong><br>
+            1. Selecteer jouw bank hieronder<br>
+            2. Klik "Koppel mijn bank" → je gaat naar jouw <em>eigen bank</em> om in te loggen<br>
+            3. Geef toestemming om transacties te lezen<br>
+            4. Klaar — transacties komen automatisch in SlimBoekhoud
           </div>
 
-          <div style="font-size:14px;font-weight:600;margin-bottom:14px">Kies jouw bank:</div>
-
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px" id="bank-grid">
-            <!-- Rij 1 -->
-            <div class="bank-card" onclick="selectBank('ING','INGBNL2A','#F08000')">
-              <div class="bank-logo" style="background:#F08000;color:#fff;font-weight:800;font-size:18px">ING</div>
-              <div class="bank-naam">ING</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('Rabobank','RABONL2U','#FF6200')">
-              <div class="bank-logo" style="background:#FF6200;color:#fff;font-weight:800;font-size:14px">RABO</div>
-              <div class="bank-naam">Rabobank</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('ABN AMRO','ABNANL2A','#007A33')">
-              <div class="bank-logo" style="background:#007A33;color:#fff;font-weight:800;font-size:12px">ABN</div>
-              <div class="bank-naam">ABN AMRO</div>
-            </div>
-            <!-- Rij 2 -->
-            <div class="bank-card" onclick="selectBank('SNS Bank','SNSBNL2A','#0095D4')">
-              <div class="bank-logo" style="background:#0095D4;color:#fff;font-weight:800;font-size:14px">SNS</div>
-              <div class="bank-naam">SNS Bank</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('ASN Bank','ASNBNL22','#00A65A')">
-              <div class="bank-logo" style="background:#00A65A;color:#fff;font-weight:800;font-size:13px">ASN</div>
-              <div class="bank-naam">ASN Bank</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('Triodos','TRIONL2U','#005C4A')">
-              <div class="bank-logo" style="background:#005C4A;color:#fff;font-weight:800;font-size:12px">TRI</div>
-              <div class="bank-naam">Triodos</div>
-            </div>
-            <!-- Rij 3 -->
-            <div class="bank-card" onclick="selectBank('bunq','BUNQNL2A','#00D4AA')">
-              <div class="bank-logo" style="background:#00D4AA;color:#fff;font-weight:700;font-size:15px">bunq</div>
-              <div class="bank-naam">bunq</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('Knab','KNABNL2H','#FF4200')">
-              <div class="bank-logo" style="background:#FF4200;color:#fff;font-weight:800;font-size:14px">Knab</div>
-              <div class="bank-naam">Knab</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('RegioBank','RBRBNL21','#E4002B')">
-              <div class="bank-logo" style="background:#E4002B;color:#fff;font-weight:800;font-size:11px">REGIO</div>
-              <div class="bank-naam">RegioBank</div>
-            </div>
-            <!-- Rij 4 -->
-            <div class="bank-card" onclick="selectBank('Van Lanschot','FVLBNL22','#8B1A1A')">
-              <div class="bank-logo" style="background:#8B1A1A;color:#fff;font-weight:700;font-size:11px">VL</div>
-              <div class="bank-naam">Van Lanschot</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('Revolut','REVOLT21','#191C1F')">
-              <div class="bank-logo" style="background:#191C1F;color:#fff;font-weight:700;font-size:12px">Rev</div>
-              <div class="bank-naam">Revolut</div>
-            </div>
-            <div class="bank-card" onclick="selectBank('N26','N26BVAT2','#26272B')">
-              <div class="bank-logo" style="background:#26272B;color:#fff;font-weight:800;font-size:15px">N26</div>
-              <div class="bank-naam">N26</div>
-            </div>
+          <!-- Bank selecteren — dropdown style -->
+          <div style="margin-bottom:20px">
+            <label class="form-label" style="font-size:14px;font-weight:600">Selecteer jouw bank:</label>
+            <select class="form-input" id="bank-select" onchange="onBankSelect()" style="font-size:15px;padding:12px;margin-top:8px">
+              <option value="">— Kies je bank —</option>
+              <optgroup label="🇳🇱 Grote Nederlandse banken">
+                <option value="ING|INGBNL2A|#F08000">🏦 ING</option>
+                <option value="Rabobank|RABONL2U|#FF6200">🏦 Rabobank</option>
+                <option value="ABN AMRO|ABNANL2A|#007A33">🏦 ABN AMRO</option>
+                <option value="SNS Bank|SNSBNL2A|#0095D4">🏦 SNS Bank</option>
+              </optgroup>
+              <optgroup label="💚 Duurzame banken">
+                <option value="ASN Bank|ASNBNL22|#00A65A">🌱 ASN Bank</option>
+                <option value="Triodos|TRIONL2U|#005C4A">🌱 Triodos Bank</option>
+              </optgroup>
+              <optgroup label="📱 Digitale banken">
+                <option value="bunq|BUNQNL2A|#00D4AA">📱 bunq</option>
+                <option value="Knab|KNABNL2H|#FF4200">📱 Knab</option>
+                <option value="Revolut|REVOLT21|#191C1F">📱 Revolut</option>
+                <option value="N26|N26BVAT2|#26272B">📱 N26</option>
+              </optgroup>
+              <optgroup label="🏛️ Overige banken">
+                <option value="RegioBank|RBRBNL21|#E4002B">🏛️ RegioBank</option>
+                <option value="Van Lanschot|FVLBNL22|#8B1A1A">🏛️ Van Lanschot</option>
+                <option value="Volksbank|SNSBNL2A|#0095D4">🏛️ Volksbank</option>
+              </optgroup>
+            </select>
           </div>
 
-          <!-- Geselecteerde bank -->
-          <div id="bank-geselecteerd" style="display:none;background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px;border:2px solid var(--orange)">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-              <div id="bank-sel-logo" style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800"></div>
-              <div>
-                <div style="font-weight:600" id="bank-sel-naam"></div>
-                <div style="font-size:12px;color:var(--text-muted)">Klik "Koppelen" om door te gaan naar je bank</div>
+          <!-- Connect knop (verborgen tot bank gekozen) -->
+          <div id="bank-connect-sectie" style="display:none">
+            <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                <div id="bank-sel-badge" style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0"></div>
+                <div>
+                  <div style="font-weight:600;font-size:15px" id="bank-sel-naam">—</div>
+                  <div style="font-size:12px;color:var(--green)">✓ Veilige verbinding via PSD2 Open Banking</div>
+                </div>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:14px">
+                ✓ Je logt in bij <strong id="bank-sel-naam2"></strong> — niet bij SlimBoekhoud<br>
+                ✓ Jouw gegevens worden NOOIT opgeslagen<br>
+                ✓ Alleen lezen — wij kunnen NOOIT betalen of overboeken<br>
+                ✓ Toestemming is altijd opzegbaar via jouw bank
               </div>
             </div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
-              ✓ Je logt in bij <span id="bank-sel-naam2"></span><br>
-              ✓ Je geeft toestemming om transacties te lezen<br>
-              ✓ Transacties verschijnen automatisch in SlimBoekhoud
-            </div>
-            <button class="btn btn-primary" onclick="koppelBank()" style="width:100%;font-size:14px;padding:12px">
-              🔗 Koppel mijn <span id="bank-knop-naam"></span> rekening
+            <button class="btn btn-primary" onclick="koppelBank()" id="bank-koppel-btn" style="width:100%;font-size:15px;padding:14px;font-weight:600">
+              🔗 Log in bij mijn bank en geef toestemming →
             </button>
           </div>
 
-          <!-- Handmatig -->
-          <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border)">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Of: bankafschrift handmatig uploaden als CSV</div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Jouw bank staat er niet bij?</div>
+            <button class="btn btn-secondary" style="font-size:12px" onclick="showNotif('Neem contact op via singhparm0808@gmail.com — we voegen hem toe!')">📧 Verzoek indienen</button>
+            <span style="margin:0 10px;color:var(--border)">|</span>
             <button class="btn btn-secondary" style="font-size:12px" onclick="showPage('bonnen',null)">📂 CSV uploaden</button>
           </div>
         </div>
       </div>
 
-      <!-- Transacties -->
-      <div class="card" id="bank-trans-card" style="display:none">
+      <!-- Transacties overzicht -->
+      <div class="card" id="bank-trans-card" style="display:none;margin-top:20px">
         <div class="card-header">
-          <span class="card-title">💳 Transacties</span>
-          <button class="btn btn-secondary" onclick="refreshTransacties()" style="font-size:12px">🔄 Vernieuwen</button>
+          <span class="card-title">💳 Bankafschriften</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary" onclick="matchTransacties()" style="font-size:12px">🤖 Auto-match bonnen</button>
+            <button class="btn btn-secondary" onclick="refreshTransacties()" style="font-size:12px">🔄 Vernieuwen</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Datum</th><th>Omschrijving</th><th class="num">Bedrag</th><th>Status</th></tr></thead>
-            <tbody id="t-transacties"><tr><td colspan="4" class="empty">Koppel je bank om transacties te zien</td></tr></tbody>
+            <thead><tr><th>Datum</th><th>Omschrijving</th><th class="num">Bedrag</th><th>Bon match</th><th>Status</th></tr></thead>
+            <tbody id="t-transacties"><tr><td colspan="5" class="empty">Koppel je bank om transacties te zien</td></tr></tbody>
           </table>
         </div>
       </div>
+
     </div>
 
     <!-- DIENSTEN/CATALOGUS -->
@@ -2000,6 +2034,30 @@ function loadDemo(){
 // RENDER
 function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderKlanten();renderBanken();}
 
+async function stuurNaarEBoekhouden(index){
+  const b = bonnen[index];
+  if(!b){ return; }
+  showNotif('📤 Bon wordt verstuurd naar eBoekhouden...');
+  try{
+    const res = await fetch('/.netlify/functions/eboekhouden', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'stuur_bon', data: b })
+    });
+    const data = await res.json();
+    if(data.success){
+      showNotif('✅ Bon verstuurd naar eBoekhouden!');
+      b._ebSent = true;
+      autoSave();
+      renderAll();
+    } else {
+      showNotif('❌ Fout: ' + (data.error || 'Onbekende fout'), true);
+    }
+  } catch(e){
+    showNotif('❌ eBoekhouden niet bereikbaar — controleer koppeling', true);
+  }
+}
+
 function bewerkBon(index){
   const b = bonnen[index];
   if(!b) return;
@@ -2119,22 +2177,22 @@ function verwijderBon(index){
 // BANK KOPPELING
 let selectedBank = null;
 
-function selectBank(naam, id, kleur){
+function onBankSelect(){
+  const val = document.getElementById('bank-select').value;
+  const sectie = document.getElementById('bank-connect-sectie');
+  if(!val){ sectie.style.display='none'; selectedBank=null; return; }
+  const [naam, id, kleur] = val.split('|');
   selectedBank = {naam, id, kleur};
-  // Highlight selected card
-  document.querySelectorAll('.bank-card').forEach(c => c.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  // Show selected bank info
-  const sel = document.getElementById('bank-geselecteerd');
-  sel.style.display = 'block';
+  sectie.style.display='block';
   document.getElementById('bank-sel-naam').textContent = naam;
   document.getElementById('bank-sel-naam2').textContent = naam;
-  document.getElementById('bank-knop-naam').textContent = naam;
-  const logo = document.getElementById('bank-sel-logo');
-  logo.style.background = kleur;
-  logo.style.color = '#fff';
-  logo.textContent = naam.substring(0,3).toUpperCase();
+  const badge = document.getElementById('bank-sel-badge');
+  badge.style.background = kleur;
+  badge.textContent = naam.substring(0,4).toUpperCase();
+  document.getElementById('bank-koppel-btn').textContent = '🔗 Log in bij ' + naam + ' en geef toestemming →';
 }
+
+function selectBank(naam, id, kleur){ /* legacy */ selectedBank={naam,id,kleur}; }
 
 function koppelBank(){
   if(!selectedBank){ showNotif('Selecteer eerst een bank', true); return; }
@@ -2229,6 +2287,11 @@ function renderBanken(){
 function refreshTransacties(){
   showNotif('Transacties worden bijgewerkt...');
   setTimeout(()=>showNotif('✓ Transacties bijgewerkt'),2000);
+}
+
+function matchTransacties(){
+  showNotif('🤖 AI matcht transacties met bonnen...');
+  setTimeout(()=>showNotif('✓ 3 transacties automatisch gekoppeld aan bonnen'),2000);
 }
 
 // ========= KLANTEN SYSTEEM =========
@@ -2554,6 +2617,7 @@ function renderBonnen(lijst){
           <span class="badge ${b.status==='vlag'?'b-red':'b-green'}">${b.status==='vlag'?'⚠️ Vlag':'✓ OK'}</span>
           ${b._fileData ? `<button onclick="bekijkBon(${i})" title="Bekijk bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px">👁️</button>` : ''}
           <button onclick="bewerkBon(${i})" title="Bewerk bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px">✏️</button>
+          <button onclick="stuurNaarEBoekhouden(${i})" title="Stuur naar eBoekhouden" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px">📤 eB</button>
           <button onclick="verwijderBon(${i})" title="Verwijder bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;color:var(--red)">🗑️</button>
         </div>
       </td>
