@@ -78,7 +78,7 @@ body.dark{
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:14px;transition:background .2s,color .2s}
 
 /* LOGIN */
-.login-screen{position:fixed;inset:0;background:var(--sidebar);display:flex;align-items:center;justify-content:center;z-index:999}
+.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f1117 0%,#1a1a2e 60%,#0f1117 100%);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column}
 .login-box{background:var(--white);border-radius:16px;padding:40px;width:360px;text-align:center}
 .login-logo{width:56px;height:56px;background:var(--orange);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#fff;margin:0 auto 16px}
 .login-title{font-size:22px;font-weight:600;margin-bottom:6px}
@@ -327,6 +327,18 @@ tr:hover td{background:var(--bg)}
 
 <!-- LOGIN / SIGNUP -->
 <div class="login-screen" id="login-screen">
+
+  <!-- Marketing tagline bovenaan -->
+  <div style="position:absolute;top:0;left:0;right:0;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;z-index:2">
+    <div style="font-size:20px;font-weight:800;color:#fff">SlimBoekhoud</div>
+    <div style="display:flex;gap:16px;align-items:center;font-size:13px">
+      <span style="color:rgba(255,255,255,.6)">🤖 AI bonnen</span>
+      <span style="color:rgba(255,255,255,.6)">📄 Facturen</span>
+      <span style="color:rgba(255,255,255,.6)">📊 BTW</span>
+      <span style="background:var(--orange);color:#fff;padding:5px 14px;border-radius:20px;font-weight:600">€9/maand</span>
+    </div>
+  </div>
+
   <div class="login-box">
     <div class="login-logo">SB</div>
     <div class="login-title">SlimBoekhoud</div>
@@ -361,16 +373,19 @@ tr:hover td{background:var(--bg)}
         Al een account? <a href="#" onclick="toggleAuthMode('login');return false" style="color:var(--orange);text-decoration:none;font-weight:600">Inloggen</a>
       </div>
     </div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:rgba(255,255,255,.35)">
+      © 2026 SlimBoekhoud &nbsp;·&nbsp;
+      <a href="#" onclick="showPrivacy()" style="color:rgba(255,255,255,.45);text-decoration:underline">Privacy</a>
+      &nbsp;·&nbsp; KvK 64165965
+    </div>
   </div>
 </div>
-
-<!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-mark">SB</div>
     <div>
       <div class="logo-text">SlimBoekhoud</div>
-      <div class="logo-sub" id="sb-company">Pro Stukadoors</div>
+      <div class="logo-sub" id="sb-company">Mijn Bedrijf</div>
     </div>
   </div>
   <nav class="sidebar-nav">
@@ -395,6 +410,7 @@ tr:hover td{background:var(--bg)}
     <div class="nav-item" onclick="showPage('pricing',this)"><span class="nav-icon">💳</span>Abonnement</div>
     <div class="nav-item" onclick="showPage('gdrive',this)"><span class="nav-icon">📁</span>Google Drive</div>
     <div class="nav-item" onclick="showPage('boekhouder',this)"><span class="nav-icon">👩‍💼</span>Boekhouder</div>
+    <div class="nav-item" onclick="openWhatsAppSupport()" style="color:#25D366"><span class="nav-icon">💬</span>WhatsApp Support</div>
     <div class="nav-item" onclick="showPage('instellingen',this)"><span class="nav-icon">⚙️</span>Instellingen</div>
   </nav>
   <div class="sidebar-footer">
@@ -402,7 +418,7 @@ tr:hover td{background:var(--bg)}
       <div class="user-avatar" id="user-av">PS</div>
       <div>
         <div class="user-name" id="user-name">Parminder Singh</div>
-        <div class="user-company">Pro Stukadoors</div>
+        <div class="user-company" id="user-company-name">Mijn Bedrijf</div>
       </div>
     </div>
   </div>
@@ -596,7 +612,7 @@ tr:hover td{background:var(--bg)}
       </div>
       <div id="factuur-form" style="display:none">
         <div class="card">
-          <div class="card-header"><span class="card-title" id="f-form-title">Nieuwe factuur</span><button class="btn btn-ghost" onclick="toonFacturenList()" style="font-size:12px">← Terug</button></div>
+          <div class="card-header"><span class="card-title" id="f-form-title">Nieuwe factuur</span><div style="display:flex;gap:8px;align-items:center"><button id="f-wa-btn" onclick="stuurFactuurWhatsApp()" class="btn btn-ghost" style="font-size:12px;color:#25D366;border-color:#25D366;display:none">📱 WhatsApp</button><button class="btn btn-ghost" onclick="toonFacturenList()" style="font-size:12px">← Terug</button></div></div>
           <div class="card-body">
             <div class="form-grid" style="margin-bottom:16px">
               <div class="form-group"><label class="form-label">Klant *</label><input class="form-input" id="f-klant" placeholder="Naam klant"></div>
@@ -1431,13 +1447,46 @@ tr:hover td{background:var(--bg)}
       </div>
     </div>
 
+    <!-- PRIVACY POLICY -->
+    <div class="page" id="page-privacy" style="display:none">
+      <div class="card" style="padding:28px;max-width:700px;margin:0 auto">
+        <h2 style="margin-bottom:20px">🔒 Privacyverklaring SlimBoekhoud</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Versie 1.0 — Juni 2026</p>
+
+        <h3 style="margin-bottom:10px">1. Wie zijn wij?</h3>
+        <p style="font-size:13px;line-height:1.8;margin-bottom:16px">SlimBoekhoud is een product van <strong>Pro Stukadoors</strong>, KvK 64165965, gevestigd in Rotterdam. Contactadres: singhparm0808@gmail.com</p>
+
+        <h3 style="margin-bottom:10px">2. Welke gegevens verzamelen wij?</h3>
+        <p style="font-size:13px;line-height:1.8;margin-bottom:16px">Wij verwerken: naam, e-mailadres, bedrijfsnaam, KvK-nummer, financiële gegevens (facturen, bonnen, BTW-gegevens) die u zelf invoert.</p>
+
+        <h3 style="margin-bottom:10px">3. Hoe gebruiken wij uw gegevens?</h3>
+        <p style="font-size:13px;line-height:1.8;margin-bottom:16px">Uw gegevens worden uitsluitend gebruikt voor de werking van de boekhoudapplicatie. Wij verkopen uw gegevens nooit aan derden.</p>
+
+        <h3 style="margin-bottom:10px">4. Opslag & beveiliging</h3>
+        <p style="font-size:13px;line-height:1.8;margin-bottom:16px">Data wordt opgeslagen bij Supabase (Frankfurt, EU). Verbindingen zijn versleuteld via HTTPS/TLS. Betalingen verlopen via Stripe (PCI-DSS gecertificeerd).</p>
+
+        <h3 style="margin-bottom:10px">5. Uw rechten (AVG/GDPR)</h3>
+        <p style="font-size:13px;line-height:1.8;margin-bottom:16px">U heeft recht op inzage, correctie en verwijdering van uw gegevens. Stuur een e-mail naar singhparm0808@gmail.com voor verzoeken.</p>
+
+        <h3 style="margin-bottom:10px">6. Cookies</h3>
+        <p style="font-size:13px;line-height:1.8;margin-bottom:16px">Wij gebruiken alleen functionele cookies (inlogstatus). Geen tracking of advertentiecookies.</p>
+
+        <h3 style="margin-bottom:10px">7. Bewaartermijn</h3>
+        <p style="font-size:13px;line-height:1.8;margin-bottom:16px">Financiële gegevens bewaren wij 7 jaar conform de fiscale bewaarplicht. Na opzegging worden gegevens binnen 30 dagen verwijderd op verzoek.</p>
+
+        <div style="margin-top:24px;padding:16px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text-muted)">
+          Vragen over privacy? Mail naar <strong>singhparm0808@gmail.com</strong>
+        </div>
+      </div>
+    </div>
+
     <!-- INSTELLINGEN -->
     <div class="page" id="page-instellingen">
       <div class="card">
         <div class="card-header"><span class="card-title">Bedrijfsgegevens</span></div>
         <div class="card-body">
           <div class="form-grid">
-            <div class="form-group"><label class="form-label">Bedrijfsnaam</label><input class="form-input" id="s-naam" value="Pro Stukadoors"></div>
+            <div class="form-group"><label class="form-label">Bedrijfsnaam</label><input class="form-input" id="s-naam" value=""></div>
             <div class="form-group"><label class="form-label">KvK nummer</label><input class="form-input" id="s-kvk" value="64165965"></div>
             <div class="form-group"><label class="form-label">BTW nummer</label><input class="form-input" id="s-btwnr" placeholder="NL000000000B01"></div>
             <div class="form-group"><label class="form-label">IBAN</label><input class="form-input" id="s-iban" value="NL44RABO0368249190"></div>
@@ -1899,6 +1948,40 @@ window.addEventListener('beforeinstallprompt',e=>{
 function installApp(){
   if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;document.getElementById('install-banner').style.display='none';}
   else showNotif('Open SlimBoekhoud in Chrome op je telefoon en tik op "Toevoegen aan startscherm"');
+}
+
+// PRIVACY
+function showPrivacy(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  showPage('privacy', null);
+}
+
+// WHATSAPP INTEGRATIE
+function stuurWhatsApp(id){
+  const f = facturen.find(f=>f.id===id);
+  if(!f) return;
+  const bedrijf = localStorage.getItem('sb_bedrijfsnaam') || localStorage.getItem('sb_bedrijf') || currentUser?.email?.split('@')[0] || 'Mijn Bedrijf';
+  const msg = encodeURIComponent(
+    `Beste ${f.klant},\n\n` +
+    `Hierbij stuur ik u factuur *${f.nummer}* toe.\n\n` +
+    `📋 Omschrijving: ${f.project || 'Werkzaamheden'}\n` +
+    `💰 Totaalbedrag: ${fmtEur(f.totaalIncl || f.totaal || 0)}\n` +
+    `📅 Vervaldatum: ${f.vervaldatum || f.verval || ''}\n\n` +
+    `Betaal eenvoudig via iDEAL — stuur mij een bericht voor de betaallink.\n\n` +
+    `Met vriendelijke groet,\n${bedrijf}\n📞 0628806783`
+  );
+  const tel = f.klantTel ? f.klantTel.replace(/[^0-9+]/g,'') : '';
+  const url = tel 
+    ? \`https://wa.me/\${tel.startsWith('+') ? tel.slice(1) : '31' + tel.replace(/^0/,'')}?text=\${msg}\`
+    : \`https://wa.me/?text=\${msg}\`;
+  window.open(url, '_blank');
+  showNotif('📱 WhatsApp geopend met factuurtext!');
+}
+
+function openWhatsAppSupport(){
+  const url = 'https://wa.me/31628806783?text=' + encodeURIComponent('Hallo, ik heb een vraag over SlimBoekhoud.');
+  window.open(url, '_blank');
 }
 
 // STRIPE BETALINGEN
@@ -3360,7 +3443,7 @@ function printBTWAangifte(){
   const btw1b=flist.reduce((s,f)=>s+(f.btwBedrag||0),0);
   const voorbelasting5b=items.reduce((s,b)=>s+(b.btw||0),0);
   const saldo=btw1b-voorbelasting5b;
-  const bedrijf=localStorage.getItem('sb_bedrijf')||'Pro Stukadoors';
+  const bedrijf=localStorage.getItem('sb_bedrijf') || localStorage.getItem('sb_bedrijfsnaam') || 'Mijn Bedrijf';
   const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>BTW Aangifte ${q} ${jaar}</title>
   <style>body{font-family:Arial,sans-serif;margin:40px;color:#111}h1{color:#F4A418}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #eee}th{background:#f5f5f5}.num{text-align:right;font-family:monospace}.saldo{background:${saldo>0?'#fee':'#efe'};font-weight:bold}.footer{margin-top:30px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:10px}@media print{.no-print{display:none}}</style>
@@ -3428,6 +3511,7 @@ function renderFacturen(){
     <td style="display:flex;gap:4px">
       <button onclick="markeerBetaald(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">✓</button>
       <button onclick="stuurBetaallink(${f.id})" title="Stuur iDEAL betaallink" style="font-size:11px;padding:3px 8px;border:1px solid var(--orange);border-radius:6px;background:transparent;cursor:pointer;color:var(--orange)">💳</button>
+      <button onclick="stuurWhatsApp(${f.id})" title="Stuur via WhatsApp" style="font-size:11px;padding:3px 8px;border:1px solid #25D366;border-radius:6px;background:transparent;cursor:pointer;color:#25D366">📱</button>
       <button onclick="emailFactuurId(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">📧</button>
     </td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nog geen facturen</td></tr>';
 }
