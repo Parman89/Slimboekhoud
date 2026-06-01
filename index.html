@@ -914,11 +914,26 @@ tr:hover td{background:var(--bg)}
             </button>
           </div>
 
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Jouw bank staat er niet bij?</div>
-            <button class="btn btn-secondary" style="font-size:12px" onclick="showNotif('Neem contact op via singhparm0808@gmail.com — we voegen hem toe!')">📧 Verzoek indienen</button>
-            <span style="margin:0 10px;color:var(--border)">|</span>
-            <button class="btn btn-secondary" style="font-size:12px" onclick="showPage('bonnen',null)">📂 CSV uploaden</button>
+          <!-- CSV Import sectie -->
+          <div style="margin-top:20px;padding-top:20px;border-top:2px solid var(--orange);background:var(--orange-light);border-radius:10px;padding:18px;margin-top:20px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:8px">📂 Bankafschrift uploaden — Geen registratie nodig!</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.7">
+              Download jouw bankafschrift als CSV via jouw bankapp:<br>
+              <strong>ING:</strong> Mijn ING → Betaalrekening → Exporteren → CSV<br>
+              <strong>Rabobank:</strong> Internetbankieren → Afschriften → Downloaden → CSV<br>
+              <strong>ABN AMRO:</strong> Mijn IB → Rekening → Transacties exporteren<br>
+              <strong>SNS/ASN/bunq:</strong> App → Exporteer transacties
+            </div>
+            <div id="bank-csv-drop" ondragover="event.preventDefault();this.style.background='rgba(244,164,24,.15)'" ondragleave="this.style.background=''" ondrop="handleBankCSV(event)" style="border:2px dashed var(--orange);border-radius:8px;padding:20px;text-align:center;cursor:pointer;background:var(--white)" onclick="document.getElementById('bank-csv-input').click()">
+              <div style="font-size:28px;margin-bottom:8px">📄</div>
+              <div style="font-size:13px;font-weight:600">Klik of sleep hier jouw bankafschrift</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">CSV, MT940 of TXT formaat</div>
+              <input type="file" id="bank-csv-input" accept=".csv,.mt940,.txt,.mt9" style="display:none" onchange="handleBankCSVFile(this.files[0])">
+            </div>
+          </div>
+
+          <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text-muted)">
+            Of koppel automatisch via GoCardless (gratis account op nordigen.com)
           </div>
         </div>
       </div>
@@ -2472,6 +2487,173 @@ function renderBanken(){
 function refreshTransacties(){
   showNotif('Transacties worden bijgewerkt...');
   setTimeout(()=>showNotif('✓ Transacties bijgewerkt'),2000);
+}
+
+function handleBankCSV(event){
+  event.preventDefault();
+  document.getElementById('bank-csv-drop').style.background = '';
+  const file = event.dataTransfer.files[0];
+  if(file) handleBankCSVFile(file);
+}
+
+function handleBankCSVFile(file){
+  if(!file){ return; }
+  showNotif('📄 Bankafschrift wordt ingelezen...');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    let transacties = [];
+    // Detect format
+    if(text.includes(':60F:') || text.includes(':61:') || text.includes('RBOSNL')){
+      transacties = parseMT940(text);
+    } else {
+      transacties = parseCSVBank(text);
+    }
+    if(transacties.length > 0){
+      toonBankTransacties(transacties);
+      showNotif('✓ ' + transacties.length + ' transacties ingelezen!');
+    } else {
+      showNotif('❌ Geen transacties herkend — probeer ander formaat', true);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSVBank(text){
+  const lines = text.split('\n').filter(l => l.trim());
+  const transacties = [];
+  // Detect separator
+  const sep = lines[0].includes(';') ? ';' : ',';
+  // Skip header
+  for(let i = 1; i < lines.length; i++){
+    const cols = lines[i].split(sep).map(c => c.replace(/"/g,'').trim());
+    if(cols.length < 3) continue;
+    // Try common Dutch bank CSV formats
+    let datum='', omschrijving='', bedrag=0;
+    // ING format: Datum;Naam/Omschrijving;Rekening;Tegenrekening;Code;Af Bij;Bedrag (EUR);Mutatiesoort;Mededelingen
+    if(cols.length >= 7 && (cols[5]==='Af'||cols[5]==='Bij'||cols[5]==='Credit'||cols[5]==='Debit')){
+      datum = cols[0];
+      omschrijving = (cols[1]||'') + ' ' + (cols[8]||'');
+      const afbij = cols[5].toLowerCase();
+      const amt = parseFloat((cols[6]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+      bedrag = (afbij==='bij'||afbij==='credit') ? amt : -amt;
+    }
+    // Rabobank format: IBAN;Munt;BIC;Volgnr;Datum;Rentedatum;Bedrag;Saldo;Tegenpartij IBAN;Tegenpartij naam;Betalingskenmerk;Omschrijving
+    else if(cols.length >= 12 && cols[0].startsWith('NL')){
+      datum = cols[4];
+      omschrijving = (cols[9]||'') + ' ' + (cols[11]||'');
+      bedrag = parseFloat((cols[6]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+    }
+    // ABN AMRO format: Rekeningnummer;Muntsoort;Transactiedatum;Rentedatum;Beginsaldo;Eindsaldo;Omschrijving
+    else if(cols.length >= 7){
+      datum = cols[2]||cols[0];
+      omschrijving = cols[6]||cols[3]||'';
+      const begin = parseFloat((cols[4]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+      const eind = parseFloat((cols[5]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+      bedrag = eind - begin;
+    }
+    // Generic: first col date, last numeric col is amount
+    else {
+      datum = cols[0];
+      omschrijving = cols.slice(1,-1).join(' ');
+      bedrag = parseFloat((cols[cols.length-1]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+    }
+    if(datum && omschrijving){
+      transacties.push({
+        datum: formatDatum(datum),
+        omschrijving: omschrijving.trim().substring(0, 80),
+        bedrag: Math.round(bedrag*100)/100,
+        type: bedrag < 0 ? 'Af' : 'Bij'
+      });
+    }
+  }
+  return transacties.filter(t => t.datum && t.omschrijving);
+}
+
+function parseMT940(text){
+  const transacties = [];
+  const lines = text.split('\n');
+  let datum='', bedrag=0, omschrijving='', type='';
+  for(const line of lines){
+    if(line.startsWith(':61:')){
+      // Format: :61:2405150515D123,45N...
+      const match = line.match(/:61:(\d{6})(\d{4})?(C|D)(\d+,\d+)/);
+      if(match){
+        const d = match[1];
+        datum = '20'+d.substring(0,2)+'-'+d.substring(2,4)+'-'+d.substring(4,6);
+        type = match[3]==='C' ? 'Bij' : 'Af';
+        bedrag = parseFloat(match[4].replace(',','.'))||0;
+        if(type==='Af') bedrag = -bedrag;
+      }
+    }
+    if(line.startsWith(':86:') && datum){
+      omschrijving = line.replace(':86:','').trim().substring(0,80);
+      transacties.push({datum, omschrijving, bedrag, type});
+      datum=''; bedrag=0; omschrijving='';
+    }
+  }
+  return transacties;
+}
+
+function formatDatum(d){
+  // Try to parse various date formats
+  if(!d) return '';
+  d = d.trim();
+  // YYYY-MM-DD already correct
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  // DD-MM-YYYY
+  if(/^\d{2}-\d{2}-\d{4}$/.test(d)) return d.split('-').reverse().join('-');
+  // DD/MM/YYYY
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d.split('/').reverse().join('-');
+  // YYYYMMDD
+  if(/^\d{8}$/.test(d)) return d.substring(0,4)+'-'+d.substring(4,6)+'-'+d.substring(6,8);
+  return d;
+}
+
+// Bank transactions storage
+window.__bankTransacties = [];
+
+function toonBankTransacties(transacties){
+  window.__bankTransacties = transacties;
+  const card = document.getElementById('bank-trans-card');
+  if(card) card.style.display = 'block';
+  const tbody = document.getElementById('t-transacties');
+  if(!tbody) return;
+  tbody.innerHTML = transacties.map((t,i) => `
+    <tr>
+      <td style="font-size:12px">${t.datum}</td>
+      <td style="font-size:12px;max-width:200px">${t.omschrijving}</td>
+      <td class="num" style="color:${t.bedrag<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(Math.abs(t.bedrag))}</td>
+      <td><span class="badge ${t.bedrag<0?'b-red':'b-green'}" style="font-size:10px">${t.type}</span></td>
+      <td>
+        ${t.bedrag<0 ? `<button onclick="importAlsBon(${i})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">+ Bon</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function importAlsBon(i){
+  const t = window.__bankTransacties[i];
+  if(!t) return;
+  // Add as bon
+  const bon = {
+    datum: t.datum,
+    leverancier: t.omschrijving.substring(0,30),
+    cat: 'Overig',
+    excl: Math.abs(t.bedrag) / 1.21,
+    btw: Math.abs(t.bedrag) - (Math.abs(t.bedrag) / 1.21),
+    incl: Math.abs(t.bedrag),
+    pct: 21,
+    kwartaal: kw(t.datum),
+    notitie: t.omschrijving,
+    status: 'ok'
+  };
+  bon.excl = Math.round(bon.excl*100)/100;
+  bon.btw = Math.round(bon.btw*100)/100;
+  bonnen.unshift(bon);
+  autoSave();
+  renderAll();
+  showNotif('✓ Bon toegevoegd: ' + bon.leverancier);
 }
 
 function matchTransacties(){
