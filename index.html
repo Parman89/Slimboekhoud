@@ -385,8 +385,30 @@ tr:hover td{background:var(--bg)}
       </div>
       <input class="login-input" type="email" id="signup-email" placeholder="Email adres" autocomplete="email">
       <input class="login-input" type="password" id="signup-pass" placeholder="Wachtwoord (min 8 tekens)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignup()">
+
+      <!-- ABONNEMENT KEUZE -->
+      <div style="margin:16px 0 12px;text-align:left">
+        <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:8px">Kies je abonnement:</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label id="plan-starter" onclick="kiesPlan('starter')" style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid var(--orange);border-radius:10px;cursor:pointer;background:rgba(244,164,24,.06)">
+            <input type="radio" name="signup-plan" value="starter" checked style="width:16px;height:16px;cursor:pointer;accent-color:#F4A418">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:#1a1a2e">Starter — €9/maand</div>
+              <div style="font-size:11px;color:#666">100 bonnen · 50 facturen per maand · email support</div>
+            </div>
+          </label>
+          <label id="plan-pro" onclick="kiesPlan('pro')" style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:10px;cursor:pointer;background:#fff">
+            <input type="radio" name="signup-plan" value="pro" style="width:16px;height:16px;cursor:pointer;accent-color:#F4A418">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:#1a1a2e">Pro — €19/maand <span style="font-size:10px;background:var(--orange);color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">POPULAIR</span></div>
+              <div style="font-size:11px;color:#666">Onbeperkt · 🤖 AI offertes/facturen · WhatsApp · boekhouder toegang</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
       <button class="login-btn" id="signup-btn-submit" onclick="doSignup()">30 dagen gratis proberen</button>
-      <div style="font-size:11px;color:var(--text-muted);margin:10px 0">Geen creditcard nodig. Daarna €9/maand.</div>
+      <div style="font-size:11px;color:var(--text-muted);margin:10px 0">Geen creditcard nodig. Na 30 dagen: <span id="signup-prijs-tekst">€9/maand</span>.</div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:14px">
         Al een account? <a href="#" onclick="toggleAuthMode('login');return false" style="color:var(--orange);text-decoration:none;font-weight:600">Inloggen</a>
       </div>
@@ -2141,6 +2163,28 @@ async function kvkLookup(){
   }
 }
 
+function kiesPlan(plan){
+  const starter = document.getElementById('plan-starter');
+  const pro = document.getElementById('plan-pro');
+  const prijsTekst = document.getElementById('signup-prijs-tekst');
+  if(plan === 'starter'){
+    starter.style.borderColor = 'var(--orange)';
+    starter.style.background = 'rgba(244,164,24,.06)';
+    pro.style.borderColor = '#e0e0e0';
+    pro.style.background = '#fff';
+    starter.querySelector('input').checked = true;
+    if(prijsTekst) prijsTekst.textContent = '€9/maand';
+  } else {
+    pro.style.borderColor = 'var(--orange)';
+    pro.style.background = 'rgba(244,164,24,.06)';
+    starter.style.borderColor = '#e0e0e0';
+    starter.style.background = '#fff';
+    pro.querySelector('input').checked = true;
+    if(prijsTekst) prijsTekst.textContent = '€19/maand';
+  }
+  window.__gekozenPlan = plan;
+}
+
 async function doSignup(){
   const bedrijf=document.getElementById('signup-bedrijf').value.trim();
   const kvk=document.getElementById('signup-kvk').value.trim();
@@ -3153,7 +3197,9 @@ function slaOnboardingOp(){
     iban: document.getElementById('ob-iban')?.value?.trim() || '',
   };
   localStorage.setItem('sb_settings', JSON.stringify(st));
-  localStorage.setItem('sb_bedrijfsnaam', naam);
+  const gekozenPlan = document.querySelector('input[name="signup-plan"]:checked')?.value || 'starter';
+      localStorage.setItem('sb_abonnement', gekozenPlan);
+      localStorage.setItem('sb_bedrijfsnaam', naam);
   // Update sidebar
   const el = document.getElementById('sb-company'); if(el) el.textContent = naam;
   document.getElementById('onboard-modal')?.remove();
