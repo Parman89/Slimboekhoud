@@ -3275,14 +3275,13 @@ async function runAgents(){
   const hasRealFiles = pendingFiles && pendingFiles.length > 0;
 
   setAgent('scan','running','Scannen...');
-  await sleep(400);
   setProgress(20);
 
   let raw=[];
 
   if (hasRealFiles) {
     // ECHTE FOTO ANALYSE met Claude Vision API
-    showNotif('🔍 Echte foto wordt geanalyseerd door AI...');
+    showNotif('⚡ AI verwerkt je bon(nen)...');
 
     for (let i = 0; i < pendingFiles.length; i++) {
       const file = pendingFiles[i];
@@ -3324,43 +3323,58 @@ async function runAgents(){
           continue;
         }
 
-        // Call Claude API met de echte foto/PDF
-        const response = await fetch('/.netlify/functions/claude', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            messages: [{
-              role: 'user',
-              content: [
-                contentBlock,
-                {
-                  type: 'text',
-                  text: `Analyseer deze Nederlandse bon/factuur en haal er de volgende gegevens uit. Antwoord ALLEEN met JSON, geen uitleg:
+        // Call Anthropic API DIRECT (sneller dan via Netlify function)
+        const apiKey = localStorage.getItem('anthropic_key') || localStorage.getItem('sb_anthropic_key');
+        let response, data;
 
-{
-  "datum": "YYYY-MM-DD (datum op de bon, gebruik vandaag als niet leesbaar)",
-  "leverancier": "naam van het bedrijf",
-  "cat": "een van: Materiaal/Brandstof/Gereedschap/Verzekering/Telefoon/Eten & drinken/Transport/Subcontractor/Overig",
-  "excl": getal (bedrag exclusief BTW),
-  "pct": 21 (BTW percentage, meestal 21),
-  "note": "korte beschrijving wat er gekocht is"
-}
+        if(apiKey){
+          // DIRECT - geen Netlify cold start, veel sneller!
+          response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model: 'claude-haiku-4-5-20251001',
+              max_tokens: 150,
+              messages: [{
+                role: 'user',
+                content: [
+                  contentBlock,
+                  {
+                    type: 'text',
+                    text: `Bon analyseren. Geef ALLEEN JSON terug:
+{"datum":"YYYY-MM-DD","leverancier":"naam","cat":"Materiaal|Brandstof|Gereedschap|Verzekering|Telefoon|Eten & drinken|Transport|Overig","excl":0.00,"pct":21,"note":"omschrijving"}`
+                  }
+                ]
+              }]
+            })
+          });
+          data = await response.json();
+        } else {
+          // Fallback via Netlify function (als geen API key)
+          response = await fetch('/.netlify/functions/claude', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              messages: [{
+                role: 'user',
+                content: [
+                  contentBlock,
+                  {
+                    type: 'text',
+                    text: `Bon analyseren. Geef ALLEEN JSON terug:
+{"datum":"YYYY-MM-DD","leverancier":"naam","cat":"Materiaal|Brandstof|Gereedschap|Verzekering|Telefoon|Eten & drinken|Transport|Overig","excl":0.00,"pct":21,"note":"omschrijving"}`
+                  }
+                ]
+              }]
+            })
+          });
+          data = await response.json();
+        }
 
-Bepaal de categorie op basis van het bedrijf:
-- Gamma, Praxis, Karwei, Bouwmaat, Hornbach → Materiaal of Gereedschap
-- Shell, BP, Esso, Tinq, Tango, TotalEnergies → Brandstof
-- Univé, ASR, Achmea, Centraal Beheer → Verzekering
-- T-Mobile, KPN, Vodafone, Ziggo → Telefoon
-- Restaurant, café, bakker → Eten & drinken
-
-Als je iets niet kunt lezen, gok op basis van het bedrijf. Geef ALLEEN de JSON terug, geen uitleg.`
-                }
-              ]
-            }]
-          })
-        });
-
-        const data = await response.json();
 
         // Check voor API errors
         if (data.error) {
@@ -3415,9 +3429,9 @@ Als je iets niet kunt lezen, gok op basis van het bedrijf. Geef ALLEEN de JSON t
   }
 
   setProgress(60);setAgent('scan','done','Klaar');
-  setAgent('sort','running','Categoriseren...');await sleep(400);setProgress(75);setAgent('sort','done','Klaar');
-  setAgent('kw','running','Kwartalen berekenen...');await sleep(400);setProgress(85);setAgent('kw','done','Klaar');
-  setAgent('acc','running','Controleren...');await sleep(500);
+  setAgent('sort','running','Categoriseren...');setProgress(75);setAgent('sort','done','Klaar');
+  setAgent('kw','running','Kwartalen berekenen...');setProgress(85);setAgent('kw','done','Klaar');
+  setAgent('acc','running','Controleren...');
 
   // Voeg toe aan bestaande bonnen ipv vervangen
   const nieuweBonnen = processBonnen(raw);
