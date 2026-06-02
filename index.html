@@ -321,6 +321,24 @@ tr:hover td{background:var(--bg)}
 .cat-folder-name{font-size:11px;font-weight:600;margin-bottom:2px;color:var(--text)}
 .cat-folder-count{font-size:10px;color:var(--text-muted);font-weight:500}
 .cat-folder-amount{font-size:11px;color:var(--orange-dark);font-weight:600;margin-top:2px}
+
+.ai-msg{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;max-width:90%}
+.ai-bot{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.ai-user{background:var(--orange);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+
+/* GLOBAL SEARCH */
+.zoek-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.1s;border-bottom:1px solid var(--border);font-size:13px}
+.zoek-item:hover{background:var(--bg)}
+.zoek-item:last-child{border-bottom:none}
+.zoek-badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;flex-shrink:0}
+.zoek-badge-factuur{background:rgba(0,122,255,.1);color:#007aff}
+.zoek-badge-bon{background:rgba(52,199,89,.1);color:var(--green)}
+.zoek-badge-offerte{background:rgba(244,164,24,.1);color:var(--orange)}
+.zoek-badge-klant{background:rgba(88,86,214,.1);color:#5856d6}
+.zoek-badge-dienst{background:rgba(255,149,0,.1);color:#ff9500}
+.zoek-item-title{font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zoek-item-sub{font-size:11px;color:var(--text-muted)}
+
 </style>
 </head>
 <body>
@@ -413,7 +431,7 @@ tr:hover td{background:var(--bg)}
     <div class="nav-item" onclick="showPage('pricing',this)"><span class="nav-icon">💳</span>Abonnement</div>
     <div class="nav-item" onclick="showPage('gdrive',this)"><span class="nav-icon">📁</span>Google Drive</div>
     <div class="nav-item" onclick="showPage('boekhouder',this)"><span class="nav-icon">👩‍💼</span>Boekhouder</div>
-    <div class="nav-item" onclick="openWhatsAppSupport()" style="color:#25D366"><span class="nav-icon">💬</span>WhatsApp Support</div>
+    <div class="nav-item" onclick="toggleAIChat()" style="color:var(--orange)"><span class="nav-icon">🤖</span>AI Assistent</div>
     <div class="nav-item" onclick="showPage('instellingen',this)"><span class="nav-icon">⚙️</span>Instellingen</div>
   </nav>
   <div class="sidebar-footer">
@@ -432,6 +450,14 @@ tr:hover td{background:var(--bg)}
   <div class="topbar">
     <button class="mobile-btn" onclick="toggleSidebar()">☰</button>
     <div class="page-title" id="page-title">Dashboard</div>
+    <div style="position:relative;flex:1;max-width:280px;margin:0 10px" id="search-container">
+      <input id="global-search" type="text" placeholder="🔍 Zoek alles..." 
+        style="width:100%;padding:7px 12px 7px 14px;font-size:12px;border-radius:20px;border:1px solid var(--border);background:var(--white);color:var(--text);outline:none"
+        oninput="zoekAlles(this.value)" 
+        onkeydown="if(event.key==='Escape'){sluitZoek();this.value='';this.blur()}"
+        onfocus="if(this.value.length>1)toonZoekResultaten()">
+      <div id="zoek-resultaten" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:9000;max-height:400px;overflow-y:auto"></div>
+    </div>
     <div style="display:flex;gap:8px;align-items:center">
       <select style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--white);color:var(--text)" id="year-sel" onchange="renderAll()">
         <option>2024</option><option>2025</option><option selected>2026</option>
@@ -500,6 +526,11 @@ tr:hover td{background:var(--bg)}
           <div class="upload-option-sub">JPG, PNG, PDF, CSV</div>
           <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.pdf,.csv" style="display:none" onchange="handleFiles(this.files)">
         </div>
+        <div class="upload-option" onclick="openHandmatigBon()" style="border-color:var(--orange);background:rgba(244,164,24,.05)">
+          <div class="upload-option-icon" style="color:var(--orange)">✏️</div>
+          <div class="upload-option-title" style="color:var(--orange)">Handmatig invoeren</div>
+          <div class="upload-option-sub">Zelf bedrag + BTW invullen</div>
+        </div>
       </div>
       <div id="upload-status" style="display:none;margin-bottom:12px;font-size:13px;color:var(--text-muted)"></div>
       <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
@@ -551,6 +582,7 @@ tr:hover td{background:var(--bg)}
     <div class="page" id="page-offertes">
       <div style="display:flex;gap:8px;margin-bottom:20px">
         <button class="btn btn-primary" onclick="nieuweOfferte()">+ Nieuwe offerte</button>
+      <button class="btn btn-secondary" onclick="openAIDocModal('offerte')" style="background:linear-gradient(135deg,var(--orange),#e67e22);color:#fff;border:none" title="Pro feature">🤖 AI maakt offerte</button>
         <button class="btn btn-secondary" onclick="toonOfferteList()">📋 Alle offertes</button>
       </div>
       <div id="offerte-list">
@@ -578,7 +610,7 @@ tr:hover td{background:var(--bg)}
             <table class="factuur-lines">
               <thead><tr><th style="width:40%">Omschrijving</th><th style="width:15%">Aantal</th><th style="width:20%">Prijs excl.</th><th style="width:12%">BTW%</th><th style="width:13%">Totaal</th></tr></thead>
               <tbody id="offerte-regels">
-                <tr><td><input class="form-input" oninput="berekenOfferte()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="berekenOfferte()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="berekenOfferte()"></td><td><input class="form-input num" type="number" value="21" oninput="berekenOfferte()"></td><td><input class="form-input num" readonly style="background:var(--bg)"></td></tr>
+                <tr><td><input class="form-input" oninput="berekenOfferte()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="berekenOfferte()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="berekenOfferte()"></td><td><select class="form-input" style="padding:3px;font-size:12px" onchange="berekenOfferte()"><option value="21" selected>21% NL</option><option value="9">9% NL</option><option value="0">0% export</option><option value="0">0% EU</option></select></td><td><input class="form-input num" readonly style="background:var(--bg)"></td></tr>
               </tbody>
             </table>
             <button class="btn btn-ghost" onclick="voegOfferteRegelToe()" style="font-size:12px;margin-bottom:16px">+ Regel toevoegen</button>
@@ -601,6 +633,7 @@ tr:hover td{background:var(--bg)}
     <div class="page" id="page-facturen">
       <div style="display:flex;gap:8px;margin-bottom:20px">
         <button class="btn btn-primary" onclick="nieuwFactuur()">+ Nieuwe factuur</button>
+        <button class="btn btn-secondary" onclick="openAIDocModal('factuur')" style="background:linear-gradient(135deg,var(--orange),#e67e22);color:#fff;border:none" title="Pro feature">🤖 AI maakt factuur</button>
         <button class="btn btn-secondary" onclick="toonFacturenList()">📋 Alle facturen</button>
       </div>
       <div id="facturen-list">
@@ -628,7 +661,7 @@ tr:hover td{background:var(--bg)}
             <table class="factuur-lines">
               <thead><tr><th style="width:40%">Omschrijving</th><th style="width:15%">Aantal</th><th style="width:20%">Prijs excl.</th><th style="width:12%">BTW%</th><th style="width:13%">Totaal</th></tr></thead>
               <tbody id="factuur-regels">
-                <tr><td><input class="form-input" oninput="berekenFactuur()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="berekenFactuur()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="berekenFactuur()"></td><td><input class="form-input num" type="number" value="21" oninput="berekenFactuur()"></td><td><input class="form-input num" readonly style="background:var(--bg)"></td></tr>
+                <tr><td><input class="form-input" oninput="berekenFactuur()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="berekenFactuur()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="berekenFactuur()"></td><td><select class="form-input" style="padding:3px;font-size:12px" onchange="berekenFactuur()"><option value="21" selected>21% NL</option><option value="9">9% NL</option><option value="0">0% export</option><option value="0">0% EU</option></select></td><td><input class="form-input num" readonly style="background:var(--bg)"></td></tr>
               </tbody>
             </table>
             <button class="btn btn-ghost" onclick="voegRegelToe('factuur-regels','berekenFactuur')" style="font-size:12px;margin-bottom:16px">+ Regel toevoegen</button>
@@ -661,6 +694,18 @@ tr:hover td{background:var(--bg)}
             <thead><tr><th>Kwartaal</th><th class="num">Omzet</th><th class="num">Kosten</th><th class="num">BTW saldo</th><th class="num">Nettowinst</th></tr></thead>
             <tbody id="t-wv"><tr><td colspan="5" class="empty">Laad demo data om rapport te zien</td></tr></tbody>
           </table>
+        </div>
+        <div id="wv-kwartaal-detail" style="display:none;margin-top:12px">
+          <div class="card" style="padding:20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+              <span id="wv-detail-titel" style="font-size:16px;font-weight:700">Kwartaal details</span>
+              <button onclick="document.getElementById('wv-kwartaal-detail').style.display='none'" class="btn btn-ghost" style="font-size:12px;margin-left:auto">✕ Sluiten</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div><div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px">📈 OMZET — FACTUREN</div><div id="wv-detail-facturen"></div></div>
+              <div><div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px">📉 KOSTEN — BONNEN</div><div id="wv-detail-bonnen"></div></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1040,6 +1085,18 @@ tr:hover td{background:var(--bg)}
             </table>
           </div>
         </div>
+        <div id="gb-rekening-detail" style="display:none;margin-top:12px">
+          <div class="card" style="padding:20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+              <span id="gb-rekening-titel" style="font-size:15px;font-weight:700">Rekening details</span>
+              <button onclick="document.getElementById('gb-rekening-detail').style.display='none'" class="btn btn-ghost" style="font-size:12px;margin-left:auto">✕ Sluiten</button>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Datum</th><th>Omschrijving</th><th>Type</th><th class="num">Bedrag</th></tr></thead>
+              <tbody id="t-gb-detail"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -1063,6 +1120,47 @@ tr:hover td{background:var(--bg)}
 
     <!-- BALANS -->
     <div class="page" id="page-balans">
+
+      <!-- Beginbalans wizard -->
+      <div id="beginbalans-wizard" class="card" style="margin-bottom:16px;border:2px solid var(--orange);display:none">
+        <div class="card-header" style="background:rgba(244,164,24,.1)">
+          <span class="card-title">🚀 Beginbalans instellen</span>
+          <span style="font-size:12px;color:var(--text-muted)">Vul je beginstand in als je overstapt van een ander programma</span>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Banksaldo beginstand</label>
+              <input class="form-input" type="number" id="bb-bank" placeholder="0.00" step="0.01">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Saldo op jouw bankrekening op startdatum</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Openstaande facturen (te ontvangen)</label>
+              <input class="form-input" type="number" id="bb-vorderingen" placeholder="0.00" step="0.01">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Facturen die klanten nog moeten betalen</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nog te betalen BTW</label>
+              <input class="form-input" type="number" id="bb-btw" placeholder="0.00" step="0.01">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">BTW schuld aan Belastingdienst</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Eigen vermogen / startkapitaal</label>
+              <input class="form-input" type="number" id="bb-ev" placeholder="0.00" step="0.01">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Wat je zelf hebt ingelegd</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Startdatum</label>
+              <input class="form-input" type="date" id="bb-datum">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn btn-primary" onclick="slaBeginbalansOp()">💾 Beginbalans opslaan</button>
+            <button class="btn btn-ghost" onclick="document.getElementById('beginbalans-wizard').style.display='none'" style="font-size:13px">Overslaan</button>
+          </div>
+        </div>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Totale activa</div>
@@ -1368,14 +1466,15 @@ tr:hover td{background:var(--bg)}
           </div>
 
           <div style="text-align:left;margin-bottom:20px;font-size:13px;line-height:2.1">
-            ✅ Onbeperkt bonnen scannen<br>
-            ✅ Onbeperkt facturen maken<br>
+            ✅ <strong>100 bonnen</strong> per maand<br>
+            ✅ <strong>50 facturen</strong> per maand<br>
             ✅ BTW aangifte helper<br>
             ✅ Bank CSV import<br>
             ✅ eBoekhouden koppeling<br>
             ✅ Cloud opslag<br>
             ✅ 1 gebruiker<br>
             ✅ Email support (48u)<br>
+            ❌ AI offerte/factuur assistent<br>
             ❌ Boekhouder toegang<br>
             ❌ WhatsApp support
           </div>
@@ -1404,6 +1503,7 @@ tr:hover td{background:var(--bg)}
             ✅ eBoekhouden koppeling<br>
             ✅ Cloud opslag<br>
             ✅ <strong>Jij + boekhouder toegang</strong><br>
+            ✅ <strong>🤖 AI maakt offertes & facturen</strong><br>
             ✅ <strong>WhatsApp direct support</strong><br>
             ✅ Prioriteit hulp
           </div>
@@ -1427,7 +1527,7 @@ tr:hover td{background:var(--bg)}
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">Bonnen scannen</td><td style="text-align:center">✅ Onbeperkt</td><td style="text-align:center">✅ Onbeperkt</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">Bonnen scannen</td><td style="text-align:center">100/maand</td><td style="text-align:center;color:var(--orange);font-weight:700">✅ Onbeperkt</td></tr>
               <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">Facturen maken</td><td style="text-align:center">✅ Onbeperkt</td><td style="text-align:center">✅ Onbeperkt</td></tr>
               <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">eBoekhouden koppeling</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
               <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 4px">Boekhouder toegang</td><td style="text-align:center">❌</td><td style="text-align:center;color:var(--orange);font-weight:700">✅</td></tr>
@@ -1485,40 +1585,236 @@ tr:hover td{background:var(--bg)}
 
     <!-- INSTELLINGEN -->
     <div class="page" id="page-instellingen">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Bedrijfsgegevens</span></div>
+
+      <!-- SECTIE 1: BEDRIJFSPROFIEL -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">🏢 Bedrijfsprofiel</span>
+        </div>
         <div class="card-body">
           <div class="form-grid">
-            <div class="form-group"><label class="form-label">Bedrijfsnaam</label><input class="form-input" id="s-naam" value=""></div>
+            <div class="form-group"><label class="form-label">Bedrijfsnaam</label><input class="form-input" id="s-naam" placeholder="Jouw bedrijfsnaam"></div>
             <div class="form-group"><label class="form-label">KvK nummer</label><input class="form-input" id="s-kvk" value="64165965"></div>
             <div class="form-group"><label class="form-label">BTW nummer</label><input class="form-input" id="s-btwnr" placeholder="NL000000000B01"></div>
             <div class="form-group"><label class="form-label">IBAN</label><input class="form-input" id="s-iban" value="NL44RABO0368249190"></div>
             <div class="form-group"><label class="form-label">Telefoon</label><input class="form-input" id="s-tel" value="0628806783"></div>
             <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="s-email" value="singhparm0808@gmail.com"></div>
             <div class="form-group full"><label class="form-label">Adres</label><input class="form-input" id="s-adres" value="Cartagenapad 42, Rotterdam"></div>
+            <div class="form-group full">
+              <label class="form-label">Bedrijfslogo op facturen</label>
+              <div style="display:flex;gap:12px;align-items:center">
+                <div id="logo-preview" style="width:80px;height:80px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer" onclick="document.getElementById('logo-upload').click()">🏢</div>
+                <div>
+                  <input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="uploadLogo(this)">
+                  <button class="btn btn-secondary" onclick="document.getElementById('logo-upload').click()" style="font-size:12px">📤 Logo uploaden</button>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px">PNG, JPG — max 2MB<br>Verschijnt op elke factuur en offerte</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <button class="btn btn-primary" style="margin-top:16px" onclick="slaInstellingenOp()">💾 Opslaan</button>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="slaInstellingenOp()">💾 Bedrijfsprofiel opslaan</button>
         </div>
       </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Anthropic API key</span></div>
+
+      <!-- SECTIE 2: FACTUUR INSTELLINGEN -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">📄 Factuur instellingen</span>
+          <span style="font-size:11px;color:var(--text-muted)">Geldt voor alle nieuwe facturen</span>
+        </div>
         <div class="card-body">
-          <div class="form-group" style="max-width:500px">
-            <label class="form-label">API key (voor AI agenten)</label>
-            <input class="form-input" type="password" id="api-key-input" placeholder="sk-ant-...">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Standaard betalingstermijn</label>
+              <select class="form-input" id="s-betalingstermijn">
+                <option value="7">7 dagen</option>
+                <option value="14" selected>14 dagen</option>
+                <option value="21">21 dagen</option>
+                <option value="30">30 dagen</option>
+                <option value="60">60 dagen</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Factuur prefix</label>
+              <input class="form-input" id="s-factuur-prefix" placeholder="2026-" value="2026-" maxlength="10">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Bijv. "2026-" → factuur wordt 2026-001</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Standaard BTW tarief</label>
+              <select class="form-input" id="s-btw-tarief">
+                <option value="21" selected>21% (standaard)</option>
+                <option value="9">9% (voedsel/boeken)</option>
+                <option value="0">0% (export/vrijgesteld)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bedragen op factuur</label>
+              <select class="form-input" id="s-bedragen-type">
+                <option value="excl" selected>Exclusief BTW (aanbevolen)</option>
+                <option value="incl">Inclusief BTW</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Betalingsvoorwaarden (voetnoot op factuur)</label>
+              <textarea class="form-input" id="s-betalingsvoorwaarden" rows="3" style="resize:vertical" placeholder="Bijv: Betaling binnen 14 dagen na factuurdatum. Bij niet tijdige betaling is 1% rente per maand verschuldigd.">Betaling dient te geschieden binnen de overeengekomen betalingstermijn. Bij overschrijding is de opdrachtgever van rechtswege in verzuim en is een rente van 1% per maand verschuldigd.</textarea>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Standaard email tekst bij factuur</label>
+              <textarea class="form-input" id="s-email-tekst" rows="4" style="resize:vertical" placeholder="Standaard tekst die meegestuurd wordt bij een factuur...">Geachte klant,
+
+Bijgaand ontvangt u onze factuur. Wij verzoeken u vriendelijk het bedrag binnen de betalingstermijn over te maken op het vermelde IBAN.
+
+Met vriendelijke groet</textarea>
+            </div>
           </div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Haal je key op via <a href="https://console.anthropic.com" target="_blank" style="color:var(--orange)">console.anthropic.com</a></div>
-          <button class="btn btn-primary" style="margin-top:12px" onclick="slaApiKeyOp()">💾 Opslaan</button>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:16px">
+            <button class="btn btn-primary" onclick="slaFactuurInstellingenOp()">💾 Factuur instellingen opslaan</button>
+            <div id="factuur-inst-saved" style="display:none;font-size:12px;color:var(--green)">✓ Opgeslagen!</div>
+          </div>
         </div>
       </div>
+
+      <!-- SECTIE 3: BTW INSTELLINGEN -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">🧾 BTW instellingen</span>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">BTW plichtig</label>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+                  <input type="radio" name="btw-plichtig" id="btw-ja" value="ja" checked> Ja — ik ben BTW plichtig
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+                  <input type="radio" name="btw-plichtig" id="btw-nee" value="nee"> Nee — KOR / vrijgesteld
+                </label>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">KOR = Kleine Ondernemersregeling (&lt; €20.000 omzet)</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">BTW aangifte periode</label>
+              <select class="form-input" id="s-btw-periode">
+                <option value="kwartaal" selected>Per kwartaal (standaard ZZP)</option>
+                <option value="maand">Per maand (bij hoge omzet)</option>
+                <option value="jaar">Per jaar (kleine omzet)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Startdatum boekjaar</label>
+              <select class="form-input" id="s-boekjaar-start">
+                <option value="01-01" selected>1 januari (standaard)</option>
+                <option value="01-04">1 april</option>
+                <option value="01-07">1 juli</option>
+                <option value="01-10">1 oktober</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">BTW aangifte herinnering</label>
+              <select class="form-input" id="s-btw-herinnering">
+                <option value="7" selected>7 dagen voor deadline</option>
+                <option value="14">14 dagen voor deadline</option>
+                <option value="30">30 dagen voor deadline</option>
+                <option value="0">Geen herinnering</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="slaBTWInstellingenOp()">💾 BTW instellingen opslaan</button>
+        </div>
+      </div>
+
+      <!-- SECTIE 4: NOTIFICATIES -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">🔔 Notificaties</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+              <div>
+                <div style="font-size:13px;font-weight:600">BTW deadline herinnering</div>
+                <div style="font-size:11px;color:var(--text-muted)">Melding in de app wanneer BTW aangifte deadline nadert</div>
+              </div>
+              <input type="checkbox" id="notif-btw" checked style="width:18px;height:18px;cursor:pointer">
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+              <div>
+                <div style="font-size:13px;font-weight:600">Openstaande facturen</div>
+                <div style="font-size:11px;color:var(--text-muted)">Melding als een factuur de betalingstermijn overschrijdt</div>
+              </div>
+              <input type="checkbox" id="notif-facturen" checked style="width:18px;height:18px;cursor:pointer">
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+              <div>
+                <div style="font-size:13px;font-weight:600">Nieuwe bon verwerkt</div>
+                <div style="font-size:11px;color:var(--text-muted)">Bevestiging na AI scan van een bon</div>
+              </div>
+              <input type="checkbox" id="notif-bonnen" style="width:18px;height:18px;cursor:pointer">
+            </label>
+          </div>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="slaNotificatiesOp()">💾 Notificaties opslaan</button>
+        </div>
+      </div>
+
+      <!-- SECTIE 5: KOPPELINGEN -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">🔗 Koppelingen</span>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:16px">
+          <!-- eBoekhouden -->
+          <div style="padding:16px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <div style="font-size:20px">📊</div>
+              <div>
+                <div style="font-weight:600;font-size:13px">eBoekhouden koppeling</div>
+                <div style="font-size:11px;color:var(--text-muted)">Synchroniseer bonnen en facturen automatisch</div>
+              </div>
+              <div id="eboek-status" style="margin-left:auto;font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(244,164,24,.15);color:var(--orange)">Niet gekoppeld</div>
+            </div>
+            <input class="form-input" type="password" id="s-eboekhouden-token" placeholder="eBoekhouden API token" style="margin-bottom:8px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Token ophalen: e-boekhouden.nl → Beheer → Koppelingen → API</div>
+            <button class="btn btn-secondary" style="font-size:12px" onclick="slaEboekTokenOp()">🔗 Koppelen</button>
+          </div>
+          <!-- Anthropic -->
+          <div style="padding:16px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <div style="font-size:20px">🤖</div>
+              <div>
+                <div style="font-weight:600;font-size:13px">Anthropic AI (bonnen scannen)</div>
+                <div style="font-size:11px;color:var(--text-muted)">Voor automatisch verwerken van bonnen</div>
+              </div>
+            </div>
+            <input class="form-input" type="password" id="api-key-input" placeholder="sk-ant-..." style="margin-bottom:8px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Haal je key op via <a href="https://console.anthropic.com" target="_blank" style="color:var(--orange)">console.anthropic.com</a></div>
+            <button class="btn btn-secondary" style="font-size:12px" onclick="slaApiKeyOp()">💾 Opslaan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTIE 6: ACCOUNT -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Account</span></div>
-        <div class="card-body" style="display:flex;gap:10px">
-          <button class="btn btn-secondary" onclick="toggleDark()">🌙 Donkere modus</button>
-          <button class="btn btn-ghost" style="color:var(--red);border-color:var(--red)" onclick="uitloggen()">← Uitloggen</button>
+        <div class="card-header">
+          <span class="card-title">👤 Account</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
+            <div style="font-size:13px;color:var(--text-muted)" id="account-email-display"></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <button class="btn btn-secondary" onclick="toggleDark()">🌙 Donkere modus</button>
+            <button class="btn btn-secondary" onclick="exportAlleData()" style="font-size:13px">📤 Exporteer alle data (ZIP)</button>
+            <button class="btn btn-ghost" style="color:var(--red);border-color:var(--red)" onclick="uitloggen()">← Uitloggen</button>
+          </div>
+          <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--text-muted)">
+            🔒 Jouw data is versleuteld opgeslagen bij Supabase (Frankfurt, EU) · <a href="#" onclick="showPrivacy()" style="color:var(--orange)">Privacyverklaring</a>
+          </div>
         </div>
       </div>
+
     </div>
+
 
     <!-- GOOGLE DRIVE -->
     <div class="page" id="page-gdrive">
@@ -1796,6 +2092,7 @@ async function doLogin(){
       showNotif('Welkom terug! ☁️ Data laden...');
       if(typeof autoLoad==='function') autoLoad();
       if(typeof checkBTWDeadline==='function') checkBTWDeadline();
+      if(typeof checkOnboarding==='function') setTimeout(checkOnboarding, 2500);
     }
   } catch(e){ showAuthError('Verbinding mislukt — probeer opnieuw'); }
   finally{ btn.disabled=false; btn.textContent='Inloggen'; }
@@ -1907,6 +2204,7 @@ function showPage(name,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
+  if(name==='instellingen') setTimeout(laadInstellingenPagina, 100);
   const titles={dashboard:'Dashboard',bonnen:'Bonnen',offertes:'Offertes',facturen:'Facturen',wv:'Winst & verlies',btw:'BTW aangifte',bank:'Bankrekening',klanten:'Klanten',instellingen:'Instellingen'};
   document.getElementById('page-title').textContent=titles[name]||name;
   if(el)el.classList.add('active');
@@ -1915,6 +2213,664 @@ function showPage(name,el){
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open')}
 
 // DARK MODE
+
+
+// ============================================================
+// AI OFFERTE / FACTUUR ASSISTENT
+// ============================================================
+let aiDocType = 'offerte'; // 'offerte' or 'factuur'
+let aiDocGenerated = null; // generated data
+
+function openAIDocModal(type){
+  aiDocType = type;
+  aiDocGenerated = null;
+  const modal = document.getElementById('ai-doc-modal');
+  const titel = document.getElementById('ai-doc-titel');
+  const input = document.getElementById('ai-doc-input');
+  const preview = document.getElementById('ai-doc-preview');
+  const gebruikBtn = document.getElementById('ai-doc-gebruik-btn');
+  if(!modal) return;
+  titel.textContent = type === 'offerte' ? '🤖 AI Offerte Assistent' : '🤖 AI Factuur Assistent';
+  if(input) input.value = '';
+  if(preview) preview.style.display = 'none';
+  if(gebruikBtn) gebruikBtn.style.display = 'none';
+  modal.style.display = 'flex';
+}
+
+function sluitAIDocModal(){
+  const modal = document.getElementById('ai-doc-modal');
+  if(modal) modal.style.display = 'none';
+}
+
+function aiVoorbeeldKlik(btn){
+  const input = document.getElementById('ai-doc-input');
+  if(input) input.value = btn.textContent;
+}
+
+async function genereerAIDoc(){
+  const input = document.getElementById('ai-doc-input');
+  const vraag = input?.value?.trim();
+  if(!vraag){ showNotif('Beschrijf eerst het werk', true); return; }
+
+  const apiKey = localStorage.getItem('anthropic_key') || localStorage.getItem('sb_anthropic_key');
+  if(!apiKey){
+    showNotif('❌ Voeg je Anthropic API key toe bij Instellingen → Koppelingen', true);
+    return;
+  }
+
+  // Check Pro (basic check)
+  const isProUser = true; // TODO: check subscription when live Stripe is active
+
+  const btn = document.getElementById('ai-doc-genereer-btn');
+  const loading = document.getElementById('ai-doc-loading');
+  const preview = document.getElementById('ai-doc-preview');
+  if(btn) btn.style.display = 'none';
+  if(loading) loading.style.display = 'block';
+
+  // Get company info
+  const settings = JSON.parse(localStorage.getItem('sb_settings')||'{}');
+  const bedrijf = settings.naam || localStorage.getItem('sb_bedrijfsnaam') || '';
+  const btwnr = settings.btwnr || '';
+
+  // Get diensten for price reference
+  const dienstenRef = (diensten && diensten.length > 0)
+    ? "Bekende diensten: " + diensten.slice(0,5).map(d=> d.naam + ": EUR" + (d.prijs||"?")).join(", ")
+    : "Gangbare prijzen: glad stucwerk EUR25-35/m2, sierpleister EUR30-45/m2, schilderwerk EUR15-25/m2";
+
+  const prompt = `Je bent een professionele ${aiDocType} assistent voor Nederlandse ZZP'ers en kleine bedrijven.
+
+Je helpt elk type ZZP'er: stukadoors, schilders, webdesigners, IT'ers, fotografen, loodgieters, elektriciens, schoonmakers, kappers, consultants, coaches, marketeers, boekhouders, tuiniers, bouwers, en alle andere beroepen.
+
+Maak een professionele ${aiDocType} voor: ${bedrijf}
+Op basis van: "${vraag}"
+
+${dienstenRef}
+
+Nederlandse marktprijzen (gebruik als referentie voor jouw sector):
+- IT/webdesign: €75-150/uur, websites €500-5000
+- Stucwerk: €25-45/m², sierpleister €30-50/m²
+- Schilderwerk: €15-30/m², buiten €20-35/m²
+- Loodgieterswerk: €60-90/uur + materiaal
+- Elektricien: €55-85/uur + materiaal
+- Schoonmaak: €20-35/uur of per object
+- Tuinier: €35-55/uur
+- Fotograaf: €75-200/uur, bruiloft €1500-3500
+- Consultant/coach: €75-200/uur
+- Boekhouder: €50-120/uur
+- Kapster/kapper aan huis: €35-75/uur
+
+Bepaal automatisch het juiste BTW tarief:
+- Standaard diensten: 21%
+- Eten/drinken, boeken, medicijnen: 9%
+- Export buiten EU: 0%
+
+Geef antwoord ALLEEN als JSON in dit exacte formaat (geen andere tekst):
+{
+  "klant": "naam klant als vermeld, anders leeg",
+  "project": "korte professionele projectomschrijving (1 zin)",
+  "regels": [
+    {"omschrijving": "specifieke omschrijving", "aantal": 1, "prijs": 100.00, "btw": 21}
+  ],
+  "notities": "betalingstermijn 14 dagen, of andere relevante voorwaarden",
+  "totaalExcl": 0
+}
+
+Regels: maximaal 5, realistisch voor Nederlandse marktprijzen, splits arbeid en materiaal als relevant.
+Schrijf omschrijvingen professioneel in het Nederlands.`;
+
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        messages: [{role: 'user', content: prompt}]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+
+    // Parse JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('Geen geldig JSON antwoord ontvangen');
+
+    aiDocGenerated = JSON.parse(jsonMatch[0]);
+
+    // Show preview
+    const previewContent = document.getElementById('ai-doc-preview-content');
+    const totaal = aiDocGenerated.regels.reduce((s,r) => s + (r.aantal * r.prijs), 0);
+    aiDocGenerated.totaalExcl = totaal;
+
+    previewContent.innerHTML = `
+      <div style="margin-bottom:8px"><strong>Klant:</strong> ${aiDocGenerated.klant || '(nog in te vullen)'}</div>
+      <div style="margin-bottom:8px"><strong>Project:</strong> ${aiDocGenerated.project}</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:8px">
+        <tr style="background:var(--border)"><th style="padding:4px;text-align:left">Omschrijving</th><th style="padding:4px;text-align:right">Prijs</th></tr>
+        ${aiDocGenerated.regels.map(r=>`
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:4px">${r.omschrijving} (${r.aantal}x)</td>
+            <td style="padding:4px;text-align:right">€ ${(r.aantal*r.prijs).toFixed(2)}</td>
+          </tr>`).join('')}
+        <tr style="font-weight:700">
+          <td style="padding:6px">Totaal excl. BTW</td>
+          <td style="padding:6px;text-align:right;color:var(--orange)">€ ${totaal.toFixed(2)}</td>
+        </tr>
+      </table>
+      ${aiDocGenerated.notities ? `<div style="font-size:11px;color:var(--text-muted)">📝 ${aiDocGenerated.notities}</div>` : ''}
+    `;
+
+    if(preview) preview.style.display = 'block';
+    const gebruikBtn = document.getElementById('ai-doc-gebruik-btn');
+    if(gebruikBtn) gebruikBtn.style.display = 'block';
+
+  } catch(err){
+    showNotif('❌ AI fout: ' + err.message, true);
+  }
+
+  if(btn) btn.style.display = 'block';
+  if(loading) loading.style.display = 'none';
+}
+
+function gebruikAIDoc(){
+  if(!aiDocGenerated) return;
+
+  sluitAIDocModal();
+
+  if(aiDocType === 'offerte'){
+    // Navigate to offerte form and fill it
+    showPage('offertes', null);
+    setTimeout(() => {
+      nieuweOfferte();
+      setTimeout(() => {
+        // Fill in the form
+        const klantEl = document.getElementById('o-klant');
+        const projectEl = document.getElementById('o-project');
+        if(klantEl && aiDocGenerated.klant) klantEl.value = aiDocGenerated.klant;
+        if(projectEl) projectEl.value = aiDocGenerated.project;
+
+        // Fill regels
+        const tbody = document.getElementById('offerte-regels');
+        if(tbody){
+          tbody.innerHTML = '';
+          aiDocGenerated.regels.forEach((r, i) => {
+            voegRegelToe('offerte-regels', 'berekenOfferte');
+            const rows = tbody.querySelectorAll('tr');
+            const row = rows[rows.length-1];
+            const inputs = row.querySelectorAll('input, select');
+            if(inputs[0]) inputs[0].value = r.omschrijving;
+            if(inputs[1]) inputs[1].value = r.aantal;
+            if(inputs[2]) inputs[2].value = r.prijs;
+            if(inputs[3]) inputs[3].value = r.btw || 21;
+          });
+          berekenOfferte();
+        }
+        showNotif('✅ AI offerte ingevuld! Controleer en pas aan waar nodig.');
+      }, 300);
+    }, 200);
+
+  } else {
+    // Navigate to factuur form and fill it
+    showPage('facturen', null);
+    setTimeout(() => {
+      nieuwFactuur();
+      setTimeout(() => {
+        const klantEl = document.getElementById('f-klant');
+        const projectEl = document.getElementById('f-project');
+        if(klantEl && aiDocGenerated.klant) klantEl.value = aiDocGenerated.klant;
+        if(projectEl) projectEl.value = aiDocGenerated.project;
+
+        const tbody = document.getElementById('factuur-regels');
+        if(tbody){
+          tbody.innerHTML = '';
+          aiDocGenerated.regels.forEach((r) => {
+            voegRegelToe('factuur-regels', 'berekenFactuur');
+            const rows = tbody.querySelectorAll('tr');
+            const row = rows[rows.length-1];
+            const inputs = row.querySelectorAll('input, select');
+            if(inputs[0]) inputs[0].value = r.omschrijving;
+            if(inputs[1]) inputs[1].value = r.aantal;
+            if(inputs[2]) inputs[2].value = r.prijs;
+            if(inputs[3]) inputs[3].value = r.btw || 21;
+          });
+          berekenFactuur();
+        }
+        showNotif('✅ AI factuur ingevuld! Controleer en pas aan waar nodig.');
+      }, 300);
+    }, 200);
+  }
+}
+
+// Close modal on backdrop click
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('ai-doc-modal');
+  if(modal && e.target === modal) sluitAIDocModal();
+});
+
+
+
+
+// ============================================================
+// GLOBAL ZOEKFUNCTIE
+// ============================================================
+let zoekTimer = null;
+
+function zoekAlles(query){
+  clearTimeout(zoekTimer);
+  if(!query || query.length < 2){ sluitZoek(); return; }
+  zoekTimer = setTimeout(() => voerZoekUit(query), 200);
+}
+
+function voerZoekUit(query){
+  const q = query.toLowerCase().trim();
+  const resultaten = [];
+
+  // Zoek in FACTUREN
+  (facturen||[]).forEach(f => {
+    const match = (f.klant||'').toLowerCase().includes(q) ||
+                  (f.nummer||'').toLowerCase().includes(q) ||
+                  (f.project||'').toLowerCase().includes(q);
+    if(match) resultaten.push({
+      type: 'factuur', icon: '📄',
+      titel: f.nummer + ' — ' + (f.klant||'Onbekend'),
+      sub: fmtEur(f.totaalIncl||f.totaalExcl||0) + ' · ' + (f.datum||''),
+      badge: 'factuur', badgeText: 'Factuur',
+      actie: () => { showPage('facturen',null); setTimeout(()=>openFactuur(f.id),200); }
+    });
+  });
+
+  // Zoek in BONNEN
+  (bonnen||[]).forEach(b => {
+    const match = (b.leverancier||'').toLowerCase().includes(q) ||
+                  (b.cat||'').toLowerCase().includes(q) ||
+                  (b.omschrijving||'').toLowerCase().includes(q);
+    if(match) resultaten.push({
+      type: 'bon', icon: '🧾',
+      titel: (b.leverancier||'Onbekend'),
+      sub: fmtEur(b.incl||b.excl||0) + ' · ' + (b.cat||'') + ' · ' + (b.datum||''),
+      badge: 'bon', badgeText: 'Bon',
+      actie: () => { showPage('bonnen',null); }
+    });
+  });
+
+  // Zoek in OFFERTES
+  (offertes||[]).forEach(o => {
+    const match = (o.klant||'').toLowerCase().includes(q) ||
+                  (o.nummer||'').toLowerCase().includes(q) ||
+                  (o.project||'').toLowerCase().includes(q);
+    if(match) resultaten.push({
+      type: 'offerte', icon: '📋',
+      titel: (o.nummer||'') + ' — ' + (o.klant||'Onbekend'),
+      sub: fmtEur(o.totaalIncl||o.totaalExcl||0) + ' · ' + (o.datum||''),
+      badge: 'offerte', badgeText: 'Offerte',
+      actie: () => { showPage('offertes',null); }
+    });
+  });
+
+  // Zoek in KLANTEN
+  (klanten||[]).forEach(k => {
+    const match = (k.naam||'').toLowerCase().includes(q) ||
+                  (k.bedrijf||'').toLowerCase().includes(q) ||
+                  (k.email||'').toLowerCase().includes(q);
+    if(match) resultaten.push({
+      type: 'klant', icon: '👤',
+      titel: (k.naam||'Onbekend') + (k.bedrijf ? ' — ' + k.bedrijf : ''),
+      sub: (k.email||'') + (k.tel ? ' · ' + k.tel : ''),
+      badge: 'klant', badgeText: 'Klant',
+      actie: () => { showPage('klanten',null); }
+    });
+  });
+
+  // Zoek in DIENSTEN
+  (diensten||[]).forEach(d => {
+    const match = (d.naam||'').toLowerCase().includes(q) ||
+                  (d.omschrijving||'').toLowerCase().includes(q);
+    if(match) resultaten.push({
+      type: 'dienst', icon: '🛍️',
+      titel: (d.naam||'Onbekend'),
+      sub: fmtEur(d.prijs||0) + ' · BTW ' + (d.btw||21) + '%',
+      badge: 'dienst', badgeText: 'Dienst',
+      actie: () => { showPage('diensten',null); }
+    });
+  });
+
+  toonZoekResultaten(resultaten, q);
+}
+
+function toonZoekResultaten(resultaten, query){
+  const container = document.getElementById('zoek-resultaten');
+  if(!container) return;
+
+  if(!resultaten || resultaten.length === 0){
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">Geen resultaten gevonden voor <strong>' + (query||'') + '</strong></div>';
+  } else {
+    const max = resultaten.slice(0, 8); // max 8 resultaten
+    container.innerHTML = max.map((r, i) => `
+      <div class="zoek-item" onclick="selecteerZoekResultaat(${i})">
+        <span style="font-size:18px">${r.icon}</span>
+        <div style="flex:1;overflow:hidden">
+          <div class="zoek-item-title">${r.titel}</div>
+          <div class="zoek-item-sub">${r.sub}</div>
+        </div>
+        <span class="zoek-badge zoek-badge-${r.badge}">${r.badgeText}</span>
+      </div>`).join('') +
+      (resultaten.length > 8 ? `<div style="padding:8px 14px;font-size:11px;color:var(--text-muted);text-align:center">+ ${resultaten.length - 8} meer resultaten</div>` : '');
+
+    // Store results for selection
+    window.__zoekResultaten = resultaten;
+  }
+
+  container.style.display = 'block';
+}
+
+function selecteerZoekResultaat(idx){
+  const r = window.__zoekResultaten?.[idx];
+  if(r && r.actie){
+    r.actie();
+    sluitZoek();
+    document.getElementById('global-search').value = '';
+  }
+}
+
+function sluitZoek(){
+  const container = document.getElementById('zoek-resultaten');
+  if(container) container.style.display = 'none';
+}
+
+// Close search on click outside
+document.addEventListener('click', (e) => {
+  const search = document.getElementById('search-container');
+  if(search && !search.contains(e.target)) sluitZoek();
+});
+
+// Keyboard navigation in search results
+document.addEventListener('keydown', (e) => {
+  const input = document.getElementById('global-search');
+  if(document.activeElement !== input) return;
+  const items = document.querySelectorAll('.zoek-item');
+  const current = document.querySelector('.zoek-item:focus');
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    if(!current) items[0]?.focus();
+    else { const next = [...items].indexOf(current)+1; items[next]?.focus(); }
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    if(!current) items[items.length-1]?.focus();
+    else { const prev = [...items].indexOf(current)-1; if(prev>=0) items[prev]?.focus(); else input.focus(); }
+  }
+});
+
+
+// ============================================================
+// HANDMATIGE BON INVOER
+function previewHandmatigFoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  const naam = document.getElementById('hb-foto-naam');
+  const preview = document.getElementById('hb-foto-preview');
+  const img = document.getElementById('hb-foto-img');
+  if(naam) naam.textContent = '✓ ' + file.name;
+
+  if(file.type.startsWith('image/')){
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      window.__hbFotoData = e.target.result;
+      if(img) img.src = e.target.result;
+      if(preview) preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // PDF - just store reference
+    window.__hbFotoData = file.name;
+    if(preview) preview.style.display = 'none';
+  }
+}
+
+
+// ============================================================
+function openHandmatigBon(){
+  const modal = document.getElementById('handmatig-bon-modal');
+  if(!modal) return;
+  // Reset form
+  document.getElementById('hb-leverancier').value = '';
+  document.getElementById('hb-datum').value = new Date().toISOString().split('T')[0];
+  document.getElementById('hb-excl').value = '';
+  document.getElementById('hb-btw-pct').value = '21';
+  document.getElementById('hb-btw').value = '';
+  document.getElementById('hb-incl').value = '';
+  document.getElementById('hb-omschrijving').value = '';
+  window.__hbFotoData = null;
+  const fotoNaam = document.getElementById('hb-foto-naam');
+  const fotoPrev = document.getElementById('hb-foto-preview');
+  if(fotoNaam) fotoNaam.textContent = '';
+  if(fotoPrev) fotoPrev.style.display = 'none';
+  modal.style.display = 'flex';
+}
+
+function sluitHandmatigBon(){
+  const modal = document.getElementById('handmatig-bon-modal');
+  if(modal) modal.style.display = 'none';
+}
+
+function berekenHandmatigBTW(){
+  const excl = parseFloat(document.getElementById('hb-excl')?.value) || 0;
+  const pct = parseFloat(document.getElementById('hb-btw-pct')?.value) || 21;
+  const btw = Math.round(excl * pct) / 100;
+  const incl = excl + btw;
+  const btwEl = document.getElementById('hb-btw');
+  const inclEl = document.getElementById('hb-incl');
+  if(btwEl) btwEl.value = btw.toFixed(2);
+  if(inclEl) inclEl.value = incl.toFixed(2);
+}
+
+function slaHandmatigBonOp(){
+  const leverancier = document.getElementById('hb-leverancier')?.value?.trim();
+  const datum = document.getElementById('hb-datum')?.value;
+  const exclVal = parseFloat(document.getElementById('hb-excl')?.value) || 0;
+  const btwPct = parseFloat(document.getElementById('hb-btw-pct')?.value) || 21;
+
+  if(!leverancier){ showNotif('Vul een leverancier in', true); return; }
+  if(!datum){ showNotif('Vul een datum in', true); return; }
+  if(exclVal <= 0){ showNotif('Vul een geldig bedrag in', true); return; }
+
+  const btw = parseFloat(document.getElementById('hb-btw')?.value) || Math.round(exclVal * btwPct) / 100;
+  const incl = exclVal + btw;
+  const cat = document.getElementById('hb-cat')?.value || 'Overig';
+  const omschrijving = document.getElementById('hb-omschrijving')?.value || '';
+  const betaalwijze = document.getElementById('hb-betaalwijze')?.value || 'pin';
+
+  // Determine kwartaal
+  const maand = new Date(datum).getMonth() + 1;
+  const kw = maand <= 3 ? 'Q1' : maand <= 6 ? 'Q2' : maand <= 9 ? 'Q3' : 'Q4';
+  const jaar = new Date(datum).getFullYear();
+
+  // Get foto if uploaded
+  const fotoData = window.__hbFotoData || null;
+
+  const bon = {
+    id: Date.now(),
+    leverancier,
+    datum,
+    excl: exclVal,
+    btw,
+    incl,
+    btwPct,
+    cat,
+    omschrijving,
+    betaalwijze,
+    kwartaal: kw,
+    jaar,
+    bron: 'handmatig',
+    label: cat,
+    notitie: omschrijving,
+    foto: fotoData  // base64 image or null
+  };
+
+  bonnen.push(bon);
+  window.__hbFotoData = null; // reset
+  autoSave();
+  renderAll();
+
+  // Show bonnen results and category folders
+  const results = document.getElementById('bonnen-results');
+  const catFolders = document.getElementById('cat-folders');
+  if(results) results.style.display = 'block';
+  if(catFolders) catFolders.style.display = 'grid';
+
+  sluitHandmatigBon();
+  showNotif('✅ Bon opgeslagen: ' + leverancier + ' — €' + incl.toFixed(2) + ' (' + cat + ')');
+
+  // Navigate to bonnen page and scroll to folders
+  showPage('bonnen', null);
+  setTimeout(() => {
+    if(catFolders) catFolders.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 300);
+}
+
+// Close on backdrop click
+document.addEventListener('click', (e) => {
+  const m = document.getElementById('handmatig-bon-modal');
+  if(m && e.target === m) sluitHandmatigBon();
+});
+
+
+// AI CHAT WIDGET
+function toggleAIChat(){
+  const w = document.getElementById('ai-chat-widget');
+  if(!w) return;
+  w.style.display = w.style.display === 'none' || w.style.display === '' ? 'flex' : 'none';
+}
+
+async function stuurAIVraag(){
+  const input = document.getElementById('ai-chat-input');
+  const messages = document.getElementById('ai-chat-messages');
+  if(!input || !messages) return;
+  const vraag = input.value.trim();
+  if(!vraag) return;
+  input.value = '';
+
+  // Add user message
+  messages.innerHTML += `<div class="ai-msg ai-user">${vraag}</div>`;
+  messages.innerHTML += `<div class="ai-msg ai-bot ai-loading" id="ai-typing">⏳ Even nadenken...</div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  try{
+    const apiKey = localStorage.getItem('anthropic_key') || localStorage.getItem('sb_anthropic_key');
+    if(!apiKey){ 
+      document.getElementById('ai-typing').outerHTML = '<div class="ai-msg ai-bot">❌ Voeg je Anthropic API key toe bij Instellingen → Koppelingen om de AI assistent te gebruiken.</div>';
+      return; 
+    }
+
+    // Build rich context about SlimBoekhoud and user data
+    const totOmzet = facturen.reduce((s,f)=>s+(f.totaalExcl||0),0);
+    const totKosten = bonnen.reduce((s,b)=>s+(b.excl||0),0);
+    const openFacturen = facturen.filter(f=>f.status!=='betaald').length;
+    const ctx = `Je bent een deskundige Nederlandse boekhoud assistent voor SlimBoekhoud (slimboekhoud.com).
+
+OVER SLIMBOEKHOUD:
+SlimBoekhoud is een complete boekhoud app voor Nederlandse ZZP'ers. Functies:
+- 📄 Facturen maken en versturen (met iDEAL betaallink)
+- 📋 Offertes maken (→ direct naar factuur)
+- 🧾 Bonnen scannen met AI (automatisch categoriseren)
+- 📊 BTW aangifte helper (Q1-Q4, klaar voor belastingdienst.nl)
+- 🏦 Bankrekening koppelen (CSV import Rabobank/ING/ABN)
+- 📁 Google Drive koppeling
+- 💼 Klanten beheren
+- 🛍️ Diensten catalogus (vaste diensten opslaan)
+- 📈 Winst & verlies per kwartaal
+- 📚 Grootboek (RGS standaard)
+- ⚖️ Balans overzicht
+- 🏛️ Belastingdienst formulier
+- 🔗 eBoekhouden koppeling
+- 💳 Abonnement: Starter €9/maand of Pro €19/maand (30 dagen gratis)
+
+HUIDIGE GEBRUIKER DATA:
+- Bonnen: ${bonnen.length} (totaal kosten: €${totKosten.toFixed(2)} excl. BTW)
+- Facturen: ${facturen.length} (totaal omzet: €${totOmzet.toFixed(2)} excl. BTW)
+- Open facturen: ${openFacturen}
+- Klanten: ${klanten?.length||0}
+
+VEELGESTELDE VRAGEN EN ANTWOORDEN:
+- Hoe maak ik een factuur? → Klik "Facturen" in sidebar → "+" Nieuwe factuur
+- Hoe scan ik een bon? → Klik "Bonnen" → "Bestand uploaden" of camera
+- Hoe doe ik BTW aangifte? → Klik "BTW aangifte" → kies kwartaal → download PDF
+- Hoe koppel ik mijn bank? → "Bankrekening" → download CSV bij je bank → upload
+- Wat kost SlimBoekhoud? → Starter €9/maand (100 bonnen, 50 facturen), Pro €19/maand (onbeperkt)
+- Hoe exporteer ik naar eBoekhouden? → Instellingen → Koppelingen → eBoekhouden token
+- Hoe voeg ik een klant toe? → "Klanten" → "+ Nieuwe klant"
+- BTW tarief: standaard 21%, ook 9% (voedsel/boeken) en 0% (export/EU)
+
+Antwoord altijd in het Nederlands. Wees concreet en praktisch. Max 3-4 zinnen.
+
+NAVIGATIE COMMANDO'S — als de gebruiker iets wil ZIEN of OPENEN, voeg dan exact dit toe aan je antwoord op een aparte regel:
+NAVIGEER:bonnen (voor bonnen pagina)
+NAVIGEER:facturen (voor facturen)
+NAVIGEER:offertes (voor offertes)
+NAVIGEER:btw (voor BTW aangifte)
+NAVIGEER:wv (voor winst & verlies)
+NAVIGEER:grootboek (voor grootboek)
+NAVIGEER:balans (voor balans)
+NAVIGEER:instellingen (voor instellingen)
+NAVIGEER:pricing (voor abonnement)
+NAVIGEER:klanten (voor klanten)
+
+Gebruik NAVIGEER: commando als de gebruiker zegt: "laat me zien", "open", "ga naar", "toon", "waar zijn", "ik wil kijken naar", of soortgelijke navigatie intentie.
+
+Voorbeeld: "waar zijn mijn facturen?" → Antwoord + NAVIGEER:facturen
+Voorbeeld: "toon BTW aangifte Q2" → Antwoord + NAVIGEER:btw`;
+
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:400,
+        system: ctx,
+        messages:[{role:'user',content:vraag}]
+      })
+    });
+    const data = await res.json();
+    let antwoord = data.content?.[0]?.text || 'Geen antwoord ontvangen.';
+    // Handle navigation commands
+    const navMatch = antwoord.match(/NAVIGEER:([a-z]+)/);
+    if(navMatch){
+      const navPage = navMatch[1];
+      antwoord = antwoord.replace(/NAVIGEER:[a-z]+/g, '').trim();
+      // Add navigation button
+      const navLabels = {bonnen:'Bonnen',facturen:'Facturen',offertes:'Offertes',btw:'BTW aangifte',wv:'Winst & verlies',grootboek:'Grootboek',balans:'Balans',instellingen:'Instellingen',pricing:'Abonnement',klanten:'Klanten'};
+      const navLabel = navLabels[navPage] || navPage;
+      antwoord += '<br><br><button onclick="if(window.showPage)showPage(\'' + navPage + '\',null);toggleAIChat()" style="background:var(--orange);color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">➜ Ga naar ' + navLabel + '</button>';
+    }
+    const typing = document.getElementById('ai-typing');
+    if(typing) typing.outerHTML = `<div class="ai-msg ai-bot">${antwoord}</div>`;
+  }catch(e){
+    const typing = document.getElementById('ai-typing');
+    if(typing) typing.outerHTML = `<div class="ai-msg ai-bot">❌ Fout: ${e.message}</div>`;
+  }
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// BEGINBALANS
+function slaBeginbalansOp(){
+  const data = {
+    bank: parseFloat(document.getElementById('bb-bank')?.value||0),
+    vorderingen: parseFloat(document.getElementById('bb-vorderingen')?.value||0),
+    btw: parseFloat(document.getElementById('bb-btw')?.value||0),
+    ev: parseFloat(document.getElementById('bb-ev')?.value||0),
+    datum: document.getElementById('bb-datum')?.value||''
+  };
+  localStorage.setItem('sb_beginbalans', JSON.stringify(data));
+  document.getElementById('beginbalans-wizard').style.display='none';
+  showNotif('✓ Beginbalans opgeslagen!');
+  renderBalans();
+}
+
 function toggleDark(){
   document.body.classList.toggle('dark');
   document.getElementById('dark-btn').textContent=document.body.classList.contains('dark')?'☀️':'🌙';
@@ -2114,6 +3070,68 @@ async function syncToCloud(){
       await window.sb.from('offertes').insert(rows);
     }
   }catch(e){ console.warn('Cloud sync error:', e.message); }
+}
+
+// ONBOARDING WIZARD — toon bij eerste login
+function checkOnboarding(){
+  const st = JSON.parse(localStorage.getItem('sb_settings')||'{}');
+  const heeftNaam = st.naam && st.naam.trim() !== '';
+  if(!heeftNaam && currentUser){
+    // Show welcome modal for new users
+    setTimeout(() => {
+      const modal = document.createElement('div');
+      modal.id = 'onboard-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
+      modal.innerHTML = `
+        <div style="background:var(--white);border-radius:16px;padding:28px;max-width:460px;width:100%;text-align:center">
+          <div style="font-size:36px;margin-bottom:12px">👋</div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:8px">Welkom bij SlimBoekhoud!</div>
+          <div style="font-size:14px;color:var(--text-muted);margin-bottom:24px">Stel je bedrijfsgegevens in — deze verschijnen op al je facturen en offertes</div>
+          <div style="text-align:left;display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+            <div><label class="form-label">Bedrijfsnaam *</label><input class="form-input" id="ob-naam" placeholder="Jouw bedrijfsnaam"></div>
+            <div><label class="form-label">KvK nummer</label><input class="form-input" id="ob-kvk" placeholder="12345678"></div>
+            <div><label class="form-label">IBAN</label><input class="form-input" id="ob-iban" placeholder="NL00BANK0000000000"></div>
+            <div><label class="form-label">Logo (optioneel)</label>
+              <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+                <input type="file" id="ob-logo" accept="image/*" style="display:none" onchange="uploadLogoOnboard(this)">
+                <button class="btn btn-secondary" onclick="document.getElementById('ob-logo').click()" style="font-size:12px">📤 Logo uploaden</button>
+                <span id="ob-logo-naam" style="font-size:11px;color:var(--text-muted)">Nog geen logo</span>
+              </div>
+            </div>
+          </div>
+          <button onclick="slaOnboardingOp()" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:600">💾 Opslaan & aan de slag!</button>
+          <button onclick="document.getElementById('onboard-modal').remove()" style="margin-top:10px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-muted)">Overslaan (later invullen via Instellingen)</button>
+        </div>`;
+      document.body.appendChild(modal);
+    }, 1500);
+  }
+}
+
+function uploadLogoOnboard(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    localStorage.setItem('sb_logo', e.target.result);
+    document.getElementById('ob-logo-naam').textContent = '✓ ' + file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function slaOnboardingOp(){
+  const naam = document.getElementById('ob-naam')?.value?.trim();
+  if(!naam){ alert('Vul je bedrijfsnaam in'); return; }
+  const st = {
+    naam: naam,
+    kvk: document.getElementById('ob-kvk')?.value?.trim() || '',
+    iban: document.getElementById('ob-iban')?.value?.trim() || '',
+  };
+  localStorage.setItem('sb_settings', JSON.stringify(st));
+  localStorage.setItem('sb_bedrijfsnaam', naam);
+  // Update sidebar
+  const el = document.getElementById('sb-company'); if(el) el.textContent = naam;
+  document.getElementById('onboard-modal')?.remove();
+  showNotif('✅ Welkom ' + naam + '! Je bedrijfsgegevens zijn opgeslagen.');
 }
 
 async function autoLoad(){
@@ -3127,6 +4145,9 @@ function renderCategoryFolders(){
   if(!container) return;
   if(bonnen.length === 0){ container.style.display='none'; return; }
   container.style.display='grid';
+  // Also show bonnen results table if there are bonnen
+  const results = document.getElementById('bonnen-results');
+  if(results) results.style.display = 'block';
 
   const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig'];
   const counts = {}; const amounts = {};
@@ -3156,8 +4177,14 @@ function renderCategoryFolders(){
 }
 
 function filterByFolder(cat){
+  // Show the bonnen results table
+  const results = document.getElementById('bonnen-results');
+  if(results) results.style.display = 'block';
+  // Set the category filter
   const sel = document.getElementById('bon-cat-filter');
   if(sel){ sel.value = cat; filterBonnen(); }
+  // Scroll to results
+  if(results) results.scrollIntoView({behavior:'smooth', block:'start'});
   renderCategoryFolders();
 }
 
@@ -3482,6 +4509,98 @@ function deelMetBoekhouder(){
   showNotif('✓ Print venster geopend — sla op als PDF en stuur naar je boekhouder');
 }
 
+
+// WV KWARTAAL DETAIL
+function toonKwartaalDetail(q){
+  const maanden = {Q1:[1,2,3], Q2:[4,5,6], Q3:[7,8,9], Q4:[10,11,12]};
+  const ms = maanden[q] || [];
+  const detail = document.getElementById('wv-kwartaal-detail');
+  const titel = document.getElementById('wv-detail-titel');
+  if(!detail || !titel) return;
+  titel.textContent = q + ' 2026 — Gedetailleerd overzicht';
+  detail.style.display = 'block';
+  detail.scrollIntoView({behavior:'smooth'});
+  
+  // Filter facturen for this quarter
+  const qFacturen = facturen.filter(f => {
+    const d = new Date(f.datum); return d && ms.includes(d.getMonth()+1);
+  });
+  const fEl = document.getElementById('wv-detail-facturen');
+  if(fEl){
+    if(qFacturen.length === 0){
+      fEl.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Geen facturen in '+q+'</div>';
+    } else {
+      fEl.innerHTML = qFacturen.map(f=>`
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <div><strong>${f.nummer||'-'}</strong> ${f.klant||''}</div>
+          <div style="color:var(--green)">${fmtEur(f.totaalIncl||f.totaalExcl||0)}</div>
+        </div>`).join('')+`
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:13px;margin-top:4px">
+          <div>Totaal omzet</div>
+          <div style="color:var(--green)">${fmtEur(qFacturen.reduce((s,f)=>s+(f.totaalIncl||f.totaalExcl||0),0))}</div>
+        </div>`;
+    }
+  }
+
+  // Filter bonnen for this quarter
+  const qBonnen = bonnen.filter(b => {
+    const d = new Date(b.datum); return d && ms.includes(d.getMonth()+1);
+  });
+  const bEl = document.getElementById('wv-detail-bonnen');
+  if(bEl){
+    if(qBonnen.length === 0){
+      bEl.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Geen bonnen in '+q+'</div>';
+    } else {
+      bEl.innerHTML = qBonnen.map(b=>`
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <div><span style="font-size:10px;padding:2px 6px;background:var(--bg);border-radius:10px;margin-right:6px">${b.cat||'Overig'}</span>${b.leverancier||'-'}</div>
+          <div style="color:var(--red)">${fmtEur(b.incl||b.excl||0)}</div>
+        </div>`).join('')+`
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:13px;margin-top:4px">
+          <div>Totaal kosten</div>
+          <div style="color:var(--red)">${fmtEur(qBonnen.reduce((s,b)=>s+(b.incl||b.excl||0),0))}</div>
+        </div>`;
+    }
+  }
+}
+
+// GROOTBOEK REKENING DETAIL
+function toonRekeningDetail(rek, naam){
+  const detail = document.getElementById('gb-rekening-detail');
+  const titel = document.getElementById('gb-rekening-titel');
+  const tbody = document.getElementById('t-gb-detail');
+  if(!detail || !titel || !tbody) return;
+  titel.textContent = rek + ' — ' + naam;
+  detail.style.display = 'block';
+  detail.scrollIntoView({behavior:'smooth'});
+  
+  // Find all items for this rekening
+  const items = [];
+  bonnen.forEach(b => {
+    const rekeningNr = mapCatToRekening(b.cat||'');
+    if(String(rekeningNr) === String(rek)){
+      items.push({datum:b.datum, omsch:b.leverancier||'Onbekend', type:'Bon', bedrag:b.incl||b.excl||0});
+    }
+  });
+  facturen.forEach(f => {
+    if(rek === '8000' || rek === 1100){
+      items.push({datum:f.datum, omsch:f.klant||'Klant', type:'Factuur', bedrag:f.totaalIncl||0});
+    }
+  });
+  items.sort((a,b) => new Date(b.datum)-new Date(a.datum));
+  
+  if(items.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">Geen boekingen gevonden</td></tr>';
+  } else {
+    tbody.innerHTML = items.map(i=>`<tr>
+      <td>${i.datum||'-'}</td>
+      <td>${i.omsch}</td>
+      <td><span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:10px">${i.type}</span></td>
+      <td class="num">${fmtEur(i.bedrag)}</td>
+    </tr>`).join('');
+  }
+}
+
 function renderWV(){
   const totOmzet=facturen.reduce((s,f)=>s+f.totaal,0);
   const totKosten=bonnen.reduce((s,b)=>s+b.incl,0);
@@ -3495,7 +4614,8 @@ function renderWV(){
     const kosten=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0);
     const btwSaldo=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.btw,0)-facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0);
     const winst=omzet-kosten;
-    return`<tr><td><span class="badge b-gray">${q}</span></td>
+    return`<tr onclick="toonKwartaalDetail('${q}')" style="cursor:pointer;transition:.1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''" title="Klik voor details ${q}">
+      <td><span class="badge b-gray">${q}</span> <small style="color:var(--text-muted)">▼</small></td>
       <td class="num mono" style="color:var(--green)">${fmt(omzet)}</td>
       <td class="num mono" style="color:var(--red)">${fmt(kosten)}</td>
       <td class="num mono">${fmt(btwSaldo)}</td>
@@ -3567,7 +4687,7 @@ function berekenOfferte(){berekenDoc('offerte-regels','o-tot-excl','o-tot-btw','
 function voegRegelToe(tbodyId,calcFn){
   const tbody=document.getElementById(tbodyId);
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td><input class="form-input" oninput="${calcFn}()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="${calcFn}()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="${calcFn}()"></td><td><input class="form-input num" type="number" value="21" oninput="${calcFn}()"></td><td><input class="form-input num" readonly style="background:var(--bg)"></td>`;
+  tr.innerHTML=`<td><input class="form-input" oninput="${calcFn}()" placeholder="Omschrijving"></td><td><input class="form-input num" type="number" value="1" oninput="${calcFn}()"></td><td><input class="form-input num" type="number" placeholder="0.00" oninput="${calcFn}()"></td><td><select class="form-input" style="padding:3px;font-size:12px" onchange="${calcFn}()"><option value="21" selected>21% NL</option><option value="9">9% NL</option><option value="0">0% export</option><option value="0">0% EU</option></select></td><td><input class="form-input num" readonly style="background:var(--bg)"></td>`;
   tbody.appendChild(tr);
 }
 function voegOfferteRegelToe(){voegRegelToe('offerte-regels','berekenOfferte')}
@@ -3703,20 +4823,40 @@ function voegKlantToe(){
 function downloadFactuurPDF(){
   try{
     const {jsPDF}=window.jspdf;const doc=new jsPDF();
-    const bedrijf=document.getElementById('s-naam').value||'Pro Stukadoors';
+    // Load user settings from localStorage
+    const st=JSON.parse(localStorage.getItem('sb_settings')||'{}');
+    const bedrijf=st.naam||document.getElementById('s-naam')?.value||'Mijn Bedrijf';
+    const kvk=st.kvk||document.getElementById('s-kvk')?.value||'';
+    const iban=st.iban||document.getElementById('s-iban')?.value||'';
+    const tel=st.tel||document.getElementById('s-tel')?.value||'';
+    const adres=st.adres||document.getElementById('s-adres')?.value||'';
+    const email=st.email||document.getElementById('s-email')?.value||'';
+    const betalTerm=JSON.parse(localStorage.getItem('sb_factuur_inst')||'{}').betalingstermijn||'30';
+    const betalVw=JSON.parse(localStorage.getItem('sb_factuur_inst')||'{}').betalingsvoorwaarden||'';
+    const logo=localStorage.getItem('sb_logo');
+
     const klant=document.getElementById('f-klant').value||'Klant';
     const nummer=document.getElementById('f-nummer').value;
     const datum=document.getElementById('f-datum').value;
     const project=document.getElementById('f-project').value;
     const t=getDocTotals('factuur-regels');
+
+    // Header - orange bar
     doc.setFillColor(244,164,24);doc.rect(0,0,210,28,'F');
+
+    // Logo if available
+    if(logo){
+      try{ doc.addImage(logo,'JPEG',168,2,24,24); }catch(e){}
+    }
+
     doc.setTextColor(255,255,255);doc.setFontSize(20);doc.setFont('helvetica','bold');
     doc.text(bedrijf,14,18);
     doc.setFontSize(11);doc.setFont('helvetica','normal');doc.text('FACTUUR',14,26);
     doc.setTextColor(0,0,0);doc.setFontSize(10);
-    doc.text('KvK: '+(document.getElementById('s-kvk').value||'64165965'),14,40);
-    doc.text('IBAN: '+(document.getElementById('s-iban').value||'NL44RABO0368249190'),14,48);
-    doc.text('Tel: '+(document.getElementById('s-tel').value||'0628806783'),14,56);
+    if(kvk) doc.text('KvK: '+kvk,14,40);
+    if(iban) doc.text('IBAN: '+iban,14,48);
+    if(tel) doc.text('Tel: '+tel,14,56);
+    if(adres) doc.text(adres,14,64);
     doc.setFont('helvetica','bold');doc.text('Aan:',120,40);
     doc.setFont('helvetica','normal');doc.text(klant,120,48);
     doc.setFont('helvetica','bold');doc.text('Factuurnummer: '+nummer,14,72);
@@ -3735,7 +4875,7 @@ function downloadFactuurPDF(){
     doc.setFont('helvetica','bold');doc.setFontSize(12);
     doc.text('TOTAAL incl. BTW',14,y);doc.text(fmt(t.incl),196,y,'right');
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);
-    doc.text('Betaling binnen 30 dagen op IBAN '+( document.getElementById('s-iban').value||'NL44RABO0368249190')+' t.n.v. '+bedrijf,14,y+20);
+    const betaalTxt=(betalVw||('Betaling binnen '+betalTerm+' dagen op IBAN '+(iban||'')+(iban&&bedrijf?' t.n.v. '+bedrijf:'')));doc.text(betaalTxt.substring(0,90),14,y+20);
     doc.save('factuur-'+nummer+'.pdf');
     showNotif('PDF gedownload ✓');
   }catch(e){showNotif('PDF: installeer de pagina opnieuw om PDFs te genereren',true)}
@@ -4003,6 +5143,124 @@ showPage=function(name,el){
   if(name==='inkopen'){renderLeveranciers();document.getElementById('inkopen-badge').textContent=getLeveranciers().length;}
 };
 
+
+// INSTELLINGEN FUNCTIES
+function slaFactuurInstellingenOp(){
+  const data = {
+    betalingstermijn: document.getElementById('s-betalingstermijn')?.value || '14',
+    prefix: document.getElementById('s-factuur-prefix')?.value || '2026-',
+    btwTarief: document.getElementById('s-btw-tarief')?.value || '21',
+    bedragenType: document.getElementById('s-bedragen-type')?.value || 'excl',
+    betalingsvoorwaarden: document.getElementById('s-betalingsvoorwaarden')?.value || '',
+    emailTekst: document.getElementById('s-email-tekst')?.value || ''
+  };
+  localStorage.setItem('sb_factuur_inst', JSON.stringify(data));
+  const saved = document.getElementById('factuur-inst-saved');
+  if(saved){ saved.style.display='inline'; setTimeout(()=>saved.style.display='none', 2000); }
+  showNotif('✓ Factuur instellingen opgeslagen!');
+}
+
+function slaBTWInstellingenOp(){
+  const data = {
+    plichtig: document.querySelector('input[name="btw-plichtig"]:checked')?.value || 'ja',
+    periode: document.getElementById('s-btw-periode')?.value || 'kwartaal',
+    boekjaarStart: document.getElementById('s-boekjaar-start')?.value || '01-01',
+    herinnering: document.getElementById('s-btw-herinnering')?.value || '7'
+  };
+  localStorage.setItem('sb_btw_inst', JSON.stringify(data));
+  showNotif('✓ BTW instellingen opgeslagen!');
+}
+
+function slaNotificatiesOp(){
+  const data = {
+    btw: document.getElementById('notif-btw')?.checked || false,
+    facturen: document.getElementById('notif-facturen')?.checked || false,
+    bonnen: document.getElementById('notif-bonnen')?.checked || false
+  };
+  localStorage.setItem('sb_notificaties', JSON.stringify(data));
+  showNotif('✓ Notificaties opgeslagen!');
+}
+
+function slaEboekTokenOp(){
+  const token = document.getElementById('s-eboekhouden-token')?.value?.trim();
+  if(!token){ showNotif('Vul je eBoekhouden token in', true); return; }
+  localStorage.setItem('sb_eboekhouden_token', token);
+  const status = document.getElementById('eboek-status');
+  if(status){ status.textContent = '✅ Gekoppeld'; status.style.background='rgba(52,199,89,.15)'; status.style.color='var(--green)'; }
+  showNotif('✓ eBoekhouden gekoppeld!');
+}
+
+function uploadLogo(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){ showNotif('Logo mag max 2MB zijn', true); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    localStorage.setItem('sb_logo', e.target.result);
+    const preview = document.getElementById('logo-preview');
+    if(preview) preview.innerHTML = '<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:contain;border-radius:8px">';
+    showNotif('✓ Logo opgeslagen! Verschijnt op facturen.');
+  };
+  reader.readAsDataURL(file);
+}
+
+function exportAlleData(){
+  const data = {
+    bonnen, facturen, klanten, offertes,
+    instellingen: localStorage.getItem('sb_settings'),
+    factuurInst: localStorage.getItem('sb_factuur_inst'),
+    btwInst: localStorage.getItem('sb_btw_inst'),
+    exportDatum: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'slimboekhoud-export-'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+  showNotif('✓ Data geëxporteerd!');
+}
+
+function laadInstellingenPagina(){
+  // Load saved factuur settings
+  try{
+    const fi = JSON.parse(localStorage.getItem('sb_factuur_inst')||'{}');
+    if(fi.betalingstermijn) document.getElementById('s-betalingstermijn').value = fi.betalingstermijn;
+    if(fi.prefix !== undefined) document.getElementById('s-factuur-prefix').value = fi.prefix;
+    if(fi.btwTarief) document.getElementById('s-btw-tarief').value = fi.btwTarief;
+    if(fi.bedragenType) document.getElementById('s-bedragen-type').value = fi.bedragenType;
+    if(fi.betalingsvoorwaarden) document.getElementById('s-betalingsvoorwaarden').value = fi.betalingsvoorwaarden;
+    if(fi.emailTekst) document.getElementById('s-email-tekst').value = fi.emailTekst;
+  }catch(e){}
+  // Load BTW settings
+  try{
+    const bi = JSON.parse(localStorage.getItem('sb_btw_inst')||'{}');
+    if(bi.plichtig){ document.getElementById('btw-'+bi.plichtig).checked = true; }
+    if(bi.periode) document.getElementById('s-btw-periode').value = bi.periode;
+    if(bi.boekjaarStart) document.getElementById('s-boekjaar-start').value = bi.boekjaarStart;
+    if(bi.herinnering) document.getElementById('s-btw-herinnering').value = bi.herinnering;
+  }catch(e){}
+  // Load notificaties
+  try{
+    const ni = JSON.parse(localStorage.getItem('sb_notificaties')||'{}');
+    if(document.getElementById('notif-btw')) document.getElementById('notif-btw').checked = ni.btw !== false;
+    if(document.getElementById('notif-facturen')) document.getElementById('notif-facturen').checked = ni.facturen !== false;
+    if(document.getElementById('notif-bonnen')) document.getElementById('notif-bonnen').checked = ni.bonnen || false;
+  }catch(e){}
+  // Load logo
+  const logo = localStorage.getItem('sb_logo');
+  if(logo){ const p = document.getElementById('logo-preview'); if(p) p.innerHTML = '<img src="'+logo+'" style="width:100%;height:100%;object-fit:contain;border-radius:8px">'; }
+  // Load eboekhouden token
+  const token = localStorage.getItem('sb_eboekhouden_token') || localStorage.getItem('EBOEKHOUDEN_TOKEN');
+  if(token){
+    const inp = document.getElementById('s-eboekhouden-token'); if(inp) inp.value = token;
+    const status = document.getElementById('eboek-status');
+    if(status){ status.textContent='✅ Gekoppeld'; status.style.background='rgba(52,199,89,.15)'; status.style.color='var(--green)'; }
+  }
+  // Account email
+  const emailEl = document.getElementById('account-email-display');
+  if(emailEl && currentUser) emailEl.textContent = '📧 Ingelogd als: ' + currentUser.email;
+}
+
 function slaInstellingenOp(){
   document.getElementById('sb-company').textContent=document.getElementById('s-naam').value;
   localStorage.setItem('sb_settings',JSON.stringify({naam:document.getElementById('s-naam').value,kvk:document.getElementById('s-kvk').value,iban:document.getElementById('s-iban').value,tel:document.getElementById('s-tel').value,email:document.getElementById('s-email').value,adres:document.getElementById('s-adres').value}));
@@ -4219,7 +5477,7 @@ function slaBoekhouderOp() {
 function emailLinkNaarBoekhouder() {
   const bk = JSON.parse(localStorage.getItem('sb_boekhouder')||'{}');
   const url = document.getElementById('portal-url').textContent;
-  const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+  const naam = document.getElementById('s-naam').value || localStorage.getItem('sb_bedrijfsnaam') || '';
   const subject = encodeURIComponent('Toegang tot SlimBoekhoud administratie — ' + naam);
   const body = encodeURIComponent(`Beste ${bk.naam||'boekhouder'},\n\nHierbij stuur ik je de link om mijn SlimBoekhoud administratie te bekijken.\n\nLink: ${url}\n\nJe kunt hiermee mijn bonnen, facturen en BTW aangifte bekijken. Je kunt niets aanpassen.\n\nMet vriendelijke groet,\n${naam}\nTel: ${document.getElementById('s-tel').value||'0628806783'}`);
   window.open(`mailto:${bk.email||''}?subject=${subject}&body=${body}`);
@@ -4238,7 +5496,7 @@ function downloadKwRapport(q) {
   try {
     const {jsPDF} = window.jspdf;
     const doc = new jsPDF();
-    const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+    const naam = document.getElementById('s-naam').value || localStorage.getItem('sb_bedrijfsnaam') || '';
     const kvk = document.getElementById('s-kvk').value || '64165965';
     const jaar = document.getElementById('year-sel').value || '2026';
 
@@ -4376,7 +5634,7 @@ function renderGrootboek() {
     const saldo = s.debet - s.credit;
     if (s.debet === 0 && s.credit === 0) return '';
     const tc = info.type==='Activa'?'b-blue':info.type==='Passiva'?'b-amber':info.type==='Omzet'?'b-green':'b-purple';
-    return `<tr><td class="mono"><strong>${rek}</strong></td><td>${info.naam}</td><td><span class="badge ${tc}">${info.type}</span></td><td class="num mono">${s.debet>0?fmt(s.debet):'-'}</td><td class="num mono">${s.credit>0?fmt(s.credit):'-'}</td><td class="num mono" style="font-weight:600;color:${saldo>=0?'var(--green)':'var(--red)'}">${fmt(Math.abs(saldo))} ${saldo>=0?'D':'C'}</td></tr>`;
+    return `<tr onclick="toonRekeningDetail('${rek}','${info.naam}')" style="cursor:pointer" title="Klik voor boekingen"><td class="mono"><strong>${rek}</strong></td><td>${info.naam} <span style="font-size:10px;color:var(--text-muted)">▼</span></td><td><span class="badge ${tc}">${info.type}</span></td><td class="num mono">${s.debet>0?fmt(s.debet):'-'}</td><td class="num mono">${s.credit>0?fmt(s.credit):'-'}</td><td class="num mono" style="font-weight:600;color:${saldo>=0?'var(--green)':'var(--red)'}">${fmt(Math.abs(saldo))} ${saldo>=0?'D':'C'}</td></tr>`;
   }).filter(Boolean).join('') || '<tr><td colspan="6" class="empty">Geen boekingen</td></tr>';
 
   const journaal = [];
@@ -4462,7 +5720,7 @@ function exportBalansPDF() {
   try {
     const {jsPDF} = window.jspdf;
     const doc = new jsPDF();
-    const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+    const naam = document.getElementById('s-naam').value || localStorage.getItem('sb_bedrijfsnaam') || '';
     const kvk = document.getElementById('s-kvk').value || '64165965';
     doc.setFillColor(244,164,24); doc.rect(0,0,210,28,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
@@ -4528,7 +5786,7 @@ function exportBelastingdienstPDF() {
   try {
     const {jsPDF} = window.jspdf;
     const doc = new jsPDF();
-    const naam = document.getElementById('s-naam').value || 'Pro Stukadoors';
+    const naam = document.getElementById('s-naam').value || localStorage.getItem('sb_bedrijfsnaam') || '';
     const kvk = document.getElementById('s-kvk').value || '64165965';
     const btwNr = document.getElementById('s-btwnr').value || 'NL000000000B01';
     const q = document.getElementById('bd-kwartaal').value;
@@ -4593,6 +5851,196 @@ if(savedSettings){try{const s=JSON.parse(savedSettings);Object.entries(s).forEac
 autoLoad();
 checkBTWDeadline();
 </script>
+
+  <!-- AI CHAT WIDGET -->
+  <div id="ai-chat-widget" style="display:none;position:fixed;bottom:24px;right:24px;width:360px;height:500px;z-index:9999;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;background:var(--white)">
+    <div style="background:var(--orange);padding:14px 16px;display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">🤖</div>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:14px">SlimBoekhoud AI</div>
+        <div style="color:rgba(255,255,255,.8);font-size:11px">Stel een vraag over je boekhouding</div>
+      </div>
+      <button onclick="toggleAIChat()" style="margin-left:auto;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div class="ai-msg ai-bot">👋 Hallo! Ik ben jouw <strong>SlimBoekhoud AI</strong>. Ik ken alles over de app en kan je helpen met:<br><br>
+        📄 Facturen maken<br>
+        🧾 Bonnen scannen<br>
+        📊 BTW aangifte<br>
+        💰 Jouw financiën<br><br>
+        Stel me een vraag!</div>
+    </div>
+    <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <input id="ai-chat-input" class="form-input" placeholder="Stel een vraag..." style="flex:1;padding:8px 12px;font-size:13px" onkeydown="if(event.key==='Enter')stuurAIVraag()">
+      <button onclick="stuurAIVraag()" class="btn btn-primary" style="padding:8px 14px;font-size:13px">➤</button>
+    </div>
+  </div>
+
+
+  <!-- AI OFFERTE/FACTUUR MODAL -->
+  <div id="ai-doc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--white);border-radius:16px;padding:28px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+      
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--orange),#e67e22);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">🤖</div>
+        <div>
+          <div style="font-size:17px;font-weight:700" id="ai-doc-titel">AI Offerte Assistent</div>
+          <div style="font-size:12px;color:var(--text-muted)">Voor elk beroep — beschrijf het werk en ik maak de offerte</div>
+        </div>
+        <button onclick="sluitAIDocModal()" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      </div>
+
+      <!-- Input -->
+      <div style="margin-bottom:16px">
+        <label class="form-label">Beschrijf het werk of dienst</label>
+        <textarea id="ai-doc-input" class="form-input" rows="5" style="resize:vertical" 
+          placeholder="Bijv: Website bouwen voor restaurant, 5 pagina's + contactformulier, klant Bakkerij de Vries. Of: Loodgieterwerk badkamer renovatie 2 dagen. Of: Logo ontwerp + visitekaartjes voor kapster Sarah."></textarea>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">💡 Vermeld: wat voor werk, hoeveel uur/m²/stuks, naam klant (optioneel) — voor elk beroep!</div>
+      </div>
+
+      <!-- Voorbeelden -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">⚡ Snel starten:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <button onclick="aiVoorbeeldKlik(this)" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Website bouwen 5 pagina's</button>
+          <button onclick="aiVoorbeeldKlik(this)" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Stucwerk woonkamer 40m²</button>
+          <button onclick="aiVoorbeeldKlik(this)" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Logo ontwerp + huisstijl</button>
+          <button onclick="aiVoorbeeldKlik(this)" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Loodgieter werk badkamer</button>
+          <button onclick="aiVoorbeeldKlik(this)" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Marketing advies 10 uur</button>
+          <button onclick="aiVoorbeeldKlik(this)" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Schoonmaak bedrijf 3x/week</button>
+        </div>
+      </div>
+
+      <!-- Result preview -->
+      <div id="ai-doc-preview" style="display:none;margin-bottom:16px;padding:16px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px">📋 GEGENEREERD DOOR AI:</div>
+        <div id="ai-doc-preview-content" style="font-size:13px;line-height:1.8"></div>
+      </div>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:10px">
+        <button id="ai-doc-genereer-btn" onclick="genereerAIDoc()" class="btn btn-primary" style="flex:1;padding:12px;font-size:14px;font-weight:600">
+          🤖 Genereer met AI
+        </button>
+        <button id="ai-doc-gebruik-btn" onclick="gebruikAIDoc()" class="btn btn-secondary" style="flex:1;padding:12px;font-size:14px;display:none">
+          ✅ Gebruik dit
+        </button>
+      </div>
+
+      <div id="ai-doc-loading" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:13px">
+        <div style="font-size:28px;margin-bottom:8px">⏳</div>
+        AI is je offerte aan het opstellen...
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- HANDMATIGE BON MODAL -->
+  <div id="handmatig-bon-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--white);border-radius:16px;padding:28px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="width:44px;height:44px;background:var(--orange);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">✏️</div>
+        <div>
+          <div style="font-size:17px;font-weight:700">Bon handmatig invoeren</div>
+          <div style="font-size:12px;color:var(--text-muted)">Vul de gegevens zelf in</div>
+        </div>
+        <button onclick="sluitHandmatigBon()" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group">
+          <label class="form-label">Leverancier / Winkel *</label>
+          <input class="form-input" id="hb-leverancier" placeholder="Bijv. Gamma, Shell, AH, Praxis...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Datum *</label>
+          <input class="form-input" type="date" id="hb-datum">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Bedrag excl. BTW (€) *</label>
+            <input class="form-input" type="number" id="hb-excl" placeholder="0.00" step="0.01" oninput="berekenHandmatigBTW()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">BTW tarief</label>
+            <select class="form-input" id="hb-btw-pct" onchange="berekenHandmatigBTW()">
+              <option value="21" selected>21% (standaard)</option>
+              <option value="9">9% (voedsel/boeken)</option>
+              <option value="0">0% (geen BTW)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">BTW bedrag (€)</label>
+            <input class="form-input" type="number" id="hb-btw" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Totaal incl. BTW (€)</label>
+            <input class="form-input" type="number" id="hb-incl" placeholder="0.00" step="0.01" style="background:var(--bg)" readonly>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categorie</label>
+          <select class="form-input" id="hb-cat">
+            <option value="Materiaal">🔨 Materiaal</option>
+            <option value="Brandstof">⛽ Brandstof</option>
+            <option value="Gereedschap">🔧 Gereedschap</option>
+            <option value="Kantoor">💼 Kantoor</option>
+            <option value="Maaltijden">🍽️ Maaltijden</option>
+            <option value="Transport">🚗 Transport</option>
+            <option value="Software">💻 Software</option>
+            <option value="Marketing">📢 Marketing</option>
+            <option value="Verzekering">🛡️ Verzekering</option>
+            <option value="Overig">📦 Overig</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Omschrijving (optioneel)</label>
+          <input class="form-input" id="hb-omschrijving" placeholder="Extra toelichting...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Betalingswijze</label>
+          <select class="form-input" id="hb-betaalwijze">
+            <option value="pin">💳 Pinbetaling</option>
+            <option value="bank">🏦 Bank / Overschrijving</option>
+            <option value="cash">💵 Contant</option>
+            <option value="creditcard">💳 Creditcard</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">📎 Foto bon uploaden (optioneel)</label>
+          <div id="hb-foto-preview" style="display:none;margin-bottom:8px">
+            <img id="hb-foto-img" style="max-width:100%;max-height:120px;border-radius:8px;border:1px solid var(--border)" src="">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="file" id="hb-foto-input" accept="image/*,.pdf" style="display:none" onchange="previewHandmatigFoto(this)">
+            <button class="btn btn-secondary" onclick="document.getElementById('hb-foto-input').click()" style="font-size:12px">
+              📷 Foto / PDF uploaden
+            </button>
+            <button class="btn btn-secondary" onclick="document.getElementById('hb-cam-input').click()" style="font-size:12px">
+              📸 Camera
+            </button>
+            <input type="file" id="hb-cam-input" accept="image/*" capture="environment" style="display:none" onchange="previewHandmatigFoto(this)">
+            <span id="hb-foto-naam" style="font-size:11px;color:var(--text-muted)"></span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Bewijs van betaling opslaan bij deze bon</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button onclick="slaHandmatigBonOp()" class="btn btn-primary" style="flex:1;padding:12px;font-size:14px;font-weight:600">
+          💾 Bon opslaan
+        </button>
+        <button onclick="sluitHandmatigBon()" class="btn btn-ghost" style="padding:12px">
+          Annuleren
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- end app -->
 </body>
 </html>
