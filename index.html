@@ -4294,6 +4294,27 @@ function renderBonnen(lijst){
     </tr>`).join('') || '<tr><td colspan="9" class="empty">Geen bonnen</td></tr>';
 }
 
+
+// BON PDF / FOTO HELPERS
+function openBonPDF(dataUrl){
+  if(!dataUrl) return;
+  const win = window.open('', '_blank');
+  if(dataUrl.startsWith('data:application/pdf')){
+    win.document.write('<iframe src="'+dataUrl+'" style="width:100%;height:100vh;border:none"></iframe>');
+  } else {
+    win.document.write('<img src="'+dataUrl+'" style="max-width:100%">');
+  }
+}
+
+function downloadBonPDF(dataUrl, naam){
+  if(!dataUrl) return;
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  const ext = dataUrl.startsWith('data:application/pdf') ? '.pdf' : '.jpg';
+  a.download = 'bon-' + (naam||'download').replace(/[^a-z0-9]/gi,'_') + ext;
+  a.click();
+}
+
 // View bon file (PDF or image) in modal
 function toonBonDetail(index){
   const b = bonnen[index];
@@ -4365,14 +4386,18 @@ function toonBonDetail(index){
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">📎 BON FOTO</div>
         <img src="${photoData}" style="width:100%;border-radius:10px;border:1px solid var(--border);cursor:zoom-in" 
           onclick="window.open('${photoData}','_blank')" title="Klik om te vergroten">
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:center">Klik op foto om te vergroten</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button onclick="window.open('${photoData}','_blank')" class="btn btn-secondary" style="flex:1;font-size:12px">🔍 Vergroot</button>
+          <button onclick="downloadBonPDF('${photoData}','${esc(b.leverancier)}')" class="btn btn-secondary" style="font-size:12px">⬇️ Download</button>
+        </div>
       </div>` : ''}
-      ${isPDF ? `
+      ${isPDF && photoData ? `
       <div style="padding:0 20px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">📎 BON PDF</div>
-        <div style="background:var(--bg);border-radius:10px;padding:16px;text-align:center">
-          <div style="font-size:24px;margin-bottom:8px">📄</div>
-          <div style="font-size:13px">PDF bijlage</div>
+        <iframe src="${photoData}" style="width:100%;height:320px;border-radius:10px;border:1px solid var(--border)" title="Bon PDF"></iframe>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button onclick="openBonPDF('${photoData}')" class="btn btn-primary" style="flex:1;font-size:13px">📄 Open PDF op volledig scherm</button>
+          <button onclick="downloadBonPDF('${photoData}','${esc(b.leverancier)}')" class="btn btn-secondary" style="font-size:13px">⬇️ Download</button>
         </div>
       </div>` : ''}
       ${!hasPhoto ? `
