@@ -79,7 +79,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 
 /* LOGIN */
 .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f1117 0%,#1a1a2e 60%,#0f1117 100%);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column}
-.login-box{background:var(--white);border-radius:16px;padding:40px;width:360px;text-align:center}
+.login-split{display:flex;align-items:center;justify-content:center;gap:48px;max-width:980px;width:100%;padding:0 24px;flex-wrap:wrap}
+.login-marketing{flex:1;min-width:300px;max-width:480px;color:#fff}
+.login-trust-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);padding:6px 14px;border-radius:20px;font-size:13px;margin-bottom:20px}
+.login-headline{font-size:36px;font-weight:800;line-height:1.15;margin-bottom:20px}
+.login-headline span{color:var(--orange)}
+.login-benefit{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:15px;color:rgba(255,255,255,.85)}
+.login-benefit-check{color:#34c759;font-size:18px;flex-shrink:0;margin-top:1px}
+.login-starter-badge{display:inline-block;background:var(--orange);color:#fff;padding:8px 18px;border-radius:24px;font-weight:700;font-size:14px;margin-top:8px;box-shadow:0 4px 16px rgba(244,164,24,.35)}
+.login-box{background:var(--white);border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .login-logo{width:56px;height:56px;background:var(--orange);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#fff;margin:0 auto 16px}
 .login-title{font-size:22px;font-weight:600;margin-bottom:6px}
 .login-sub{font-size:13px;color:var(--text-muted);margin-bottom:28px}
@@ -87,6 +95,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .login-btn{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px}
 .login-google{width:100%;padding:11px;background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 .login-error{color:var(--red);font-size:12px;margin-bottom:8px}
+@media(max-width:860px){.login-marketing{display:none}.login-nav-tag{display:none}}
 
 /* SIDEBAR */
 .sidebar{width:240px;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:100;transition:transform .3s}
@@ -350,15 +359,31 @@ tr:hover td{background:var(--bg)}
   <div style="position:absolute;top:0;left:0;right:0;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;z-index:2">
     <div style="font-size:20px;font-weight:800;color:#fff">SlimBoekhoud</div>
     <div style="display:flex;gap:16px;align-items:center;font-size:13px">
-      <span style="color:rgba(255,255,255,.6)">🤖 AI bonnen</span>
-      <span style="color:rgba(255,255,255,.6)">📄 Facturen</span>
-      <span style="color:rgba(255,255,255,.6)">📊 BTW</span>
+      <span class="login-nav-tag" style="color:rgba(255,255,255,.6)">🤖 AI bonnen</span>
+      <span class="login-nav-tag" style="color:rgba(255,255,255,.6)">📄 Facturen</span>
+      <span class="login-nav-tag" style="color:rgba(255,255,255,.6)">📊 BTW</span>
       <a href="#" onclick="toonPakketten();return false" style="color:#fff;text-decoration:none;font-weight:600;border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:20px">📦 Pakketten</a>
-      <span style="background:var(--orange);color:#fff;padding:5px 14px;border-radius:20px;font-weight:600">vanaf €9/maand</span>
+      <span class="login-nav-tag" style="background:var(--orange);color:#fff;padding:5px 14px;border-radius:20px;font-weight:600">vanaf €9/maand</span>
     </div>
   </div>
 
-  <div class="login-box">
+  <div class="login-split">
+
+    <!-- MARKETING PANEEL (links) -->
+    <div class="login-marketing">
+      <div class="login-trust-badge">
+        <span style="color:#34c759">★★★★★</span>
+        <span style="color:rgba(255,255,255,.7)">Boekhouden zonder gedoe</span>
+      </div>
+      <div class="login-headline">Boekhouden &amp; factureren <span>op een manier die jij begrijpt</span></div>
+      <div class="login-benefit"><span class="login-benefit-check">✓</span><span>Maak een foto van je bon — <strong>AI vult alles automatisch in</strong></span></div>
+      <div class="login-benefit"><span class="login-benefit-check">✓</span><span>Facturen &amp; offertes in 1 minuut, voor <strong>élk beroep</strong></span></div>
+      <div class="login-benefit"><span class="login-benefit-check">✓</span><span>BTW aangifte <strong>automatisch berekend</strong> per kwartaal</span></div>
+      <div class="login-benefit"><span class="login-benefit-check">✓</span><span>Speciaal gemaakt voor <strong>Nederlandse ZZP'ers</strong></span></div>
+      <div class="login-starter-badge">🎁 30 dagen GRATIS — geen creditcard nodig</div>
+    </div>
+
+    <div class="login-box">
     <div class="login-logo">SB</div>
     <div class="login-title">SlimBoekhoud</div>
     <div class="login-sub" id="login-sub">Professionele boekhouding voor ZZP'ers</div>
@@ -420,6 +445,7 @@ tr:hover td{background:var(--bg)}
       &nbsp;·&nbsp; KvK 64165965
     </div>
   </div>
+  </div><!-- end login-split -->
 
   <!-- PUBLIEKE PAKKETTEN OVERLAY -->
   <div id="pakketten-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f1117 0%,#1a1a2e 60%,#0f1117 100%);z-index:1000;overflow-y:auto">
