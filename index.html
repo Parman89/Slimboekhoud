@@ -353,7 +353,8 @@ tr:hover td{background:var(--bg)}
       <span style="color:rgba(255,255,255,.6)">🤖 AI bonnen</span>
       <span style="color:rgba(255,255,255,.6)">📄 Facturen</span>
       <span style="color:rgba(255,255,255,.6)">📊 BTW</span>
-      <span style="background:var(--orange);color:#fff;padding:5px 14px;border-radius:20px;font-weight:600">€9/maand</span>
+      <a href="#" onclick="toonPakketten();return false" style="color:#fff;text-decoration:none;font-weight:600;border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:20px">📦 Pakketten</a>
+      <span style="background:var(--orange);color:#fff;padding:5px 14px;border-radius:20px;font-weight:600">vanaf €9/maand</span>
     </div>
   </div>
 
@@ -417,6 +418,94 @@ tr:hover td{background:var(--bg)}
       © 2026 SlimBoekhoud &nbsp;·&nbsp;
       <a href="#" onclick="showPrivacy()" style="color:rgba(255,255,255,.45);text-decoration:underline">Privacy</a>
       &nbsp;·&nbsp; KvK 64165965
+    </div>
+  </div>
+
+  <!-- PUBLIEKE PAKKETTEN OVERLAY -->
+  <div id="pakketten-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f1117 0%,#1a1a2e 60%,#0f1117 100%);z-index:1000;overflow-y:auto">
+    <div style="max-width:980px;margin:0 auto;padding:24px 20px 60px">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-top:8px">
+        <div style="font-size:20px;font-weight:800;color:#fff">SlimBoekhoud</div>
+        <button onclick="sluitPakketten()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:600">← Terug naar inloggen</button>
+      </div>
+
+      <div style="text-align:center;margin:32px 0 40px">
+        <div style="font-size:32px;font-weight:800;color:#fff;margin-bottom:10px">Kies het pakket dat bij je past</div>
+        <div style="font-size:15px;color:rgba(255,255,255,.6)">Begin met 30 dagen gratis. Geen creditcard nodig. Maandelijks opzegbaar.</div>
+      </div>
+
+      <!-- Pakketten kaarten -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;max-width:760px;margin:0 auto">
+
+        <!-- STARTER -->
+        <div style="background:#fff;border-radius:18px;padding:28px;position:relative">
+          <div style="font-size:14px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px">Starter</div>
+          <div style="margin:12px 0">
+            <span style="font-size:42px;font-weight:800;color:#1a1a2e">€9</span>
+            <span style="font-size:15px;color:#888">/maand</span>
+          </div>
+          <div style="font-size:13px;color:#888;margin-bottom:20px">Voor de startende ZZP'er</div>
+          <button onclick="startVanuitPakket('starter')" style="width:100%;padding:13px;background:#1a1a2e;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:24px">Start 30 dagen gratis</button>
+          <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:#333">
+            <div>✅ <strong>100 bonnen</strong> scannen per maand</div>
+            <div>✅ <strong>50 facturen</strong> per maand</div>
+            <div>✅ AI bonnen scannen</div>
+            <div>✅ Offertes maken</div>
+            <div>✅ BTW aangifte helper</div>
+            <div>✅ Klanten beheer</div>
+            <div>✅ Email support</div>
+            <div style="color:#bbb">❌ AI offerte/factuur assistent</div>
+            <div style="color:#bbb">❌ WhatsApp support</div>
+            <div style="color:#bbb">❌ Boekhouder toegang</div>
+          </div>
+        </div>
+
+        <!-- PRO -->
+        <div style="background:#fff;border-radius:18px;padding:28px;position:relative;border:3px solid var(--orange);box-shadow:0 12px 40px rgba(244,164,24,.25)">
+          <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;padding:4px 16px;border-radius:20px;font-size:12px;font-weight:700">⭐ MEEST GEKOZEN</div>
+          <div style="font-size:14px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px">Pro</div>
+          <div style="margin:12px 0">
+            <span style="font-size:42px;font-weight:800;color:#1a1a2e">€19</span>
+            <span style="font-size:15px;color:#888">/maand</span>
+          </div>
+          <div style="font-size:13px;color:#888;margin-bottom:20px">Voor de groeiende ondernemer</div>
+          <button onclick="startVanuitPakket('pro')" style="width:100%;padding:13px;background:var(--orange);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:24px">Start 30 dagen gratis</button>
+          <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:#333">
+            <div>✅ <strong>Onbeperkt</strong> bonnen scannen</div>
+            <div>✅ <strong>Onbeperkt</strong> facturen</div>
+            <div>✅ <strong>🤖 AI maakt je offertes & facturen</strong></div>
+            <div>✅ AI bonnen scannen</div>
+            <div>✅ BTW aangifte helper</div>
+            <div>✅ Klanten beheer</div>
+            <div>✅ <strong>WhatsApp versturen</strong></div>
+            <div>✅ <strong>Boekhouder toegang</strong></div>
+            <div>✅ eBoekhouden koppeling</div>
+            <div>✅ Prioriteit support</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Vergelijkingstabel / extra info -->
+      <div style="max-width:760px;margin:40px auto 0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px">
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:16px">💡 Alles wat SlimBoekhoud voor je doet</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;font-size:13px;color:rgba(255,255,255,.75)">
+          <div>📸 <strong style="color:#fff">Bonnen scannen</strong><br>Maak een foto, AI leest leverancier, bedrag en BTW automatisch uit.</div>
+          <div>🤖 <strong style="color:#fff">AI offerte/factuur</strong><br>Beschrijf het werk, AI maakt een professioneel document. Voor élk beroep.</div>
+          <div>📊 <strong style="color:#fff">BTW aangifte</strong><br>Automatisch berekend per kwartaal, klaar om in te dienen.</div>
+          <div>🔍 <strong style="color:#fff">Alles terugvinden</strong><br>Zoek direct in al je bonnen, facturen en klanten.</div>
+          <div>🏦 <strong style="color:#fff">Bank koppeling</strong><br>Importeer je transacties van Rabobank, ING of ABN.</div>
+          <div>📁 <strong style="color:#fff">Eigen huisstijl</strong><br>Je eigen logo en bedrijfsgegevens op elke factuur.</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:32px">
+        <button onclick="startVanuitPakket('pro')" style="padding:14px 32px;background:var(--orange);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Begin nu — 30 dagen gratis</button>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:12px">Geen creditcard nodig · Maandelijks opzegbaar · © 2026 SlimBoekhoud · KvK 64165965</div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -2163,6 +2252,25 @@ async function kvkLookup(){
   }
 }
 
+function toonPakketten(){
+  const o = document.getElementById('pakketten-overlay');
+  if(o) o.style.display = 'block';
+}
+
+function sluitPakketten(){
+  const o = document.getElementById('pakketten-overlay');
+  if(o) o.style.display = 'none';
+}
+
+function startVanuitPakket(plan){
+  // Sluit pakketten, ga naar registratie met gekozen plan
+  sluitPakketten();
+  if(typeof toggleAuthMode === 'function') toggleAuthMode('signup');
+  setTimeout(() => {
+    if(typeof kiesPlan === 'function') kiesPlan(plan);
+  }, 100);
+}
+
 function kiesPlan(plan){
   const starter = document.getElementById('plan-starter');
   const pro = document.getElementById('plan-pro');
@@ -2530,7 +2638,7 @@ function voerZoekUit(query){
     if(match) resultaten.push({
       type: 'factuur', icon: '📄',
       titel: f.nummer + ' — ' + (f.klant||'Onbekend'),
-      sub: fmtEur(f.totaalIncl||f.totaalExcl||0) + ' · ' + (f.datum||''),
+      sub: fmt(f.totaalIncl||f.totaalExcl||0) + ' · ' + (f.datum||''),
       badge: 'factuur', badgeText: 'Factuur',
       actie: () => { showPage('facturen',null); setTimeout(()=>openFactuur(f.id),200); }
     });
@@ -2544,7 +2652,7 @@ function voerZoekUit(query){
     if(match) resultaten.push({
       type: 'bon', icon: '🧾',
       titel: (b.leverancier||'Onbekend'),
-      sub: fmtEur(b.incl||b.excl||0) + ' · ' + (b.cat||'') + ' · ' + (b.datum||''),
+      sub: fmt(b.incl||b.excl||0) + ' · ' + (b.cat||'') + ' · ' + (b.datum||''),
       badge: 'bon', badgeText: 'Bon',
       actie: () => { showPage('bonnen',null); }
     });
@@ -2558,7 +2666,7 @@ function voerZoekUit(query){
     if(match) resultaten.push({
       type: 'offerte', icon: '📋',
       titel: (o.nummer||'') + ' — ' + (o.klant||'Onbekend'),
-      sub: fmtEur(o.totaalIncl||o.totaalExcl||0) + ' · ' + (o.datum||''),
+      sub: fmt(o.totaalIncl||o.totaalExcl||0) + ' · ' + (o.datum||''),
       badge: 'offerte', badgeText: 'Offerte',
       actie: () => { showPage('offertes',null); }
     });
@@ -2585,7 +2693,7 @@ function voerZoekUit(query){
     if(match) resultaten.push({
       type: 'dienst', icon: '🛍️',
       titel: (d.naam||'Onbekend'),
-      sub: fmtEur(d.prijs||0) + ' · BTW ' + (d.btw||21) + '%',
+      sub: fmt(d.prijs||0) + ' · BTW ' + (d.btw||21) + '%',
       badge: 'dienst', badgeText: 'Dienst',
       actie: () => { showPage('diensten',null); }
     });
@@ -2995,7 +3103,7 @@ function stuurWhatsApp(id){
     `Beste ${f.klant},\n\n` +
     `Hierbij stuur ik u factuur *${f.nummer}* toe.\n\n` +
     `📋 Omschrijving: ${f.project || 'Werkzaamheden'}\n` +
-    `💰 Totaalbedrag: ${fmtEur(f.totaalIncl || f.totaal || 0)}\n` +
+    `💰 Totaalbedrag: ${fmt(f.totaalIncl || f.totaal || 0)}\n` +
     `📅 Vervaldatum: ${f.vervaldatum || f.verval || ''}\n\n` +
     `Betaal eenvoudig via iDEAL — stuur mij een bericht voor de betaallink.\n\n` +
     `Met vriendelijke groet,\n${bedrijf}\n📞 0628806783`
@@ -4901,11 +5009,11 @@ function toonKwartaalDetail(q){
       fEl.innerHTML = qFacturen.map(f=>`
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
           <div><strong>${f.nummer||'-'}</strong> ${f.klant||''}</div>
-          <div style="color:var(--green)">${fmtEur(f.totaalIncl||f.totaalExcl||0)}</div>
+          <div style="color:var(--green)">${fmt(f.totaalIncl||f.totaalExcl||0)}</div>
         </div>`).join('')+`
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:13px;margin-top:4px">
           <div>Totaal omzet</div>
-          <div style="color:var(--green)">${fmtEur(qFacturen.reduce((s,f)=>s+(f.totaalIncl||f.totaalExcl||0),0))}</div>
+          <div style="color:var(--green)">${fmt(qFacturen.reduce((s,f)=>s+(f.totaalIncl||f.totaalExcl||0),0))}</div>
         </div>`;
     }
   }
@@ -4922,11 +5030,11 @@ function toonKwartaalDetail(q){
       bEl.innerHTML = qBonnen.map(b=>`
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
           <div><span style="font-size:10px;padding:2px 6px;background:var(--bg);border-radius:10px;margin-right:6px">${b.cat||'Overig'}</span>${b.leverancier||'-'}</div>
-          <div style="color:var(--red)">${fmtEur(b.incl||b.excl||0)}</div>
+          <div style="color:var(--red)">${fmt(b.incl||b.excl||0)}</div>
         </div>`).join('')+`
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:13px;margin-top:4px">
           <div>Totaal kosten</div>
-          <div style="color:var(--red)">${fmtEur(qBonnen.reduce((s,b)=>s+(b.incl||b.excl||0),0))}</div>
+          <div style="color:var(--red)">${fmt(qBonnen.reduce((s,b)=>s+(b.incl||b.excl||0),0))}</div>
         </div>`;
     }
   }
@@ -4964,7 +5072,7 @@ function toonRekeningDetail(rek, naam){
       <td>${i.datum||'-'}</td>
       <td>${i.omsch}</td>
       <td><span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:10px">${i.type}</span></td>
-      <td class="num">${fmtEur(i.bedrag)}</td>
+      <td class="num">${fmt(i.bedrag)}</td>
     </tr>`).join('');
   }
 }
