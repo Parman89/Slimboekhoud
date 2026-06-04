@@ -363,7 +363,7 @@ tr:hover td{background:var(--bg)}
       <span class="login-nav-tag" style="color:rgba(255,255,255,.6)">📄 Facturen</span>
       <span class="login-nav-tag" style="color:rgba(255,255,255,.6)">📊 BTW</span>
       <a href="#" onclick="toonPakketten();return false" style="color:#fff;text-decoration:none;font-weight:600;border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:20px">📦 Pakketten</a>
-      <span class="login-nav-tag" style="background:var(--orange);color:#fff;padding:5px 14px;border-radius:20px;font-weight:600">vanaf €9/maand</span>
+      <span onclick="toonPakketten()" class="login-nav-tag" style="background:var(--orange);color:#fff;padding:5px 14px;border-radius:20px;font-weight:600;cursor:pointer">vanaf €9/maand →</span>
     </div>
   </div>
 
@@ -490,6 +490,48 @@ tr:hover td{background:var(--bg)}
       <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.8);font-size:13px">
         <span style="font-size:22px">🔄</span><div><strong style="color:#fff">Maandelijks opzegbaar</strong><br>Geen lange contracten</div>
       </div>
+    </div>
+
+    <!-- ABONNEMENTEN — 2 grote kaarten -->
+    <div style="text-align:center;margin:20px 0 32px">
+      <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:8px">Kies je abonnement</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.55)">Begin met 30 dagen gratis. Geen creditcard nodig.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:720px;margin:0 auto 50px">
+
+      <!-- STARTER -->
+      <div style="background:#fff;border-radius:18px;padding:28px;text-align:left">
+        <div style="font-size:14px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px">Starter</div>
+        <div style="margin:12px 0"><span style="font-size:40px;font-weight:800;color:#1a1a2e">€9</span><span style="font-size:15px;color:#888">/maand</span></div>
+        <div style="font-size:13px;color:#888;margin-bottom:18px">Voor de startende ZZP'er</div>
+        <button onclick="startVanuitPakket('starter')" style="width:100%;padding:13px;background:#1a1a2e;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:20px">Start 30 dagen gratis</button>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#333">
+          <div>✅ <strong>100 bonnen</strong> per maand</div>
+          <div>✅ <strong>50 facturen</strong> per maand</div>
+          <div>✅ AI bonnen scannen</div>
+          <div>✅ Offertes maken</div>
+          <div>✅ BTW aangifte helper</div>
+          <div>✅ Email support</div>
+        </div>
+      </div>
+
+      <!-- PRO -->
+      <div style="background:#fff;border-radius:18px;padding:28px;text-align:left;border:3px solid var(--orange);box-shadow:0 12px 40px rgba(244,164,24,.25);position:relative">
+        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;padding:4px 16px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap">⭐ MEEST GEKOZEN</div>
+        <div style="font-size:14px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px">Pro</div>
+        <div style="margin:12px 0"><span style="font-size:40px;font-weight:800;color:#1a1a2e">€19</span><span style="font-size:15px;color:#888">/maand</span></div>
+        <div style="font-size:13px;color:#888;margin-bottom:18px">Voor de groeiende ondernemer</div>
+        <button onclick="startVanuitPakket('pro')" style="width:100%;padding:13px;background:var(--orange);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:20px">Start 30 dagen gratis</button>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#333">
+          <div>✅ <strong>Onbeperkt</strong> bonnen &amp; facturen</div>
+          <div>✅ <strong>🤖 AI maakt offertes &amp; facturen</strong></div>
+          <div>✅ AI bonnen scannen</div>
+          <div>✅ <strong>WhatsApp</strong> versturen</div>
+          <div>✅ <strong>Boekhouder</strong> toegang</div>
+          <div>✅ eBoekhouden + prioriteit support</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Call to action -->
