@@ -4872,9 +4872,12 @@ function renderDashboard(){
       <div><div style="font-size:12px;font-weight:500">${esc(b.leverancier)}</div><div style="font-size:11px;color:var(--text-muted)">${b.datum}</div></div>
       <div style="font-size:12px;font-weight:500">${fmt(b.incl)}</div>
     </div>`).join('')||'<div class="empty">Geen bonnen</div>';
-  // reminder check
+  // reminder check — toon maar 1x per sessie, niet bij elke render
   const overdue=facturen.filter(f=>{return f.status==='Openstaand'&&new Date(f.verval)<new Date()});
-  if(overdue.length)showNotif(`⚠️ ${overdue.length} factuur(en) zijn verlopen!`,true);
+  if(overdue.length && !window.__overdueShown){
+    window.__overdueShown = true;
+    showNotif(`⚠️ ${overdue.length} factuur(en) zijn verlopen!`,true);
+  }
 }
 
 // Track active BTW kwartaal
