@@ -78,7 +78,7 @@ body.dark{
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:14px;transition:background .2s,color .2s}
 
 /* LOGIN */
-.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f1117 0%,#1a1a2e 60%,#0f1117 100%);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column}
+.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f1117 0%,#1a1a2e 60%,#0f1117 100%);display:flex;align-items:center;justify-content:flex-start;z-index:999;flex-direction:column;overflow-y:auto;padding-top:80px}
 .login-split{display:flex;align-items:center;justify-content:center;gap:48px;max-width:980px;width:100%;padding:0 24px;flex-wrap:wrap}
 .login-marketing{flex:1;min-width:300px;max-width:480px;color:#fff}
 .login-trust-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);padding:6px 14px;border-radius:20px;font-size:13px;margin-bottom:20px}
@@ -446,6 +446,60 @@ tr:hover td{background:var(--bg)}
     </div>
   </div>
   </div><!-- end login-split -->
+
+  <!-- ZO WERKT HET + VERTROUWEN -->
+  <div style="width:100%;max-width:980px;padding:60px 24px 40px;margin:0 auto">
+
+    <!-- Zo werkt het in 3 stappen -->
+    <div style="text-align:center;margin-bottom:40px">
+      <div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:8px">Zo simpel werkt het</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.55)">In 3 stappen je hele administratie op orde</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-bottom:60px">
+      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;text-align:center">
+        <div style="width:48px;height:48px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin:0 auto 14px">1</div>
+        <div style="font-size:32px;margin-bottom:10px">📸</div>
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px">Maak een foto</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6">Snap een foto van je bon of factuur. De AI leest automatisch de leverancier, het bedrag en de BTW uit.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;text-align:center">
+        <div style="width:48px;height:48px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin:0 auto 14px">2</div>
+        <div style="font-size:32px;margin-bottom:10px">🤖</div>
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px">AI doet het werk</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6">Alles wordt automatisch gecategoriseerd en geboekt. Maak facturen en offertes met één opdracht.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;text-align:center">
+        <div style="width:48px;height:48px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin:0 auto 14px">3</div>
+        <div style="font-size:32px;margin-bottom:10px">📊</div>
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px">Klaar voor de BTW</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6">Je BTW-aangifte wordt automatisch berekend per kwartaal. Klaar om in te dienen bij de Belastingdienst.</div>
+      </div>
+    </div>
+
+    <!-- Vertrouwen badges -->
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:24px;padding:28px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;margin-bottom:40px">
+      <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.8);font-size:13px">
+        <span style="font-size:22px">🔒</span><div><strong style="color:#fff">Veilig &amp; versleuteld</strong><br>Je data is beschermd</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.8);font-size:13px">
+        <span style="font-size:22px">🇳🇱</span><div><strong style="color:#fff">Nederlandse BTW-regels</strong><br>21%, 9% en 0% correct</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.8);font-size:13px">
+        <span style="font-size:22px">💳</span><div><strong style="color:#fff">Geen creditcard nodig</strong><br>30 dagen gratis proberen</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.8);font-size:13px">
+        <span style="font-size:22px">🔄</span><div><strong style="color:#fff">Maandelijks opzegbaar</strong><br>Geen lange contracten</div>
+      </div>
+    </div>
+
+    <!-- Call to action -->
+    <div style="text-align:center">
+      <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:16px">Klaar om tijd te besparen?</div>
+      <button onclick="toggleAuthMode('signup');document.querySelector('.login-box').scrollIntoView({behavior:'smooth'})" style="padding:14px 32px;background:var(--orange);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Begin nu — 30 dagen gratis</button>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:24px">© 2026 SlimBoekhoud · slimboekhoud.com · KvK 64165965</div>
+    </div>
+
+  </div>
 
   <!-- PUBLIEKE PAKKETTEN OVERLAY -->
   <div id="pakketten-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f1117 0%,#1a1a2e 60%,#0f1117 100%);z-index:1000;overflow-y:auto">
