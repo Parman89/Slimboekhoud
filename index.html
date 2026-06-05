@@ -5272,10 +5272,12 @@ function berekenDoc(bodyId,exclId,btwId,inclId){
   const regels=document.querySelectorAll('#'+bodyId+' tr');
   let te=0,tb=0;
   regels.forEach(r=>{
-    const inp=r.querySelectorAll('input');
-    const excl=(parseFloat(inp[1]?.value)||0)*(parseFloat(inp[2]?.value)||0);
-    const btw=excl*(parseFloat(inp[3]?.value)||21)/100;
-    if(inp[4])inp[4].value=excl+btw>0?fmt(excl+btw):'';
+    const el=r.querySelectorAll('input, select');
+    // el[0]=omschrijving, el[1]=aantal, el[2]=prijs, el[3]=BTW select, el[4]=readonly totaal
+    const excl=(parseFloat(el[1]?.value)||0)*(parseFloat(el[2]?.value)||0);
+    const pct=parseFloat(el[3]?.value);
+    const btw=excl*(isNaN(pct)?21:pct)/100;
+    if(el[4])el[4].value=excl+btw>0?fmt(excl+btw):'';
     te+=excl;tb+=btw;
   });
   document.getElementById(exclId).textContent=fmt(te);
@@ -5297,9 +5299,10 @@ function getDocTotals(bodyId){
   const regels=document.querySelectorAll('#'+bodyId+' tr');
   let te=0,tb=0;
   regels.forEach(r=>{
-    const inp=r.querySelectorAll('input');
-    const excl=(parseFloat(inp[1]?.value)||0)*(parseFloat(inp[2]?.value)||0);
-    te+=excl;tb+=excl*(parseFloat(inp[3]?.value)||21)/100;
+    const el=r.querySelectorAll('input, select');
+    const excl=(parseFloat(el[1]?.value)||0)*(parseFloat(el[2]?.value)||0);
+    const pct=parseFloat(el[3]?.value);
+    te+=excl;tb+=excl*(isNaN(pct)?21:pct)/100;
   });
   return{excl:te,btw:tb,incl:te+tb};
 }
