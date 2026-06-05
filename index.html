@@ -3383,7 +3383,8 @@ function checkOnboarding(){
       modal.id = 'onboard-modal';
       modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
       modal.innerHTML = `
-        <div style="background:var(--white);border-radius:16px;padding:28px;max-width:460px;width:100%;text-align:center">
+        <div style="background:var(--white);border-radius:16px;padding:28px;max-width:460px;width:100%;text-align:center;position:relative">
+          <button onclick="document.getElementById('onboard-modal').remove()" title="Sluiten" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);line-height:1;padding:4px">&times;</button>
           <div style="font-size:36px;margin-bottom:12px">👋</div>
           <div style="font-size:20px;font-weight:800;margin-bottom:8px">Welkom bij SlimBoekhoud!</div>
           <div style="font-size:14px;color:var(--text-muted);margin-bottom:24px">Stel je bedrijfsgegevens in — deze verschijnen op al je facturen en offertes</div>
@@ -5475,7 +5476,7 @@ function downloadFactuurPDF(){
     });
     doc.line(14,y+2,196,y+2);y+=10;
     doc.text('Subtotaal excl. BTW',14,y);doc.text(fmt(t.excl),196,y,'right');y+=8;
-    doc.text('BTW 21%',14,y);doc.text(fmt(t.btw),196,y,'right');y+=8;
+    doc.text('BTW',14,y);doc.text(fmt(t.btw),196,y,'right');y+=8;
     doc.setFont('helvetica','bold');doc.setFontSize(12);
     doc.text('TOTAAL incl. BTW',14,y);doc.text(fmt(t.incl),196,y,'right');
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);
@@ -5514,7 +5515,57 @@ function exportBonnenPDF(){
 
 function exportBTWPDF(){printBTWAangifte();}
 function exportWVPDF(){showNotif('W&V rapport PDF: gebruik de CSV export voor nu');exportCSV()}
-function downloadOffertePDF(){showNotif('Offerte PDF: dezelfde functie als factuur PDF ✓');downloadFactuurPDF()}
+function downloadOffertePDF(){
+  try{
+    const {jsPDF}=window.jspdf;const doc=new jsPDF();
+    const st=JSON.parse(localStorage.getItem('sb_settings')||'{}');
+    const bedrijf=st.naam||document.getElementById('s-naam')?.value||'Mijn Bedrijf';
+    const kvk=st.kvk||document.getElementById('s-kvk')?.value||'';
+    const iban=st.iban||document.getElementById('s-iban')?.value||'';
+    const tel=st.tel||document.getElementById('s-tel')?.value||'';
+    const adres=st.adres||document.getElementById('s-adres')?.value||'';
+    const logo=localStorage.getItem('sb_logo');
+
+    const klant=document.getElementById('o-klant')?.value||'Klant';
+    const nummer=document.getElementById('o-nummer')?.value||'';
+    const datum=document.getElementById('o-datum')?.value||'';
+    const project=document.getElementById('o-project')?.value||'';
+    const t=getDocTotals('offerte-regels');
+
+    // Header - orange bar
+    doc.setFillColor(244,164,24);doc.rect(0,0,210,28,'F');
+    if(logo){ try{ doc.addImage(logo,'JPEG',168,2,24,24); }catch(e){} }
+    doc.setTextColor(255,255,255);doc.setFontSize(20);doc.setFont('helvetica','bold');
+    doc.text(bedrijf,14,18);
+    doc.setFontSize(11);doc.setFont('helvetica','normal');doc.text('OFFERTE',14,26);
+    doc.setTextColor(0,0,0);doc.setFontSize(10);
+    if(kvk) doc.text('KvK: '+kvk,14,40);
+    if(iban) doc.text('IBAN: '+iban,14,48);
+    if(tel) doc.text('Tel: '+tel,14,56);
+    if(adres) doc.text(adres,14,64);
+    doc.setFont('helvetica','bold');doc.text('Voor:',120,40);
+    doc.setFont('helvetica','normal');doc.text(klant,120,48);
+    doc.setFont('helvetica','bold');doc.text('Offertenummer: '+nummer,14,72);
+    doc.setFont('helvetica','normal');doc.text('Datum: '+datum,14,80);doc.text('Project: '+project,14,88);
+    doc.setFillColor(247,247,245);doc.rect(14,96,182,8,'F');
+    doc.setFont('helvetica','bold');doc.text('Omschrijving',16,102);doc.text('Bedrag',170,102,'right');
+    doc.setFont('helvetica','normal');let y=115;
+    document.querySelectorAll('#offerte-regels tr').forEach(r=>{
+      const el=r.querySelectorAll('input, select');
+      const desc=el[0]?.value;const excl=(parseFloat(el[1]?.value)||0)*(parseFloat(el[2]?.value)||0);
+      if(desc){doc.text(desc,16,y);doc.text(fmt(excl),196,y,'right');y+=10;}
+    });
+    doc.line(14,y+2,196,y+2);y+=10;
+    doc.text('Subtotaal excl. BTW',14,y);doc.text(fmt(t.excl),196,y,'right');y+=8;
+    doc.text('BTW',14,y);doc.text(fmt(t.btw),196,y,'right');y+=8;
+    doc.setFont('helvetica','bold');doc.setFontSize(12);
+    doc.text('TOTAAL incl. BTW',14,y);doc.text(fmt(t.incl),196,y,'right');
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);
+    doc.text('Deze offerte is 14 dagen geldig.',14,y+20);
+    doc.save('offerte-'+(nummer||'concept')+'.pdf');
+    showNotif('Offerte PDF gedownload ✓');
+  }catch(e){showNotif('PDF: vul eerst de offerte in (klant + regels)',true)}
+}
 
 function exportCSV(){
   const h=['Datum','Leverancier','Categorie','Kwartaal','Excl BTW','BTW','Incl BTW','Status'];
