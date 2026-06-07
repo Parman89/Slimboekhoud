@@ -1702,7 +1702,7 @@ tr:hover td{background:var(--bg)}
     </div>
 
     <!-- PRICING / ABONNEMENT -->
-    <div class="page" id="page-uren" style="display:none">
+    <div class="page" id="page-uren">
       <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
         <div style="display:flex;border-bottom:1px solid var(--border)">
           <button id="uren-tab-uren" onclick="switchUrenTab('uren')" style="flex:1;padding:14px;border:none;background:var(--orange-light);color:var(--orange);font-weight:700;font-size:14px;cursor:pointer;border-bottom:2px solid var(--orange)">⏱️ Urenregistratie</button>
@@ -1866,7 +1866,7 @@ tr:hover td{background:var(--bg)}
     </div>
 
     <!-- PRIVACY POLICY -->
-    <div class="page" id="page-privacy" style="display:none">
+    <div class="page" id="page-privacy">
       <div class="card" style="padding:28px;max-width:700px;margin:0 auto">
         <h2 style="margin-bottom:20px">🔒 Privacyverklaring SlimBoekhoud</h2>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Versie 1.0 — Juni 2026</p>
@@ -3520,6 +3520,7 @@ async function autoLoad(){
     const k=localStorage.getItem('sb_klanten');if(k)klanten=JSON.parse(k);
     loadUrenKm();
     loadAbonnementen();
+    syncFactuurNr();
     setTimeout(verwerkAbonnementen, 1200);
     if(bonnen.length||facturen.length){renderAll();}
   }catch(e){}
@@ -5418,12 +5419,34 @@ let abonnementen = [];
 function loadAbonnementen(){ try{ const a=localStorage.getItem('sb_abonnementen'); if(a) abonnementen=JSON.parse(a); }catch(e){} }
 function saveAbonnementen(){ try{ localStorage.setItem('sb_abonnementen', JSON.stringify(abonnementen)); }catch(e){ showNotif('Opslaan abonnementen mislukt',true); } }
 
+function syncFactuurNr(){
+  // Voorkom dubbele factuurnummers: zet factuurNr op hoogste bestaande +1
+  let max = 0;
+  facturen.forEach(f => {
+    const m = (f.nummer||'').match(/(\d+)\s*$/);
+    if(m){ const n = parseInt(m[1],10); if(n>max) max=n; }
+  });
+  if(max >= factuurNr) factuurNr = max+1;
+}
+function datumPlusDagen(datumStr, dagen){
+  // Tijdzone-veilig: reken volledig in UTC
+  const p = datumStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(p[0], p[1]-1, p[2]));
+  dt.setUTCDate(dt.getUTCDate()+dagen);
+  return dt.toISOString().split('T')[0];
+}
 function volgendeDatumNa(datumStr, interval){
-  const d = new Date(datumStr+'T00:00:00');
-  if(interval==='maandelijks') d.setMonth(d.getMonth()+1);
-  else if(interval==='kwartaal') d.setMonth(d.getMonth()+3);
-  else d.setFullYear(d.getFullYear()+1);
-  return d.toISOString().split('T')[0];
+  // Reken met datum-onderdelen (geen toISOString → geen tijdzone-drift)
+  const parts = datumStr.split('-').map(Number);
+  let year = parts[0], month = parts[1], day = parts[2]; // month is 1-based
+  if(interval==='maandelijks') month += 1;
+  else if(interval==='kwartaal') month += 3;
+  else year += 1;
+  while(month > 12){ month -= 12; year += 1; }
+  // clamp dag aan laatste dag van de maand (bijv. 31 jan + 1 maand → 28/29 feb)
+  const maxDag = new Date(year, month, 0).getDate();
+  if(day > maxDag) day = maxDag;
+  return year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
 }
 
 function nieuwAbonnementFactuur(){
@@ -5496,6 +5519,7 @@ function renderAbonnementen(){
 }
 
 function verwerkAbonnementen(){
+  syncFactuurNr();
   const vandaag = new Date().toISOString().split('T')[0];
   const gemaakt = [];
   abonnementen.forEach(a=>{
@@ -5505,7 +5529,7 @@ function verwerkAbonnementen(){
       const btwBedrag = parseFloat((a.bedrag*a.btwPct/100).toFixed(2));
       const totaal = parseFloat((a.bedrag+btwBedrag).toFixed(2));
       const nummer = '2026-'+String(factuurNr).padStart(3,'0'); factuurNr++;
-      const verval = new Date(Date.now()+30*864e5).toISOString().split('T')[0];
+      const verval = datumPlusDagen(a.volgendeDatum, 30);
       const f = {id:Date.now()+Math.floor(Math.random()*9999), nummer, klant:a.klant, klantEmail:a.email||'', datum:a.volgendeDatum, verval, totaal, status:'Openstaand', project:a.omschrijving+' (abonnement)'};
       facturen.push(f);
       gemaakt.push(f);
