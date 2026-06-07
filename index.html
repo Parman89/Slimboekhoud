@@ -653,6 +653,7 @@ tr:hover td{background:var(--bg)}
     <div class="nav-section">Financieel</div>
     <div class="nav-item" onclick="showPage('bonnen',this)"><span class="nav-icon">🧾</span>Bonnen<span class="nav-badge" id="bonnen-badge">0</span></div>
     <div class="nav-item" onclick="showPage('inkopen',this)"><span class="nav-icon">🛒</span>Inkopen<span class="nav-badge" id="inkopen-badge">0</span></div>
+    <div class="nav-item" onclick="showPage('uren',this)"><span class="nav-icon">⏱️</span>Uren &amp; KM</div>
     <div class="nav-item" onclick="showPage('wv',this)"><span class="nav-icon">📈</span>Winst & verlies</div>
     <div class="nav-item" onclick="showPage('btw',this)"><span class="nav-icon">📅</span>BTW aangifte</div>
     <div class="nav-item" onclick="showPage('bank',this)"><span class="nav-icon">🏦</span>Bankrekening</div>
@@ -885,6 +886,15 @@ tr:hover td{background:var(--bg)}
             <table>
               <thead><tr><th>Nummer</th><th>Klant</th><th>Datum</th><th>Verval</th><th class="num">Bedrag</th><th>Status</th><th></th></tr></thead>
               <tbody id="t-facturen"><tr><td colspan="7" class="empty">Nog geen facturen</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-header"><span class="card-title">🔁 Terugkerende facturen (abonnementen)</span><button class="btn btn-primary" style="font-size:12px" onclick="nieuwAbonnementFactuur()">+ Nieuw abonnement</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Klant</th><th>Omschrijving</th><th class="num">Bedrag excl.</th><th>BTW</th><th>Interval</th><th>Volgende factuur</th><th>Status</th><th></th></tr></thead>
+              <tbody id="t-abonnementen"><tr><td colspan="8" class="empty">Nog geen abonnementen — maak er één voor terugkerende klanten</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1692,6 +1702,67 @@ tr:hover td{background:var(--bg)}
     </div>
 
     <!-- PRICING / ABONNEMENT -->
+    <div class="page" id="page-uren" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div style="display:flex;border-bottom:1px solid var(--border)">
+          <button id="uren-tab-uren" onclick="switchUrenTab('uren')" style="flex:1;padding:14px;border:none;background:var(--orange-light);color:var(--orange);font-weight:700;font-size:14px;cursor:pointer;border-bottom:2px solid var(--orange)">⏱️ Urenregistratie</button>
+          <button id="uren-tab-km" onclick="switchUrenTab('km')" style="flex:1;padding:14px;border:none;background:transparent;color:var(--text-muted);font-weight:600;font-size:14px;cursor:pointer;border-bottom:2px solid transparent">🚗 Kilometers</button>
+        </div>
+      </div>
+
+      <div id="uren-sectie">
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card"><div class="stat-label">Totaal uren dit jaar</div><div class="stat-value" id="u-tot-uren" style="color:var(--blue)">0</div><div class="stat-sub">geregistreerd</div></div>
+          <div class="stat-card"><div class="stat-label">Waarde uren</div><div class="stat-value" id="u-tot-waarde" style="color:var(--green)">€ 0,00</div><div class="stat-sub">uren × tarief</div></div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><span class="card-title">Uren toevoegen</span></div>
+          <div class="card-body">
+            <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+              <div><label class="form-label">Datum</label><input type="date" class="form-input" id="u-datum"></div>
+              <div><label class="form-label">Project / klant</label><input type="text" class="form-input" id="u-project" placeholder="bijv. Klant Jansen"></div>
+              <div><label class="form-label">Uren</label><input type="number" step="0.25" class="form-input" id="u-uren" placeholder="8"></div>
+              <div><label class="form-label">Uurtarief (€)</label><input type="number" step="0.01" class="form-input" id="u-tarief" placeholder="45"></div>
+            </div>
+            <div style="margin-top:12px"><label class="form-label">Omschrijving (optioneel)</label><input type="text" class="form-input" id="u-omschrijving" placeholder="bijv. Stucwerk woonkamer"></div>
+            <button class="btn btn-primary" style="margin-top:14px" onclick="voegUurToe()">+ Uren opslaan</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Geregistreerde uren</span></div>
+          <table class="table"><thead><tr><th>Datum</th><th>Project</th><th>Omschrijving</th><th class="num">Uren</th><th class="num">Tarief</th><th class="num">Bedrag</th><th></th></tr></thead>
+          <tbody id="t-uren"><tr><td colspan="7" class="empty">Nog geen uren geregistreerd</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <div id="km-sectie" style="display:none">
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card"><div class="stat-label">Totaal km dit jaar</div><div class="stat-value" id="k-tot-km" style="color:var(--blue)">0 km</div><div class="stat-sub">zakelijk gereden</div></div>
+          <div class="stat-card"><div class="stat-label">Aftrekbaar (€0,23/km)</div><div class="stat-value" id="k-tot-aftrek" style="color:var(--green)">€ 0,00</div><div class="stat-sub">reiskostenaftrek</div></div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><span class="card-title">Rit toevoegen</span></div>
+          <div class="card-body">
+            <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+              <div><label class="form-label">Datum</label><input type="date" class="form-input" id="k-datum"></div>
+              <div><label class="form-label">Van</label><input type="text" class="form-input" id="k-van" placeholder="Rotterdam"></div>
+              <div><label class="form-label">Naar</label><input type="text" class="form-input" id="k-naar" placeholder="Amsterdam"></div>
+            </div>
+            <div class="form-grid" style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-top:12px">
+              <div><label class="form-label">Kilometers</label><input type="number" step="0.1" class="form-input" id="k-km" placeholder="75"></div>
+              <div><label class="form-label">Doel / project</label><input type="text" class="form-input" id="k-doel" placeholder="bijv. Klantbezoek Jansen"></div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:14px" onclick="voegKmToe()">+ Rit opslaan</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Ritten</span></div>
+          <table class="table"><thead><tr><th>Datum</th><th>Van → Naar</th><th>Doel</th><th class="num">KM</th><th class="num">Aftrek</th><th></th></tr></thead>
+          <tbody id="t-km"><tr><td colspan="6" class="empty">Nog geen ritten geregistreerd</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-pricing">
       <div style="text-align:center;padding:20px 0 30px">
         <div style="font-size:28px;font-weight:800;margin-bottom:8px">💳 Kies jouw plan</div>
@@ -3447,6 +3518,9 @@ async function autoLoad(){
     const f=localStorage.getItem('sb_facturen');if(f)facturen=JSON.parse(f);
     const o=localStorage.getItem('sb_offertes');if(o)offertes=JSON.parse(o);
     const k=localStorage.getItem('sb_klanten');if(k)klanten=JSON.parse(k);
+    loadUrenKm();
+    loadAbonnementen();
+    setTimeout(verwerkAbonnementen, 1200);
     if(bonnen.length||facturen.length){renderAll();}
   }catch(e){}
   // Then load from Supabase cloud (authoritative source)
@@ -3777,7 +3851,7 @@ function loadDemo(){
 }
 
 // RENDER
-function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderControleBanner();renderKlanten();renderBanken();}
+function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderControleBanner();renderKlanten();renderBanken();renderUren();renderKm();renderAbonnementen();}
 
 async function stuurNaarEBoekhouden(index){
   const b = bonnen[index];
@@ -4164,17 +4238,45 @@ function toonBankTransacties(transacties){
   if(card) card.style.display = 'block';
   const tbody = document.getElementById('t-transacties');
   if(!tbody) return;
-  tbody.innerHTML = transacties.map((t,i) => `
-    <tr>
+  tbody.innerHTML = transacties.map((t,i) => {
+    let actie = '';
+    if(t.bedrag < 0){
+      actie = `<button onclick="importAlsBon(${i})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">+ Bon</button>`;
+    } else {
+      // Slimme match: zoek openstaande factuur met hetzelfde bedrag
+      const match = vindMatchendeFactuur(t.bedrag);
+      if(match){
+        actie = `<button onclick="koppelBetalingAanFactuur(${i}, ${match.id})" title="Factuur ${match.nummer} (${esc(match.klant)})" style="background:rgba(52,199,89,.12);border:1px solid #34c759;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;color:#248a3d;font-weight:600">✓ Match: ${match.nummer}</button>`;
+      }
+    }
+    return `<tr>
       <td style="font-size:12px">${t.datum}</td>
       <td style="font-size:12px;max-width:200px">${t.omschrijving}</td>
       <td class="num" style="color:${t.bedrag<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(Math.abs(t.bedrag))}</td>
       <td><span class="badge ${t.bedrag<0?'b-red':'b-green'}" style="font-size:10px">${t.type}</span></td>
-      <td>
-        ${t.bedrag<0 ? `<button onclick="importAlsBon(${i})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">+ Bon</button>` : ''}
-      </td>
-    </tr>
-  `).join('');
+      <td>${actie}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Zoek een openstaande factuur waarvan het totaal overeenkomt met een inkomende betaling
+function vindMatchendeFactuur(bedrag){
+  return facturen.find(f =>
+    f.status && f.status.toLowerCase() !== 'betaald' &&
+    Math.abs((parseFloat(f.totaal)||0) - Math.abs(bedrag)) < 0.02
+  );
+}
+
+// Koppel een inkomende betaling aan een factuur en markeer als betaald
+function koppelBetalingAanFactuur(transactieIndex, factuurId){
+  const f = facturen.find(x=>x.id===factuurId);
+  if(!f) return;
+  if(!confirm(`Factuur ${f.nummer} (${f.klant}, ${fmt(f.totaal)}) markeren als BETAALD?\n\nDe inkomende betaling komt overeen met deze openstaande factuur.`)) return;
+  f.status = 'Betaald';
+  autoSave(); renderAll();
+  // herlaad de transactie-tabel zodat de match verdwijnt
+  if(window.__bankTransacties) toonBankTransacties(window.__bankTransacties);
+  showNotif(`✓ Factuur ${f.nummer} gemarkeerd als betaald`);
 }
 
 function importAlsBon(i){
@@ -5214,6 +5316,240 @@ function toonTourStap(){
   document.body.appendChild(modal);
 }
 
+// ============================================================
+// UREN- & KILOMETERREGISTRATIE
+// ============================================================
+let urenLijst = [];
+let kmLijst = [];
+const KM_TARIEF = 0.23; // €0,23/km reiskostenaftrek 2026
+
+function switchUrenTab(tab){
+  document.getElementById('uren-sectie').style.display = tab==='uren'?'block':'none';
+  document.getElementById('km-sectie').style.display = tab==='km'?'block':'none';
+  const tu=document.getElementById('uren-tab-uren'), tk=document.getElementById('uren-tab-km');
+  if(tab==='uren'){
+    tu.style.cssText='flex:1;padding:14px;border:none;background:var(--orange-light);color:var(--orange);font-weight:700;font-size:14px;cursor:pointer;border-bottom:2px solid var(--orange)';
+    tk.style.cssText='flex:1;padding:14px;border:none;background:transparent;color:var(--text-muted);font-weight:600;font-size:14px;cursor:pointer;border-bottom:2px solid transparent';
+  } else {
+    tk.style.cssText='flex:1;padding:14px;border:none;background:var(--orange-light);color:var(--orange);font-weight:700;font-size:14px;cursor:pointer;border-bottom:2px solid var(--orange)';
+    tu.style.cssText='flex:1;padding:14px;border:none;background:transparent;color:var(--text-muted);font-weight:600;font-size:14px;cursor:pointer;border-bottom:2px solid transparent';
+  }
+}
+
+function voegUurToe(){
+  const datum=document.getElementById('u-datum').value;
+  const project=document.getElementById('u-project').value;
+  const uren=parseFloat(document.getElementById('u-uren').value);
+  const tarief=parseFloat(document.getElementById('u-tarief').value)||0;
+  const omschrijving=document.getElementById('u-omschrijving').value;
+  if(!datum || !project || isNaN(uren) || uren<=0){ showNotif('Vul datum, project en uren in',true); return; }
+  urenLijst.push({id:Date.now(), datum, project, uren, tarief, omschrijving});
+  document.getElementById('u-project').value='';document.getElementById('u-uren').value='';document.getElementById('u-omschrijving').value='';
+  saveUrenKm(); renderUren();
+  showNotif('Uren opgeslagen ✓');
+}
+function verwijderUur(id){
+  if(!confirm('Deze urenregistratie verwijderen?')) return;
+  urenLijst = urenLijst.filter(u=>u.id!==id);
+  saveUrenKm(); renderUren();
+  showNotif('Verwijderd ✓');
+}
+function renderUren(){
+  const tot = urenLijst.reduce((s,u)=>s+u.uren,0);
+  const waarde = urenLijst.reduce((s,u)=>s+u.uren*(u.tarief||0),0);
+  const tu=document.getElementById('u-tot-uren'); if(tu) tu.textContent = (Math.round(tot*100)/100)+' u';
+  const tw=document.getElementById('u-tot-waarde'); if(tw) tw.textContent = fmt(waarde);
+  const tbody=document.getElementById('t-uren'); if(!tbody) return;
+  const gesorteerd=[...urenLijst].sort((a,b)=>(b.datum||'').localeCompare(a.datum||''));
+  tbody.innerHTML = gesorteerd.length ? gesorteerd.map(u=>`
+    <tr><td>${u.datum}</td><td style="font-weight:500">${esc(u.project)}</td><td style="color:var(--text-muted)">${esc(u.omschrijving||'')}</td>
+    <td class="num mono">${u.uren}</td><td class="num mono">${u.tarief?fmt(u.tarief):'-'}</td><td class="num mono" style="font-weight:500">${fmt(u.uren*(u.tarief||0))}</td>
+    <td><button onclick="verwijderUur(${u.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:#ff3b30">🗑️</button></td></tr>`).join('') : '<tr><td colspan="7" class="empty">Nog geen uren geregistreerd</td></tr>';
+}
+
+function voegKmToe(){
+  const datum=document.getElementById('k-datum').value;
+  const van=document.getElementById('k-van').value;
+  const naar=document.getElementById('k-naar').value;
+  const km=parseFloat(document.getElementById('k-km').value);
+  const doel=document.getElementById('k-doel').value;
+  if(!datum || isNaN(km) || km<=0){ showNotif('Vul datum en kilometers in',true); return; }
+  kmLijst.push({id:Date.now(), datum, van, naar, km, doel});
+  document.getElementById('k-van').value='';document.getElementById('k-naar').value='';document.getElementById('k-km').value='';document.getElementById('k-doel').value='';
+  saveUrenKm(); renderKm();
+  showNotif('Rit opgeslagen ✓');
+}
+function verwijderKm(id){
+  if(!confirm('Deze rit verwijderen?')) return;
+  kmLijst = kmLijst.filter(k=>k.id!==id);
+  saveUrenKm(); renderKm();
+  showNotif('Verwijderd ✓');
+}
+function renderKm(){
+  const tot = kmLijst.reduce((s,k)=>s+k.km,0);
+  const aftrek = tot*KM_TARIEF;
+  const tk=document.getElementById('k-tot-km'); if(tk) tk.textContent = (Math.round(tot*10)/10)+' km';
+  const ta=document.getElementById('k-tot-aftrek'); if(ta) ta.textContent = fmt(aftrek);
+  const tbody=document.getElementById('t-km'); if(!tbody) return;
+  const gesorteerd=[...kmLijst].sort((a,b)=>(b.datum||'').localeCompare(a.datum||''));
+  tbody.innerHTML = gesorteerd.length ? gesorteerd.map(k=>`
+    <tr><td>${k.datum}</td><td style="font-weight:500">${esc(k.van||'?')} → ${esc(k.naar||'?')}</td><td style="color:var(--text-muted)">${esc(k.doel||'')}</td>
+    <td class="num mono">${k.km} km</td><td class="num mono" style="font-weight:500">${fmt(k.km*KM_TARIEF)}</td>
+    <td><button onclick="verwijderKm(${k.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:#ff3b30">🗑️</button></td></tr>`).join('') : '<tr><td colspan="6" class="empty">Nog geen ritten geregistreerd</td></tr>';
+}
+
+function saveUrenKm(){
+  try{
+    localStorage.setItem('sb_uren', JSON.stringify(urenLijst));
+    localStorage.setItem('sb_km', JSON.stringify(kmLijst));
+  }catch(e){ showNotif('Opslaan uren/km mislukt',true); }
+}
+function loadUrenKm(){
+  try{
+    const u=localStorage.getItem('sb_uren'); if(u) urenLijst=JSON.parse(u);
+    const k=localStorage.getItem('sb_km'); if(k) kmLijst=JSON.parse(k);
+  }catch(e){}
+}
+
+// ============================================================
+// TERUGKERENDE FACTUREN (ABONNEMENTEN) — automatisch factureren + mailen
+// ============================================================
+let abonnementen = [];
+function loadAbonnementen(){ try{ const a=localStorage.getItem('sb_abonnementen'); if(a) abonnementen=JSON.parse(a); }catch(e){} }
+function saveAbonnementen(){ try{ localStorage.setItem('sb_abonnementen', JSON.stringify(abonnementen)); }catch(e){ showNotif('Opslaan abonnementen mislukt',true); } }
+
+function volgendeDatumNa(datumStr, interval){
+  const d = new Date(datumStr+'T00:00:00');
+  if(interval==='maandelijks') d.setMonth(d.getMonth()+1);
+  else if(interval==='kwartaal') d.setMonth(d.getMonth()+3);
+  else d.setFullYear(d.getFullYear()+1);
+  return d.toISOString().split('T')[0];
+}
+
+function nieuwAbonnementFactuur(){
+  document.getElementById('abonnement-modal')?.remove();
+  const vandaag = new Date().toISOString().split('T')[0];
+  const modal = document.createElement('div');
+  modal.id='abonnement-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
+      <button onclick="document.getElementById('abonnement-modal').remove()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px">🔁 Nieuw abonnement</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">De factuur wordt op elke factuurdatum automatisch aangemaakt en de e-mail staat direct klaar voor verzending.</div>
+      <label class="form-label">Klantnaam *</label><input class="form-input" id="a-klant" placeholder="bijv. Jansen BV" style="margin-bottom:10px">
+      <label class="form-label">Email klant</label><input class="form-input" id="a-email" type="email" placeholder="klant@bedrijf.nl" style="margin-bottom:10px">
+      <label class="form-label">Omschrijving *</label><input class="form-input" id="a-omschrijving" placeholder="bijv. Onderhoudscontract" style="margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Bedrag excl. BTW *</label><input class="form-input" id="a-bedrag" type="number" step="0.01" placeholder="100.00"></div>
+        <div><label class="form-label">BTW</label><select class="form-input" id="a-btw"><option value="21">21%</option><option value="9">9%</option><option value="0">0%</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div><label class="form-label">Interval</label><select class="form-input" id="a-interval"><option value="maandelijks">Maandelijks</option><option value="kwartaal">Per kwartaal</option><option value="jaarlijks">Jaarlijks</option></select></div>
+        <div><label class="form-label">Eerste factuurdatum</label><input class="form-input" id="a-start" type="date" value="${vandaag}"></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px;padding:12px" onclick="slaAbonnementOp()">💾 Abonnement opslaan</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function slaAbonnementOp(){
+  const klant=document.getElementById('a-klant').value.trim();
+  const email=document.getElementById('a-email').value.trim();
+  const omschrijving=document.getElementById('a-omschrijving').value.trim();
+  const bedrag=parseFloat(document.getElementById('a-bedrag').value);
+  const btwPct=parseFloat(document.getElementById('a-btw').value);
+  const interval=document.getElementById('a-interval').value;
+  const start=document.getElementById('a-start').value;
+  if(!klant||!omschrijving||isNaN(bedrag)||bedrag<=0||!start){ showNotif('Vul klant, omschrijving, bedrag en datum in',true); return; }
+  abonnementen.push({id:Date.now(), klant, email, omschrijving, bedrag, btwPct, interval, volgendeDatum:start, actief:true});
+  saveAbonnementen();
+  document.getElementById('abonnement-modal')?.remove();
+  renderAbonnementen();
+  showNotif('🔁 Abonnement opgeslagen ✓');
+  setTimeout(verwerkAbonnementen, 400);
+}
+
+function toggleAbonnement(id){
+  const a=abonnementen.find(x=>x.id===id); if(!a) return;
+  a.actief=!a.actief; saveAbonnementen(); renderAbonnementen();
+  showNotif(a.actief?'Abonnement geactiveerd ▶':'Abonnement gepauzeerd ⏸');
+}
+function verwijderAbonnement(id){
+  const a=abonnementen.find(x=>x.id===id); if(!a) return;
+  if(!confirm('Abonnement "'+a.omschrijving+'" voor '+a.klant+' verwijderen?\n\nReeds aangemaakte facturen blijven bestaan.')) return;
+  abonnementen=abonnementen.filter(x=>x.id!==id); saveAbonnementen(); renderAbonnementen();
+  showNotif('Abonnement verwijderd ✓');
+}
+
+function renderAbonnementen(){
+  const tbody=document.getElementById('t-abonnementen'); if(!tbody) return;
+  tbody.innerHTML = abonnementen.length ? abonnementen.map(a=>`
+    <tr><td style="font-weight:500">${esc(a.klant)}</td><td>${esc(a.omschrijving)}</td>
+    <td class="num mono">${fmt(a.bedrag)}</td><td>${a.btwPct}%</td><td>${a.interval}</td>
+    <td class="mono">${a.volgendeDatum}</td>
+    <td><span class="badge ${a.actief?'b-green':'b-gray'}">${a.actief?'Actief':'Gepauzeerd'}</span></td>
+    <td style="display:flex;gap:4px">
+      <button onclick="toggleAbonnement(${a.id})" title="${a.actief?'Pauzeren':'Activeren'}" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">${a.actief?'⏸':'▶'}</button>
+      <button onclick="verwijderAbonnement(${a.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:#ff3b30">🗑️</button>
+    </td></tr>`).join('') : '<tr><td colspan="8" class="empty">Nog geen abonnementen — maak er één voor terugkerende klanten</td></tr>';
+}
+
+function verwerkAbonnementen(){
+  const vandaag = new Date().toISOString().split('T')[0];
+  const gemaakt = [];
+  abonnementen.forEach(a=>{
+    if(!a.actief) return;
+    let guard=0;
+    while(a.volgendeDatum && a.volgendeDatum <= vandaag && guard<24){
+      const btwBedrag = parseFloat((a.bedrag*a.btwPct/100).toFixed(2));
+      const totaal = parseFloat((a.bedrag+btwBedrag).toFixed(2));
+      const nummer = '2026-'+String(factuurNr).padStart(3,'0'); factuurNr++;
+      const verval = new Date(Date.now()+30*864e5).toISOString().split('T')[0];
+      const f = {id:Date.now()+Math.floor(Math.random()*9999), nummer, klant:a.klant, klantEmail:a.email||'', datum:a.volgendeDatum, verval, totaal, status:'Openstaand', project:a.omschrijving+' (abonnement)'};
+      facturen.push(f);
+      gemaakt.push(f);
+      a.volgendeDatum = volgendeDatumNa(a.volgendeDatum, a.interval);
+      guard++;
+    }
+  });
+  if(gemaakt.length){
+    saveAbonnementen(); autoSave(); renderAll();
+    toonAbonnementFacturen(gemaakt);
+  }
+}
+
+function toonAbonnementFacturen(gemaakt){
+  document.getElementById('abonnement-facturen-modal')?.remove();
+  const modal=document.createElement('div');
+  modal.id='abonnement-facturen-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9001;display:flex;align-items:center;justify-content:center;padding:20px';
+  const rows = gemaakt.map(f=>`
+    <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">${f.nummer} — ${esc(f.klant)}</div>
+      <div style="font-size:11px;color:var(--text-muted)">${esc(f.project)} · ${fmt(f.totaal)}</div></div>
+      <button onclick="mailFactuurAutomatisch(${f.id})" class="btn btn-primary" style="font-size:12px;padding:6px 12px">📧 Mail nu</button>
+    </div>`).join('');
+  modal.innerHTML=`
+    <div style="background:var(--white);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;position:relative">
+      <button onclick="document.getElementById('abonnement-facturen-modal').remove()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px">🔁 ${gemaakt.length} abonnementsfactu${gemaakt.length===1?'ur':'ren'} automatisch aangemaakt</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Opgeslagen onder Facturen. Klik "Mail nu" — de e-mail (met klant-adres, bedrag en betaalinfo) staat volledig klaar; alleen nog op verzenden drukken.</div>
+      ${rows}
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function mailFactuurAutomatisch(fid){
+  const f=facturen.find(x=>x.id===fid); if(!f) return;
+  const st=JSON.parse(localStorage.getItem('sb_settings')||'{}');
+  const bedrijf=st.naam||'';
+  const iban=st.iban||'';
+  const tekst=`Beste ${f.klant},\n\nHierbij ontvangt u onze factuur ${f.nummer} d.d. ${f.datum} voor ${f.project||'onze diensten'}.\n\nTotaalbedrag: ${fmt(f.totaal)}\nVervaldatum: ${f.verval}\n\nU kunt het bedrag overmaken op ${iban}${bedrijf?' t.n.v. '+bedrijf:''} o.v.v. ${f.nummer}.\n\nMet vriendelijke groet,\n${bedrijf}`;
+  window.open('mailto:'+encodeURIComponent(f.klantEmail||'')+'?subject='+encodeURIComponent('Factuur '+f.nummer+(bedrijf?' — '+bedrijf:''))+'&body='+encodeURIComponent(tekst));
+  showNotif('📧 E-mail klaargezet — druk op verzenden');
+}
+
 function renderReminders(){
   const box = document.getElementById('dashboard-reminders');
   if(!box) return;
@@ -5248,12 +5584,13 @@ function renderReminders(){
   const verlopen = onbetaald.filter(f=>f.verval && new Date(f.verval) < nu);
   if(verlopen.length > 0){
     const totaal = verlopen.reduce((s,f)=>s+(parseFloat(f.totaal)||0),0);
+    const lijst = verlopen.slice(0,3).map(f=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 14px 5px 42px;font-size:12px"><span style="flex:1">${f.nummer} — ${esc(f.klant)} — ${fmt(parseFloat(f.totaal)||0)}</span><button onclick="stuurHerinnering(${f.id})" style="font-size:11px;padding:3px 10px;border:1px solid #ff9500;background:transparent;color:#ff9500;border-radius:6px;cursor:pointer;font-weight:600">🔔 Stuur herinnering</button></div>`).join('');
     items.push(`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:4px solid #ff3b30">
       <span style="font-size:18px">⏰</span>
       <div style="flex:1"><div style="font-size:13px;font-weight:700">${verlopen.length} verlopen factuur(en) — ${fmt(totaal)} openstaand</div>
-      <div style="font-size:11px;color:var(--text-muted)">Stuur een betalingsherinnering naar je klant</div></div>
+      <div style="font-size:11px;color:var(--text-muted)">Stuur met 1 klik een betalingsherinnering</div></div>
       <button onclick="showPage('facturen',null)" class="btn btn-secondary" style="font-size:11px;padding:5px 12px">Bekijk facturen</button>
-    </div>`);
+    </div>${lijst}`);
   } else if(onbetaald.length > 0){
     const totaal = onbetaald.reduce((s,f)=>s+(parseFloat(f.totaal)||0),0);
     items.push(`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:4px solid #ff9500">
@@ -5583,10 +5920,52 @@ function renderFacturen(){
     <td><span class="badge ${f.status==='Betaald'?'b-green':f.status==='Openstaand'?'b-orange':'b-red'}">${f.status}</span></td>
     <td style="display:flex;gap:4px">
       <button onclick="markeerBetaald(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">✓</button>
+      ${f.status!=='Betaald' ? `<button onclick="stuurHerinnering(${f.id})" title="Stuur betalingsherinnering" style="font-size:11px;padding:3px 8px;border:1px solid #ff9500;border-radius:6px;background:transparent;cursor:pointer;color:#ff9500">🔔</button>` : ''}
       <button onclick="stuurBetaallink(${f.id})" title="Stuur iDEAL betaallink" style="font-size:11px;padding:3px 8px;border:1px solid var(--orange);border-radius:6px;background:transparent;cursor:pointer;color:var(--orange)">💳</button>
       <button onclick="stuurWhatsApp(${f.id})" title="Stuur via WhatsApp" style="font-size:11px;padding:3px 8px;border:1px solid #25D366;border-radius:6px;background:transparent;cursor:pointer;color:#25D366">📱</button>
       <button onclick="emailFactuurId(${f.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text)">📧</button>
     </td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nog geen facturen</td></tr>';
+}
+
+// Betalingsherinnering sturen (WhatsApp of email) — voor onbetaalde facturen
+function stuurHerinnering(id){
+  const f = facturen.find(x=>x.id===id);
+  if(!f) return;
+  const st = JSON.parse(localStorage.getItem('sb_settings')||'{}');
+  const bedrijf = st.naam || 'ons';
+  const verlopen = f.verval && new Date(f.verval) < new Date();
+  const dagen = f.verval ? Math.floor((new Date() - new Date(f.verval))/(864e5)) : 0;
+  document.getElementById('herinnering-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'herinnering-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+  const bericht = `Beste ${f.klant},\n\nWij willen u vriendelijk herinneren aan onze factuur ${f.nummer} van ${f.datum} voor ${fmt(f.totaal)}.${verlopen?` De betaaltermijn is ${dagen} dag(en) verstreken (verviel ${f.verval}).`:` Deze vervalt op ${f.verval}.`}\n\nWilt u het bedrag zo spoedig mogelijk overmaken? Heeft u de betaling al gedaan, dan kunt u dit bericht als niet verzonden beschouwen.\n\nMet vriendelijke groet,\n${bedrijf}`;
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:16px;padding:24px;max-width:480px;width:100%;position:relative">
+      <button onclick="document.getElementById('herinnering-modal').remove()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px">🔔 Betalingsherinnering</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Factuur ${f.nummer} — ${esc(f.klant)} — ${fmt(f.totaal)}${verlopen?` · <span style="color:#ff3b30">${dagen} dagen te laat</span>`:''}</div>
+      <textarea id="herinnering-tekst" style="width:100%;min-height:180px;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;font-family:inherit;line-height:1.5;resize:vertical">${bericht}</textarea>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="verstuurHerinneringWhatsApp(${id})" class="btn" style="flex:1;justify-content:center;background:#25D366;color:#fff;border:none">📱 Via WhatsApp</button>
+        <button onclick="verstuurHerinneringEmail(${id})" class="btn btn-secondary" style="flex:1;justify-content:center">📧 Via Email</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function verstuurHerinneringWhatsApp(id){
+  const tekst = document.getElementById('herinnering-tekst')?.value || '';
+  window.open('https://wa.me/?text='+encodeURIComponent(tekst), '_blank');
+  document.getElementById('herinnering-modal')?.remove();
+  showNotif('Herinnering geopend in WhatsApp 📱');
+}
+function verstuurHerinneringEmail(id){
+  const f = facturen.find(x=>x.id===id);
+  const tekst = document.getElementById('herinnering-tekst')?.value || '';
+  const onderwerp = 'Betalingsherinnering factuur '+(f?.nummer||'');
+  window.open('mailto:?subject='+encodeURIComponent(onderwerp)+'&body='+encodeURIComponent(tekst), '_blank');
+  document.getElementById('herinnering-modal')?.remove();
+  showNotif('Herinnering geopend in email 📧');
 }
 
 function renderOffertes(){
