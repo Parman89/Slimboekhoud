@@ -118,7 +118,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .user-company{font-size:10px;color:rgba(255,255,255,.4)}
 
 /* MAIN */
-.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.main{margin-left:240px;flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh}
 .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
 .page-title{font-size:15px;font-weight:600;flex:1}
 .btn{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
@@ -712,6 +712,7 @@ tr:hover td{background:var(--bg)}
         📱 <span>Installeer SlimBoekhoud als app op je telefoon!</span>
         <button class="btn btn-primary" onclick="installApp()" style="font-size:12px">Installeren</button>
       </div>
+      <div id="dashboard-reminders" style="display:none;margin-bottom:16px"></div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Omzet dit jaar</div><div class="stat-value" id="d-omzet" style="color:var(--green)">€ 0,00</div><div class="stat-sub">uit facturen</div></div>
         <div class="stat-card"><div class="stat-label">Kosten dit jaar</div><div class="stat-value" id="d-kosten">€ 0,00</div><div class="stat-sub">incl. BTW</div></div>
@@ -782,6 +783,7 @@ tr:hover td{background:var(--bg)}
       </div>
       <button class="btn btn-primary" id="run-btn" onclick="runAgents()" disabled style="width:100%;padding:12px;margin-bottom:20px;justify-content:center">▶ Verwerk bonnen met agenten</button>
       <div id="cat-folders" class="cat-folders" style="display:none"></div>
+      <div id="bon-controle-banner" style="display:none;margin-bottom:16px"></div>
       <div class="card" id="bonnen-results" style="display:none">
         <div class="card-header">
           <span class="card-title" id="bonnen-count">Verwerkte bonnen</span>
@@ -2536,12 +2538,6 @@ async function genereerAIDoc(){
   const vraag = input?.value?.trim();
   if(!vraag){ showNotif('Beschrijf eerst het werk', true); return; }
 
-  const apiKey = localStorage.getItem('anthropic_key') || localStorage.getItem('sb_anthropic_key');
-  if(!apiKey){
-    showNotif('❌ Voeg je Anthropic API key toe bij Instellingen → Koppelingen', true);
-    return;
-  }
-
   // Check Pro (basic check)
   const isProUser = true; // TODO: check subscription when live Stripe is active
 
@@ -2603,22 +2599,18 @@ Regels: maximaal 5, realistisch voor Nederlandse marktprijzen, splits arbeid en 
 Schrijf omschrijvingen professioneel in het Nederlands.`;
 
   try{
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/.netlify/functions/claude', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
         messages: [{role: 'user', content: prompt}]
       })
     });
 
     const data = await res.json();
-    const text = data.content?.[0]?.text || '';
+    const text = data.content?.map(b=>b.text||'').join('') || '';
 
     // Parse JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -3109,18 +3101,15 @@ Voorbeeld: "waar zijn mijn facturen?" → Antwoord + NAVIGEER:facturen
 Voorbeeld: "toon BTW aangifte Q2" → Antwoord + NAVIGEER:btw`;
 
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/.netlify/functions/claude', {
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:400,
-        system: ctx,
-        messages:[{role:'user',content:vraag}]
+        messages:[{role:'user',content: ctx + '\n\n--- Vraag van gebruiker ---\n' + vraag}]
       })
     });
     const data = await res.json();
-    let antwoord = data.content?.[0]?.text || 'Geen antwoord ontvangen.';
+    let antwoord = data.content?.map(b=>b.text||'').join('') || 'Geen antwoord ontvangen.';
     // Handle navigation commands
     const navMatch = antwoord.match(/NAVIGEER:([a-z]+)/);
     if(navMatch){
@@ -3281,15 +3270,27 @@ if(window.location.search.includes('betaald=true')){
 
 // AUTOSAVE — localStorage + Supabase cloud sync
 function autoSave(){
+  let opslaanGelukt = true;
   try{
     localStorage.setItem('sb_bonnen',JSON.stringify(bonnen));
     localStorage.setItem('sb_facturen',JSON.stringify(facturen));
     localStorage.setItem('sb_offertes',JSON.stringify(offertes));
     localStorage.setItem('sb_klanten',JSON.stringify(klanten));
-  }catch(e){}
-  // Async sync to Supabase cloud (debounced)
+    window.__laatsteSave = new Date();
+  }catch(e){
+    opslaanGelukt = false;
+    // Opslaan mislukt — waarschuw de gebruiker (anders gaat data stil verloren)
+    if(e && (e.name === 'QuotaExceededError' || /quota/i.test(e.message||''))){
+      showNotif('⚠️ Opslag bijna vol! Verwijder oude bon-foto\u0027s of exporteer naar CSV. Je data is NIET opgeslagen.', true);
+    } else {
+      showNotif('⚠️ Opslaan mislukt: ' + (e.message||'onbekende fout') + '. Maak een back-up via CSV-export.', true);
+    }
+    console.error('autoSave fout:', e);
+  }
+  // Async sync to Supabase cloud (debounced backup)
   if(window._sbSyncTimer) clearTimeout(window._sbSyncTimer);
   window._sbSyncTimer = setTimeout(syncToCloud, 2000);
+  return opslaanGelukt;
 }
 
 async function syncToCloud(){
@@ -3628,8 +3629,8 @@ async function runAgents(){
           continue;
         }
 
-        // Call Anthropic API DIRECT (sneller dan via Netlify function)
-        const apiKey = localStorage.getItem('anthropic_key') || localStorage.getItem('sb_anthropic_key');
+        // Altijd via Netlify function (server-side key, geen CORS-problemen)
+        const apiKey = null;
         let response, data;
 
         if(apiKey){
@@ -3776,7 +3777,7 @@ function loadDemo(){
 }
 
 // RENDER
-function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderKlanten();renderBanken();}
+function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderControleBanner();renderKlanten();renderBanken();}
 
 async function stuurNaarEBoekhouden(index){
   const b = bonnen[index];
@@ -4459,6 +4460,244 @@ if(!diensten.length){
   try{ localStorage.setItem('sb_diensten', JSON.stringify(diensten)); }catch(e){}
 }
 
+// ============================================================
+// AUTOMATISCHE BON-CONTROLE — checkt bedragen, datum, BTW
+// ============================================================
+function vindDubbeleBonnen(){
+  // Groepeer bonnen op datum + leverancier + bedrag → duplicaten
+  const groepen = {};
+  bonnen.forEach((b, i) => {
+    const lev = (b.leverancier||'').trim().toLowerCase();
+    const datum = b.datum||'';
+    const excl = parseFloat(b.excl)||0;
+    const key = datum + '|' + lev + '|' + excl.toFixed(2);
+    if(!groepen[key]) groepen[key] = [];
+    groepen[key].push(i);
+  });
+  // Alleen groepen met 2+ bonnen zijn duplicaten
+  return Object.values(groepen)
+    .filter(indices => indices.length > 1)
+    .map(indices => ({
+      indices,
+      naam: bonnen[indices[0]].leverancier || '(geen naam)',
+      datum: bonnen[indices[0]].datum || '?',
+      bedrag: parseFloat(bonnen[indices[0]].excl)||0,
+      aantal: indices.length
+    }));
+}
+
+function controleerBonnen(){
+  const problemen = [];
+  bonnen.forEach((b, i) => {
+    const issues = [];
+    const naam = b.leverancier || '(geen naam)';
+    // 1. Ontbrekend/leeg bedrag
+    const excl = parseFloat(b.excl);
+    if(b.excl === undefined || b.excl === null || b.excl === '' || isNaN(excl) || excl === 0){
+      issues.push({type:'bedrag', tekst:'Geen bedrag ingevuld', fixbaar:false});
+    }
+    // 2. Ontbrekende datum
+    if(!b.datum || b.datum === ''){
+      issues.push({type:'datum', tekst:'Geen datum', fixbaar:false});
+    }
+    // 3. Ontbrekende leverancier
+    if(!b.leverancier || b.leverancier === ''){
+      issues.push({type:'leverancier', tekst:'Geen leverancier/naam', fixbaar:false});
+    }
+    // 4. BTW-percentage ontbreekt
+    let pct = b.btwPct;
+    if(pct === undefined || pct === null) pct = b.pct;
+    if(pct === undefined || pct === null){
+      issues.push({type:'btwpct', tekst:'Geen BTW-tarief', fixbaar:true});
+      pct = 21;
+    }
+    pct = parseFloat(pct);
+    // 5. BTW/totaal klopt niet (alleen checken als er een geldig bedrag is)
+    if(!isNaN(excl) && excl > 0 && !isNaN(pct)){
+      const verwachtBtw = parseFloat((excl * pct/100).toFixed(2));
+      const verwachtIncl = parseFloat((excl + verwachtBtw).toFixed(2));
+      const huidigBtw = parseFloat(b.btw);
+      const huidigIncl = parseFloat(b.incl);
+      if(isNaN(huidigBtw) || Math.abs(huidigBtw - verwachtBtw) > 0.02){
+        issues.push({type:'btwfout', tekst:`BTW klopt niet (is ${isNaN(huidigBtw)?'leeg':fmt(huidigBtw)}, hoort ${fmt(verwachtBtw)} te zijn bij ${pct}%)`, fixbaar:true, verwachtBtw, verwachtIncl});
+      } else if(isNaN(huidigIncl) || Math.abs(huidigIncl - verwachtIncl) > 0.02){
+        issues.push({type:'inclfout', tekst:`Totaal klopt niet (is ${isNaN(huidigIncl)?'leeg':fmt(huidigIncl)}, hoort ${fmt(verwachtIncl)} te zijn)`, fixbaar:true, verwachtBtw, verwachtIncl});
+      }
+    }
+    // 6. Ontbrekende categorie
+    if(!b.cat || b.cat === ''){
+      issues.push({type:'cat', tekst:'Geen categorie', fixbaar:true});
+    }
+    if(issues.length) problemen.push({index:i, naam, datum:b.datum||'?', issues});
+  });
+  return problemen;
+}
+
+function renderControleBanner(){
+  const banner = document.getElementById('bon-controle-banner');
+  if(!banner) return;
+  if(bonnen.length === 0){ banner.style.display='none'; return; }
+  const problemen = controleerBonnen();
+  const dubbele = vindDubbeleBonnen();
+  if(problemen.length === 0 && dubbele.length === 0){
+    banner.style.display='block';
+    banner.innerHTML = `<div style="background:rgba(52,199,89,.1);border:1px solid rgba(52,199,89,.4);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">✅</span>
+      <div style="font-size:13px;font-weight:600;color:#248a3d">Alle ${bonnen.length} bonnen gecontroleerd — geen problemen, geen dubbele bonnen.</div>
+    </div>`;
+    return;
+  }
+  const totaalIssues = problemen.reduce((s,p)=>s+p.issues.length,0);
+  const autoFixbaar = problemen.filter(p=>p.issues.some(i=>i.fixbaar)).length;
+  const dubbelTekst = dubbele.length > 0 ? `<span style="color:#ff9500">📑 ${dubbele.length} dubbele bon${dubbele.length!==1?'nen':''}</span>` : '';
+  const probleemTekst = totaalIssues > 0 ? `${totaalIssues} probleem${totaalIssues!==1?'en':''} in ${problemen.length} bon${problemen.length!==1?'nen':''}` : '';
+  const tussen = (probleemTekst && dubbelTekst) ? ' · ' : '';
+  banner.style.display='block';
+  banner.innerHTML = `
+    <div style="background:rgba(255,59,48,.07);border:1px solid rgba(255,59,48,.35);border-radius:12px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:20px">⚠️</span>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">Controle: ${probleemTekst}${tussen}${dubbelTekst}</div>
+        <button onclick="toonControleDetails()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600">Bekijk details</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">${dubbele.length > 0 ? '📑 Klik "Bekijk details" om dubbele bonnen te zien en er één te verwijderen. ' : ''}${autoFixbaar > 0 ? `🔧 ${autoFixbaar} bon(nen) kan ik automatisch herstellen (BTW/categorie).` : ''}</div>
+    </div>`;
+}
+
+function toonControleDetails(){
+  const problemen = controleerBonnen();
+  const dubbele = vindDubbeleBonnen();
+  if(problemen.length === 0 && dubbele.length === 0){ showNotif('Geen problemen meer ✓'); renderControleBanner(); return; }
+  document.getElementById('controle-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'controle-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  // Dubbele bonnen sectie
+  let dubbelHtml = '';
+  if(dubbele.length > 0){
+    const dubbelRows = dubbele.map(d => {
+      // toon elke kopie met een verwijder-knop
+      const kopieen = d.indices.map((idx, n) => `
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0;padding:6px 8px;background:var(--bg);border-radius:6px">
+          <span style="flex:1">Kopie ${n+1}: ${esc(d.naam)} — ${fmt(d.bedrag)} — ${d.datum}</span>
+          <button onclick="verwijderDubbeleBon(${idx})" class="btn" style="font-size:11px;padding:4px 10px;background:#ff3b30;color:#fff;border:none;border-radius:6px;cursor:pointer">🗑️ Verwijder deze</button>
+        </div>`).join('');
+      return `<div style="border:1px solid #ff9500;border-radius:10px;padding:12px;margin-bottom:10px;background:rgba(255,149,0,.05)">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px">📑 ${d.aantal}x dezelfde bon: ${esc(d.naam)} (${fmt(d.bedrag)}, ${d.datum})</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Deze bonnen lijken identiek. Verwijder de kopie(ën) die je niet wilt houden — hou er één.</div>
+        ${kopieen}
+      </div>`;
+    }).join('');
+    dubbelHtml = `
+      <div style="font-size:15px;font-weight:800;margin:8px 0 10px">📑 Dubbele bonnen (${dubbele.length})</div>
+      <div style="background:rgba(255,149,0,.08);border-radius:10px;padding:10px;margin-bottom:14px;font-size:12px;line-height:1.5">
+        Deze bonnen hebben dezelfde <strong>datum, leverancier én bedrag</strong> — waarschijnlijk per ongeluk dubbel verwerkt. Klik "🗑️ Verwijder deze" bij de kopie die weg mag. <strong>Verwijderen kan niet ongedaan gemaakt worden.</strong>
+      </div>
+      ${dubbelRows}`;
+  }
+
+  const rows = problemen.map(p => {
+    const issueList = p.issues.map(iss => {
+      const kleur = iss.fixbaar ? '#ff9500' : '#ff3b30';
+      const label = iss.fixbaar ? '🔧 herstelbaar' : '✏️ zelf invullen';
+      return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:3px 0">
+        <span style="color:${kleur}">●</span>
+        <span style="flex:1">${iss.tekst}</span>
+        <span style="font-size:10px;color:var(--text-muted)">${label}</span>
+      </div>`;
+    }).join('');
+    const heeftFixbaar = p.issues.some(i=>i.fixbaar);
+    const heeftHandmatig = p.issues.some(i=>!i.fixbaar);
+    return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <strong style="font-size:13px">${esc(p.naam)}</strong>
+        <span style="font-size:11px;color:var(--text-muted)">${p.datum}</span>
+      </div>
+      ${issueList}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        ${heeftFixbaar ? `<button onclick="herstelBon(${p.index})" class="btn btn-primary" style="font-size:12px;padding:6px 12px">🔧 Herstel automatisch</button>` : ''}
+        ${heeftHandmatig ? `<button onclick="document.getElementById('controle-modal').remove();bewerkBon(${p.index})" class="btn btn-secondary" style="font-size:12px;padding:6px 12px">✏️ Zelf invullen</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  const autoFixCount = problemen.filter(p=>p.issues.some(i=>i.fixbaar)).length;
+  const probleemHtml = problemen.length > 0 ? `
+    <div style="font-size:15px;font-weight:800;margin:8px 0 10px">⚠️ Problemen (${problemen.length})</div>
+    <div style="background:rgba(244,164,24,.08);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;line-height:1.6">
+      <strong>Uitleg van de oplossingen:</strong><br>
+      🔧 <strong>BTW/totaal herstellen</strong>: ik herbereken het BTW-bedrag en totaal op basis van het bedrag excl. BTW × het BTW-tarief. Voorbeeld: €100 excl. bij 21% → BTW €21, totaal €121.<br>
+      🔧 <strong>Categorie</strong>: ontbrekende categorie zet ik op "Overig" (kun je later aanpassen).<br>
+      ✏️ <strong>Bedrag/datum/leverancier</strong>: deze kan ik niet verzinnen — die moet je zelf invullen (knop "Zelf invullen").
+    </div>
+    ${rows}
+    ${autoFixCount > 1 ? `<button onclick="herstelAlleBonnen()" class="btn btn-primary" style="width:100%;padding:12px;margin-top:8px;justify-content:center">🔧 Herstel alle ${autoFixCount} herstelbare bonnen in één keer</button>` : ''}` : '';
+
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:16px;padding:24px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;position:relative">
+      <button onclick="document.getElementById('controle-modal').remove()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      <div style="font-size:18px;font-weight:800;margin-bottom:6px">🔍 Bon-controle</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Ik heb je bonnen gecontroleerd. <strong>Ik leg eerst uit — jij beslist of ik herstel of verwijder.</strong></div>
+      ${dubbelHtml}
+      ${probleemHtml}
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function verwijderDubbeleBon(index){
+  const b = bonnen[index];
+  if(!b) return;
+  const naam = b.leverancier || 'deze bon';
+  if(!confirm(`Weet je zeker dat je deze bon wilt verwijderen?\n\n${naam} — ${fmt(parseFloat(b.excl)||0)} — ${b.datum||'?'}\n\nDit kan niet ongedaan gemaakt worden.`)) return;
+  bonnen.splice(index, 1);
+  autoSave(); renderAll();
+  showNotif('🗑️ Dubbele bon verwijderd ✓');
+  toonControleDetails();
+}
+
+function herstelBon(index){
+  const b = bonnen[index];
+  if(!b) return;
+  let pct = b.btwPct;
+  if(pct === undefined || pct === null) pct = b.pct;
+  if(pct === undefined || pct === null) pct = 21;
+  pct = parseFloat(pct); if(isNaN(pct)) pct = 21;
+  b.btwPct = pct; b.pct = pct;
+  const excl = parseFloat(b.excl);
+  if(!isNaN(excl) && excl > 0){
+    b.btw = parseFloat((excl * pct/100).toFixed(2));
+    b.incl = parseFloat((excl + b.btw).toFixed(2));
+  }
+  if(!b.cat || b.cat === '') b.cat = 'Overig';
+  autoSave(); renderAll();
+  showNotif('🔧 Bon hersteld ✓');
+  toonControleDetails();
+}
+
+function herstelAlleBonnen(){
+  const problemen = controleerBonnen();
+  let hersteld = 0;
+  problemen.forEach(p => {
+    if(p.issues.some(i=>i.fixbaar)){
+      const b = bonnen[p.index];
+      let pct = b.btwPct; if(pct===undefined||pct===null) pct=b.pct; if(pct===undefined||pct===null) pct=21;
+      pct = parseFloat(pct); if(isNaN(pct)) pct=21;
+      b.btwPct = pct; b.pct = pct;
+      const excl = parseFloat(b.excl);
+      if(!isNaN(excl) && excl > 0){
+        b.btw = parseFloat((excl * pct/100).toFixed(2));
+        b.incl = parseFloat((excl + b.btw).toFixed(2));
+      }
+      if(!b.cat || b.cat === '') b.cat = 'Overig';
+      hersteld++;
+    }
+  });
+  autoSave(); renderAll();
+  showNotif(`🔧 ${hersteld} bonnen hersteld ✓`);
+  document.getElementById('controle-modal')?.remove();
+  toonControleDetails();
+}
+
 function renderCategoryFolders(){
   const container = document.getElementById('cat-folders');
   if(!container) return;
@@ -4923,6 +5162,114 @@ function renderDashboard(){
     window.__overdueShown = true;
     showNotif(`⚠️ ${overdue.length} factuur(en) zijn verlopen!`,true);
   }
+  renderReminders();
+  // Onboarding rondleiding: 1x tonen voor nieuwe gebruikers
+  if(!localStorage.getItem('sb_tour_done') && !window.__tourChecked){
+    window.__tourChecked = true;
+    setTimeout(()=>{ if(!localStorage.getItem('sb_tour_done')) startRondleiding(); }, 800);
+  }
+}
+
+// ============================================================
+// SLIMME HERINNERINGEN — BTW-deadline + onbetaalde facturen
+// ============================================================
+// ============================================================
+// ONBOARDING RONDLEIDING — 4-staps welkom voor nieuwe gebruikers
+// ============================================================
+const RONDLEIDING_STAPPEN = [
+  {emoji:'👋', titel:'Welkom bij SlimBoekhoud!', tekst:'In 4 korte stappen laten we zien hoe je je hele boekhouding regelt — zonder gedoe. Klaar? Klik op "Volgende".'},
+  {emoji:'📸', titel:'1. Scan je bonnen', tekst:'Ga naar <strong>Bonnen</strong> en maak een foto van je bon. De AI leest automatisch de leverancier, datum, bedrag en BTW. Geen overtypen meer!'},
+  {emoji:'📄', titel:'2. Maak offertes & facturen', tekst:'Onder <strong>Offertes</strong> en <strong>Facturen</strong> maak je in 1 minuut een professioneel document — met je eigen logo en gegevens. Of laat de AI het voor je maken.'},
+  {emoji:'🧮', titel:'3. BTW-aangifte automatisch', tekst:'Onder <strong>BTW aangifte</strong> zie je per kwartaal precies wat je moet betalen of terugkrijgt — klaar om in te vullen bij de Belastingdienst.'},
+  {emoji:'🚀', titel:'4. Klaar om te starten!', tekst:'Stel eerst je bedrijfsgegevens in onder <strong>Instellingen</strong> (logo, KvK, IBAN). Daarna kun je direct aan de slag. Veel succes!'}
+];
+function startRondleiding(){
+  window.__tourStap = 0;
+  toonTourStap();
+}
+function toonTourStap(){
+  document.getElementById('tour-modal')?.remove();
+  const i = window.__tourStap || 0;
+  const s = RONDLEIDING_STAPPEN[i];
+  const laatste = i === RONDLEIDING_STAPPEN.length - 1;
+  const eerste = i === 0;
+  const modal = document.createElement('div');
+  modal.id = 'tour-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px';
+  const dots = RONDLEIDING_STAPPEN.map((_,n)=>`<span style="width:8px;height:8px;border-radius:50%;background:${n===i?'var(--orange)':'var(--border)'};display:inline-block"></span>`).join('');
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:18px;padding:32px;max-width:440px;width:100%;text-align:center;position:relative">
+      <button onclick="document.getElementById('tour-modal').remove();localStorage.setItem('sb_tour_done','1')" title="Overslaan" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      <div style="font-size:48px;margin-bottom:14px">${s.emoji}</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:10px">${s.titel}</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--text-muted);margin-bottom:24px">${s.tekst}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px">${dots}</div>
+      <div style="display:flex;gap:10px">
+        ${!eerste ? `<button onclick="window.__tourStap--;toonTourStap()" class="btn btn-secondary" style="flex:1;justify-content:center">← Vorige</button>` : ''}
+        ${!laatste ? `<button onclick="window.__tourStap++;toonTourStap()" class="btn btn-primary" style="flex:2;justify-content:center">Volgende →</button>`
+                   : `<button onclick="document.getElementById('tour-modal').remove();localStorage.setItem('sb_tour_done','1');showPage('instellingen',null)" class="btn btn-primary" style="flex:2;justify-content:center">🚀 Aan de slag!</button>`}
+      </div>
+      ${eerste ? `<button onclick="document.getElementById('tour-modal').remove();localStorage.setItem('sb_tour_done','1')" style="background:none;border:none;color:var(--text-muted);font-size:12px;cursor:pointer;margin-top:14px">Overslaan</button>` : ''}
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function renderReminders(){
+  const box = document.getElementById('dashboard-reminders');
+  if(!box) return;
+  const items = [];
+
+  // 1. BTW-aangifte deadline (kwartaaldeadlines: Q1→30 apr, Q2→31 jul, Q3→31 okt, Q4→31 jan)
+  const nu = new Date();
+  const jaar = nu.getFullYear();
+  const deadlines = [
+    {q:'Q4 '+(jaar-1), datum:new Date(jaar,0,31)},   // 31 jan
+    {q:'Q1 '+jaar, datum:new Date(jaar,3,30)},        // 30 apr
+    {q:'Q2 '+jaar, datum:new Date(jaar,6,31)},        // 31 jul
+    {q:'Q3 '+jaar, datum:new Date(jaar,9,31)},        // 31 okt
+    {q:'Q4 '+jaar, datum:new Date(jaar+1,0,31)}       // 31 jan volgend jaar
+  ];
+  const volgende = deadlines.find(d=>d.datum>=nu);
+  if(volgende){
+    const dagen = Math.ceil((volgende.datum - nu)/(1000*60*60*24));
+    if(dagen <= 21){
+      const kleur = dagen<=7 ? '#ff3b30' : '#ff9500';
+      items.push(`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:4px solid ${kleur}">
+        <span style="font-size:18px">📅</span>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700">BTW-aangifte ${volgende.q} deadline over ${dagen} dag${dagen!==1?'en':''}</div>
+        <div style="font-size:11px;color:var(--text-muted)">Uiterlijk ${volgende.datum.toLocaleDateString('nl-NL')} indienen bij de Belastingdienst</div></div>
+        <button onclick="showPage('btw',null)" class="btn btn-primary" style="font-size:11px;padding:5px 12px">Naar aangifte</button>
+      </div>`);
+    }
+  }
+
+  // 2. Onbetaalde/verlopen facturen
+  const onbetaald = facturen.filter(f=>f.status && f.status.toLowerCase()!=='betaald');
+  const verlopen = onbetaald.filter(f=>f.verval && new Date(f.verval) < nu);
+  if(verlopen.length > 0){
+    const totaal = verlopen.reduce((s,f)=>s+(parseFloat(f.totaal)||0),0);
+    items.push(`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:4px solid #ff3b30">
+      <span style="font-size:18px">⏰</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">${verlopen.length} verlopen factuur(en) — ${fmt(totaal)} openstaand</div>
+      <div style="font-size:11px;color:var(--text-muted)">Stuur een betalingsherinnering naar je klant</div></div>
+      <button onclick="showPage('facturen',null)" class="btn btn-secondary" style="font-size:11px;padding:5px 12px">Bekijk facturen</button>
+    </div>`);
+  } else if(onbetaald.length > 0){
+    const totaal = onbetaald.reduce((s,f)=>s+(parseFloat(f.totaal)||0),0);
+    items.push(`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:4px solid #ff9500">
+      <span style="font-size:18px">💸</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">${onbetaald.length} openstaande factuur(en) — ${fmt(totaal)}</div>
+      <div style="font-size:11px;color:var(--text-muted)">Nog niet betaald door je klant</div></div>
+      <button onclick="showPage('facturen',null)" class="btn btn-secondary" style="font-size:11px;padding:5px 12px">Bekijk</button>
+    </div>`);
+  }
+
+  if(items.length === 0){ box.style.display='none'; return; }
+  box.style.display='block';
+  box.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
+    <div style="background:var(--bg);padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.5px">🔔 HERINNERINGEN</div>
+    ${items.join('<div style="border-top:1px solid var(--border)"></div>')}
+  </div>`;
 }
 
 // Track active BTW kwartaal
@@ -5530,44 +5877,108 @@ function _buildOffertePDF(){
   const kvk=st.kvk||document.getElementById('s-kvk')?.value||'';
   const iban=st.iban||document.getElementById('s-iban')?.value||'';
   const tel=st.tel||document.getElementById('s-tel')?.value||'';
+  const email=st.email||document.getElementById('s-email')?.value||'';
   const adres=st.adres||document.getElementById('s-adres')?.value||'';
+  const btwnr=st.btwnr||document.getElementById('s-btwnr')?.value||'';
   const logo=localStorage.getItem('sb_logo');
 
   const klant=document.getElementById('o-klant')?.value||'Klant';
   const nummer=document.getElementById('o-nummer')?.value||'';
   const datum=document.getElementById('o-datum')?.value||'';
+  const geldig=document.getElementById('o-geldig')?.value||'';
   const project=document.getElementById('o-project')?.value||'';
   const t=getDocTotals('offerte-regels');
 
-  doc.setFillColor(244,164,24);doc.rect(0,0,210,28,'F');
-  if(logo){ try{ doc.addImage(logo,'JPEG',168,2,24,24); }catch(e){} }
-  doc.setTextColor(255,255,255);doc.setFontSize(20);doc.setFont('helvetica','bold');
-  doc.text(bedrijf,14,18);
-  doc.setFontSize(11);doc.setFont('helvetica','normal');doc.text('OFFERTE',14,26);
-  doc.setTextColor(0,0,0);doc.setFontSize(10);
-  if(kvk) doc.text('KvK: '+kvk,14,40);
-  if(iban) doc.text('IBAN: '+iban,14,48);
-  if(tel) doc.text('Tel: '+tel,14,56);
-  if(adres) doc.text(adres,14,64);
-  doc.setFont('helvetica','bold');doc.text('Voor:',120,40);
-  doc.setFont('helvetica','normal');doc.text(klant,120,48);
-  doc.setFont('helvetica','bold');doc.text('Offertenummer: '+nummer,14,72);
-  doc.setFont('helvetica','normal');doc.text('Datum: '+datum,14,80);doc.text('Project: '+project,14,88);
-  doc.setFillColor(247,247,245);doc.rect(14,96,182,8,'F');
-  doc.setFont('helvetica','bold');doc.text('Omschrijving',16,102);doc.text('Bedrag',170,102,'right');
-  doc.setFont('helvetica','normal');let y=115;
+  const ORANJE=[244,164,24], BLAUW=[44,62,80], DONKER=[44,62,80], GRIJS=[120,120,120], LICHTGRIJS=[247,247,245];
+
+  // ===== HEADER (donkerblauw-grijze band, oranje tekst) =====
+  doc.setFillColor(...BLAUW);doc.rect(0,0,210,38,'F');
+  if(logo){ try{ doc.addImage(logo,'JPEG',170,8,28,22); }catch(e){} }
+  doc.setTextColor(...ORANJE);doc.setFontSize(22);doc.setFont('helvetica','bold');
+  doc.text(bedrijf,14,20);
+  doc.setFontSize(13);doc.setFont('helvetica','normal');doc.text('OFFERTE',14,30);
+
+  // ===== INFO: KLANT LINKS, BEDRIJF RECHTS =====
+  let yL=52, yR=52;
+  // LINKS: Klantgegevens
+  doc.setTextColor(...BLAUW);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('OFFERTE VOOR',14,yL);yL+=7;
+  doc.setTextColor(...DONKER);doc.setFontSize(12);doc.setFont('helvetica','bold');
+  doc.text(klant,14,yL);yL+=7;
+  if(project){doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...GRIJS);
+    const projLines=doc.splitTextToSize('Project: '+project,85);doc.text(projLines,14,yL);yL+=projLines.length*5;}
+
+  // RECHTS: Bedrijfsgegevens
+  doc.setTextColor(...BLAUW);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('VAN',120,yR);yR+=7;
+  doc.setTextColor(...DONKER);doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text(bedrijf,120,yR);yR+=6;
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...GRIJS);
+  if(adres){const aLines=doc.splitTextToSize(adres,76);doc.text(aLines,120,yR);yR+=aLines.length*5;}
+  if(tel){doc.text('Tel: '+tel,120,yR);yR+=5;}
+  if(email){doc.text(email,120,yR);yR+=5;}
+  if(kvk){doc.text('KvK: '+kvk,120,yR);yR+=5;}
+  if(btwnr){doc.text('BTW: '+btwnr,120,yR);yR+=5;}
+  if(iban){doc.text('IBAN: '+iban,120,yR);yR+=5;}
+
+  // ===== META-BALK (offertenummer, datum, geldig) =====
+  let y=Math.max(yL,yR)+6; if(y<92)y=92;
+  doc.setFillColor(...LICHTGRIJS);doc.rect(14,y,182,11,'F');
+  doc.setTextColor(...DONKER);doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('Offertenummer:',18,y+7);doc.setFont('helvetica','normal');doc.text(nummer||'-',52,y+7);
+  doc.setFont('helvetica','bold');doc.text('Datum:',100,y+7);doc.setFont('helvetica','normal');doc.text(datum||'-',116,y+7);
+  doc.setFont('helvetica','bold');doc.text('Geldig:',150,y+7);doc.setFont('helvetica','normal');doc.text(geldig||'14 dagen',168,y+7);
+  y+=20;
+
+  // ===== TABEL-HEADER (donkergrijze balk) =====
+  doc.setFillColor(...DONKER);doc.rect(14,y-6,182,9,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('OMSCHRIJVING',16,y);doc.text('AANTAL',120,y,'center');doc.text('PRIJS',150,y,'right');doc.text('TOTAAL',194,y,'right');
+  y+=9;
+
+  // ===== REGELS (met afwisselende achtergrond) =====
+  doc.setTextColor(...DONKER);doc.setFont('helvetica','normal');doc.setFontSize(9);
+  let rij=0;
   document.querySelectorAll('#offerte-regels tr').forEach(r=>{
     const el=r.querySelectorAll('input, select');
-    const desc=el[0]?.value;const excl=(parseFloat(el[1]?.value)||0)*(parseFloat(el[2]?.value)||0);
-    if(desc){doc.text(desc,16,y);doc.text(fmt(excl),196,y,'right');y+=10;}
+    const desc=el[0]?.value;const aantal=parseFloat(el[1]?.value)||0;const prijs=parseFloat(el[2]?.value)||0;
+    const regelTot=aantal*prijs;
+    if(desc){
+      if(rij%2===1){doc.setFillColor(250,250,249);doc.rect(14,y-5,182,8,'F');}
+      const descLines=doc.splitTextToSize(desc,98);
+      doc.text(descLines,16,y);
+      doc.text(String(aantal),120,y,'center');
+      doc.text(fmt(prijs),150,y,'right');
+      doc.text(fmt(regelTot),194,y,'right');
+      y+=Math.max(8,descLines.length*5);rij++;
+    }
   });
-  doc.line(14,y+2,196,y+2);y+=10;
-  doc.text('Subtotaal excl. BTW',14,y);doc.text(fmt(t.excl),196,y,'right');y+=8;
-  doc.text('BTW',14,y);doc.text(fmt(t.btw),196,y,'right');y+=8;
-  doc.setFont('helvetica','bold');doc.setFontSize(12);
-  doc.text('TOTAAL incl. BTW',14,y);doc.text(fmt(t.incl),196,y,'right');
-  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);
-  doc.text('Deze offerte is 14 dagen geldig.',14,y+20);
+
+  // ===== TOTALEN-BLOK (rechts) =====
+  y+=4;doc.setDrawColor(220,220,220);doc.line(120,y,196,y);y+=7;
+  doc.setFontSize(10);doc.setTextColor(...GRIJS);doc.setFont('helvetica','normal');
+  doc.text('Subtotaal excl. BTW',120,y);doc.text(fmt(t.excl),194,y,'right');y+=7;
+  doc.text('BTW',120,y);doc.text(fmt(t.btw),194,y,'right');y+=4;
+  // Totaal-balk (oranje)
+  doc.setFillColor(...BLAUW);doc.rect(118,y,80,12,'F');
+  doc.setTextColor(...ORANJE);doc.setFontSize(11);doc.setFont('helvetica','bold');
+  doc.text('TOTAAL incl. BTW',121,y+8);doc.text(fmt(t.incl),195,y+8,'right');
+  y+=22;
+
+  // ===== VOORWAARDEN / FOOTER =====
+  doc.setTextColor(...DONKER);doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('Voorwaarden',14,y);y+=6;
+  doc.setFont('helvetica','normal');doc.setTextColor(...GRIJS);doc.setFontSize(8.5);
+  doc.text('\u2022 Deze offerte is '+(geldig||'14 dagen')+' geldig vanaf de offertedatum.',14,y);y+=5;
+  doc.text('\u2022 Genoemde bedragen zijn '+(t.btw>0?'inclusief':'exclusief')+' BTW zoals gespecificeerd.',14,y);y+=5;
+  doc.text('\u2022 Akkoord? Laat het ons weten, dan plannen we de werkzaamheden in.',14,y);y+=10;
+  // Bedank-regel onderaan
+  doc.setDrawColor(...BLAUW);doc.setLineWidth(0.8);doc.line(14,280,196,280);
+  doc.setTextColor(...ORANJE);doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text('Bedankt voor uw aanvraag!',14,287);
+  doc.setTextColor(...GRIJS);doc.setFontSize(8);doc.setFont('helvetica','normal');
+  doc.text(bedrijf+(tel?'  \u2022  '+tel:'')+(email?'  \u2022  '+email:''),196,287,'right');
+
   return {doc, nummer};
 }
 
