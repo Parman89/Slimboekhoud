@@ -1729,7 +1729,7 @@ tr:hover td{background:var(--bg)}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Geregistreerde uren</span></div>
+          <div class="card-header"><span class="card-title">Geregistreerde uren</span><button class="btn btn-primary" style="font-size:12px" onclick="factureerUren()">📄 Factureer uren</button></div>
           <table class="table"><thead><tr><th>Datum</th><th>Project</th><th>Omschrijving</th><th class="num">Uren</th><th class="num">Tarief</th><th class="num">Bedrag</th><th></th></tr></thead>
           <tbody id="t-uren"><tr><td colspan="7" class="empty">Nog geen uren geregistreerd</td></tr></tbody></table>
         </div>
@@ -2124,6 +2124,20 @@ Met vriendelijke groet</textarea>
           </div>
           <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--text-muted)">
             🔒 Jouw data is versleuteld opgeslagen bij Supabase (Frankfurt, EU) · <a href="#" onclick="showPrivacy()" style="color:var(--orange)">Privacyverklaring</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTIE 6: GEGEVENS BEHEER -->
+      <div class="card" style="margin-bottom:16px;border:1px solid rgba(255,59,48,.3)">
+        <div class="card-header"><span class="card-title">🗑️ Gegevens beheer</span></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:13px;font-weight:600">Begin opnieuw — wis alle gegevens</div>
+              <div style="font-size:11px;color:var(--text-muted);max-width:440px">Verwijdert alle bonnen, facturen, offertes, klanten, uren, km en abonnementen. Je bedrijfsinstellingen (naam, KvK, IBAN, logo) blijven behouden. Handig om demo-data te wissen en met een schone lei te beginnen.</div>
+            </div>
+            <button class="btn" style="background:#ff3b30;color:#fff;border:none;white-space:nowrap" onclick="wisAlleGegevens()">🗑️ Begin opnieuw</button>
           </div>
         </div>
       </div>
@@ -3020,8 +3034,9 @@ function slaHandmatigBonOp(){
   const datum = document.getElementById('hb-datum')?.value;
   const exclVal = parseFloat(document.getElementById('hb-excl')?.value) || 0;
   const btwPct = parseFloat(document.getElementById('hb-btw-pct')?.value) || 21;
+  const soort = document.getElementById('hb-soort')?.value || 'uitgave';
 
-  if(!leverancier){ showNotif('Vul een leverancier in', true); return; }
+  if(!leverancier){ showNotif(soort==='inkomst'?'Vul een klantnaam in':'Vul een leverancier in', true); return; }
   if(!datum){ showNotif('Vul een datum in', true); return; }
   if(exclVal <= 0){ showNotif('Vul een geldig bedrag in', true); return; }
 
@@ -3053,6 +3068,7 @@ function slaHandmatigBonOp(){
     kwartaal: kw,
     jaar,
     bron: 'handmatig',
+    soort,
     label: cat,
     notitie: omschrijving,
     foto: fotoData  // base64 image or null
@@ -4923,7 +4939,7 @@ function renderBonnen(lijst){
   document.getElementById('t-bonnen').innerHTML = data.map((b,i) => `
     <tr id="bon-row-${i}" style="cursor:pointer" onclick="toonBonDetail(${i})" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
       <td class="mono" style="color:var(--text-muted);font-size:12px">${b.datum}</td>
-      <td style="font-weight:500">${esc(b.leverancier)}</td>
+      <td style="font-weight:500">${b.soort==='inkomst'?'<span style="color:#248a3d">💰 </span>':b.soort==='factuur_in'?'<span title="Inkoopfactuur">📄 </span>':''}${esc(b.leverancier)}</td>
       <td onclick="event.stopPropagation()">
         <select class="badge ${CAT_BADGE[b.cat]||'b-gray'}" onchange="wijzigCat(${i},this.value)"
           style="border:none;cursor:pointer;font-size:11px;font-weight:500;padding:3px 6px;border-radius:20px;appearance:none;-webkit-appearance:none">
@@ -5236,17 +5252,37 @@ function renderDashboardFolders(){
   `).join('');
 }
 
+// Soort boeking: inkomst = geld ontvangen (omzet), anders kosten
+function bonIsInkomst(b){ return b && b.soort === 'inkomst'; }
+function updateBonSoort(){
+  const soort = document.getElementById('hb-soort')?.value || 'uitgave';
+  const lbl = document.getElementById('hb-leverancier-label');
+  const hint = document.getElementById('hb-soort-hint');
+  if(soort==='inkomst'){
+    if(lbl) lbl.textContent='Klant / Ontvangen van *';
+    if(hint) hint.textContent='Geld dat je hebt ontvangen — telt als omzet (inkomst), niet als kosten.';
+  } else if(soort==='factuur_in'){
+    if(lbl) lbl.textContent='Leverancier *';
+    if(hint) hint.textContent='Inkoopfactuur die je nog moet betalen — telt als kosten.';
+  } else {
+    if(lbl) lbl.textContent='Leverancier / Winkel *';
+    if(hint) hint.textContent='Geld dat je hebt uitgegeven — telt als kosten.';
+  }
+}
+
 function renderDashboard(){
-  const totKosten=bonnen.reduce((s,b)=>s+b.incl,0);
-  const totBtw=bonnen.reduce((s,b)=>s+b.btw,0);
-  const totOmzet=facturen.reduce((s,f)=>s+f.totaal,0);
-  const nettowinst=totOmzet-bonnen.reduce((s,b)=>s+b.excl,0);
+  const kBon=bonnen.filter(b=>!bonIsInkomst(b));
+  const inkomstUitBonnen=bonnen.filter(bonIsInkomst).reduce((s,b)=>s+(b.incl||b.excl||0),0);
+  const totKosten=kBon.reduce((s,b)=>s+b.incl,0);
+  const totBtw=kBon.reduce((s,b)=>s+b.btw,0);
+  const totOmzet=facturen.reduce((s,f)=>s+f.totaal,0)+inkomstUitBonnen;
+  const nettowinst=totOmzet-kBon.reduce((s,b)=>s+b.excl,0);
   document.getElementById('d-omzet').textContent=fmt(totOmzet);
   document.getElementById('d-kosten').textContent=fmt(totKosten);
   document.getElementById('d-btw').textContent=fmt(totBtw);
   document.getElementById('d-winst').textContent=fmt(nettowinst);
   const qs=['Q1','Q2','Q3','Q4'];
-  const kwT=qs.map(q=>bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0));
+  const kwT=qs.map(q=>kBon.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0));
   const max=Math.max(...kwT,1);
   document.getElementById('chart-bars').innerHTML=kwT.map((v,i)=>`
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
@@ -5363,7 +5399,7 @@ function renderUren(){
   const tbody=document.getElementById('t-uren'); if(!tbody) return;
   const gesorteerd=[...urenLijst].sort((a,b)=>(b.datum||'').localeCompare(a.datum||''));
   tbody.innerHTML = gesorteerd.length ? gesorteerd.map(u=>`
-    <tr><td>${u.datum}</td><td style="font-weight:500">${esc(u.project)}</td><td style="color:var(--text-muted)">${esc(u.omschrijving||'')}</td>
+    <tr><td>${u.datum}</td><td style="font-weight:500">${esc(u.project)}</td><td style="color:var(--text-muted)">${esc(u.omschrijving||'')}${u.gefactureerd?' <span style="color:#248a3d;font-size:10px;font-weight:700">✓ gefactureerd</span>':''}</td>
     <td class="num mono">${u.uren}</td><td class="num mono">${u.tarief?fmt(u.tarief):'-'}</td><td class="num mono" style="font-weight:500">${fmt(u.uren*(u.tarief||0))}</td>
     <td><button onclick="verwijderUur(${u.id})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:#ff3b30">🗑️</button></td></tr>`).join('') : '<tr><td colspan="7" class="empty">Nog geen uren geregistreerd</td></tr>';
 }
@@ -5404,6 +5440,72 @@ function saveUrenKm(){
     localStorage.setItem('sb_uren', JSON.stringify(urenLijst));
     localStorage.setItem('sb_km', JSON.stringify(kmLijst));
   }catch(e){ showNotif('Opslaan uren/km mislukt',true); }
+}
+
+// ============================================================
+// UREN FACTUREREN — geschreven uren omzetten naar een factuur
+// ============================================================
+function factureerUren(){
+  const open = urenLijst.filter(u => !u.gefactureerd && (u.uren||0)>0 && (u.tarief||0)>0);
+  if(!open.length){
+    const zonderTarief = urenLijst.filter(u=>!u.gefactureerd && (u.uren||0)>0 && !(u.tarief>0)).length;
+    showNotif(zonderTarief ? 'Vul een uurtarief in bij je uren om te kunnen factureren' : 'Geen ongefactureerde uren', true);
+    return;
+  }
+  // Groepeer per project/klant
+  const groepen = {};
+  open.forEach(u => { (groepen[u.project] = groepen[u.project] || []).push(u); });
+  document.getElementById('factureer-uren-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'factureer-uren-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+  const rows = Object.keys(groepen).map(project => {
+    const lijst = groepen[project];
+    const totaalUren = lijst.reduce((s,u)=>s+u.uren,0);
+    const excl = lijst.reduce((s,u)=>s+u.uren*(u.tarief||0),0);
+    const incl = excl*1.21;
+    return `<div style="display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700">${esc(project)}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${lijst.length} regel(s) · ${Math.round(totaalUren*100)/100} uur · ${fmt(excl)} excl. → ${fmt(incl)} incl. BTW</div>
+      </div>
+      <button onclick="maakFactuurVanUren('${project.replace(/'/g,"\\'")}')" class="btn btn-primary" style="font-size:12px;padding:6px 14px">📄 Maak factuur</button>
+    </div>`;
+  }).join('');
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:16px;padding:24px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;position:relative">
+      <button onclick="document.getElementById('factureer-uren-modal').remove()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">×</button>
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px">📄 Uren factureren</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Je ongefactureerde uren, gegroepeerd per project/klant. Klik "Maak factuur" — de uren worden omgezet naar een factuur (uren × tarief, + 21% BTW) en gemarkeerd als gefactureerd.</div>
+      ${rows}
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function maakFactuurVanUren(project){
+  const teFactureren = urenLijst.filter(u => u.project===project && !u.gefactureerd && (u.uren||0)>0 && (u.tarief||0)>0);
+  if(!teFactureren.length){ showNotif('Geen te factureren uren voor dit project',true); return; }
+  const excl = teFactureren.reduce((s,u)=>s+u.uren*(u.tarief||0),0);
+  const totaalUren = teFactureren.reduce((s,u)=>s+u.uren,0);
+  const btwBedrag = parseFloat((excl*0.21).toFixed(2));
+  const totaal = parseFloat((excl+btwBedrag).toFixed(2));
+  syncFactuurNr();
+  const nummer = '2026-'+String(factuurNr).padStart(3,'0'); factuurNr++;
+  const vandaag = new Date().toISOString().split('T')[0];
+  const verval = datumPlusDagen(vandaag, 30);
+  const f = {
+    id: Date.now()+Math.floor(Math.random()*9999),
+    nummer, klant: project, datum: vandaag, verval,
+    totaalExcl: parseFloat(excl.toFixed(2)), btwBedrag, totaal,
+    status: 'Openstaand',
+    project: 'Uren: '+(Math.round(totaalUren*100)/100)+' uur'
+  };
+  facturen.push(f);
+  teFactureren.forEach(u => u.gefactureerd = true);
+  saveUrenKm(); autoSave(); renderAll();
+  document.getElementById('factureer-uren-modal')?.remove();
+  showNotif('📄 Factuur '+nummer+' aangemaakt voor '+project+' ('+fmt(totaal)+') ✓');
+  showPage('facturen', null);
 }
 function loadUrenKm(){
   try{
@@ -5574,6 +5676,18 @@ function mailFactuurAutomatisch(fid){
   showNotif('📧 E-mail klaargezet — druk op verzenden');
 }
 
+// ============================================================
+// BEGIN OPNIEUW — alle gegevens wissen (bewaart instellingen)
+// ============================================================
+function wisAlleGegevens(){
+  if(!confirm('Weet je zeker dat je ALLE gegevens wilt wissen?\n\nDit verwijdert al je bonnen, facturen, offertes, klanten, uren, km en abonnementen.\nJe bedrijfsinstellingen (naam, KvK, IBAN, logo) blijven behouden.\n\nDit kan NIET ongedaan gemaakt worden.')) return;
+  if(!confirm('Laatste check: echt alles wissen en opnieuw beginnen?')) return;
+  ['sb_bonnen','sb_facturen','sb_offertes','sb_klanten','sb_uren','sb_km','sb_abonnementen','sb_handmatig','sb_diensten','sb_banktransacties','sb_inkopen'].forEach(k=>localStorage.removeItem(k));
+  try{ bonnen=[]; facturen=[]; offertes=[]; klanten=[]; urenLijst=[]; kmLijst=[]; abonnementen=[]; }catch(e){}
+  showNotif('🗑️ Alle gegevens gewist — je begint met een schone lei');
+  setTimeout(()=>location.reload(), 1200);
+}
+
 function renderReminders(){
   const box = document.getElementById('dashboard-reminders');
   if(!box) return;
@@ -5642,11 +5756,12 @@ function renderBTW(){
 
   // Kwartaal kaarten (klikbaar)
   document.getElementById('kw-grid-btw').innerHTML=qs.map(q=>{
-    const items=bonnen.filter(b=>b.kwartaal===q);
+    const items=bonnen.filter(b=>b.kwartaal===q&&!bonIsInkomst(b));
+    const iItems=bonnen.filter(b=>b.kwartaal===q&&bonIsInkomst(b));
     const ke=items.reduce((s,b)=>s+b.excl,0);
     const kb=items.reduce((s,b)=>s+b.btw,0);
     const flist=facturen.filter(f=>kw(f.datum)===q);
-    const ob=flist.reduce((s,f)=>s+f.btwBedrag,0);
+    const ob=flist.reduce((s,f)=>s+f.btwBedrag,0)+iItems.reduce((s,b)=>s+(b.btw||0),0);
     const saldo=ob-kb; // positief = te betalen, negatief = te ontvangen
     const isActive=window.__btwActiveQ===q;
     return`<div onclick="selectBTWKwartaal('${q}')" style="background:var(--white);border:2px solid ${isActive?'var(--orange)':'var(--border)'};border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .15s;box-shadow:${isActive?'0 4px 12px rgba(244,164,24,.2)':'var(--shadow)'}">
@@ -5661,10 +5776,10 @@ function renderBTW(){
 
   // Jaaroverzicht tabel
   document.getElementById('t-btw').innerHTML=qs.map(q=>{
-    const ke=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.excl,0);
-    const kb=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.btw,0);
-    const oe=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.totaalExcl,0);
-    const ob=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0);
+    const ke=bonnen.filter(b=>b.kwartaal===q&&!bonIsInkomst(b)).reduce((s,b)=>s+b.excl,0);
+    const kb=bonnen.filter(b=>b.kwartaal===q&&!bonIsInkomst(b)).reduce((s,b)=>s+b.btw,0);
+    const oe=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.totaalExcl,0)+bonnen.filter(b=>b.kwartaal===q&&bonIsInkomst(b)).reduce((s,b)=>s+(b.excl||0),0);
+    const ob=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0)+bonnen.filter(b=>b.kwartaal===q&&bonIsInkomst(b)).reduce((s,b)=>s+(b.btw||0),0);
     const saldo=ob-kb;
     return`<tr><td><span class="badge b-gray" style="cursor:pointer" onclick="selectBTWKwartaal('${q}')">${q}</span></td>
       <td class="num mono">${fmt(oe)}</td><td class="num mono" style="color:var(--green)">${fmt(ob)}</td>
@@ -5685,14 +5800,15 @@ function selectBTWKwartaal(q){
 
 function renderBTWFormulier(q){
   const jaar=document.getElementById('jaar-select')?.value||'2026';
-  const items=bonnen.filter(b=>b.kwartaal===q);
+  const items=bonnen.filter(b=>b.kwartaal===q&&!bonIsInkomst(b));
+  const iItems=bonnen.filter(b=>b.kwartaal===q&&bonIsInkomst(b));
   const flist=facturen.filter(f=>kw(f.datum)===q);
 
-  // 1a: omzet hoog tarief (21%) — uit facturen
-  const omzet1a=flist.reduce((s,f)=>s+(f.totaalExcl||0),0);
-  const btw1b=flist.reduce((s,f)=>s+(f.btwBedrag||0),0);
+  // 1a/1b: omzet + verschuldigde BTW — uit facturen + ontvangen geld-bonnen
+  const omzet1a=flist.reduce((s,f)=>s+(f.totaalExcl||0),0)+iItems.reduce((s,b)=>s+(b.excl||0),0);
+  const btw1b=flist.reduce((s,f)=>s+(f.btwBedrag||0),0)+iItems.reduce((s,b)=>s+(b.btw||0),0);
 
-  // 5b: voorbelasting — BTW uit bonnen
+  // 5b: voorbelasting — BTW uit kosten-bonnen
   const voorbelasting5b=items.reduce((s,b)=>s+(b.btw||0),0);
 
   // Saldo
@@ -5914,17 +6030,19 @@ function toonRekeningDetail(rek, naam){
 }
 
 function renderWV(){
-  const totOmzet=facturen.reduce((s,f)=>s+f.totaal,0);
-  const totKosten=bonnen.reduce((s,b)=>s+b.incl,0);
-  const nettowinst=totOmzet-bonnen.reduce((s,b)=>s+b.excl,0);
+  const kBon=bonnen.filter(b=>!bonIsInkomst(b));
+  const inkomstUitBonnen=bonnen.filter(bonIsInkomst).reduce((s,b)=>s+(b.incl||b.excl||0),0);
+  const totOmzet=facturen.reduce((s,f)=>s+f.totaal,0)+inkomstUitBonnen;
+  const totKosten=kBon.reduce((s,b)=>s+b.incl,0);
+  const nettowinst=totOmzet-kBon.reduce((s,b)=>s+b.excl,0);
   document.getElementById('wv-omzet').textContent=fmt(totOmzet);
   document.getElementById('wv-kosten').textContent=fmt(totKosten);
   document.getElementById('wv-winst').textContent=fmt(nettowinst);
   const qs=['Q1','Q2','Q3','Q4'];
   document.getElementById('t-wv').innerHTML=qs.map(q=>{
-    const omzet=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.totaal,0);
-    const kosten=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.incl,0);
-    const btwSaldo=bonnen.filter(b=>b.kwartaal===q).reduce((s,b)=>s+b.btw,0)-facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0);
+    const omzet=facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.totaal,0)+bonnen.filter(b=>b.kwartaal===q&&bonIsInkomst(b)).reduce((s,b)=>s+(b.incl||b.excl||0),0);
+    const kosten=bonnen.filter(b=>b.kwartaal===q&&!bonIsInkomst(b)).reduce((s,b)=>s+b.incl,0);
+    const btwSaldo=bonnen.filter(b=>b.kwartaal===q&&!bonIsInkomst(b)).reduce((s,b)=>s+b.btw,0)-(facturen.filter(f=>kw(f.datum)===q).reduce((s,f)=>s+f.btwBedrag,0)+bonnen.filter(b=>b.kwartaal===q&&bonIsInkomst(b)).reduce((s,b)=>s+(b.btw||0),0));
     const winst=omzet-kosten;
     return`<tr onclick="toonKwartaalDetail('${q}')" style="cursor:pointer;transition:.1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''" title="Klik voor details ${q}">
       <td><span class="badge b-gray">${q}</span> <small style="color:var(--text-muted)">▼</small></td>
@@ -7441,7 +7559,16 @@ checkBTWDeadline();
 
       <div style="display:flex;flex-direction:column;gap:14px">
         <div class="form-group">
-          <label class="form-label">Leverancier / Winkel *</label>
+          <label class="form-label">Soort boeking *</label>
+          <select class="form-input" id="hb-soort" onchange="updateBonSoort()">
+            <option value="uitgave">💸 Geld uitgegeven (kosten)</option>
+            <option value="factuur_in">📄 Factuur ontvangen (inkoop, te betalen)</option>
+            <option value="inkomst">💰 Geld ontvangen (inkomst / omzet)</option>
+          </select>
+          <div id="hb-soort-hint" style="font-size:11px;color:var(--text-muted);margin-top:4px">Geld dat je hebt uitgegeven — telt als kosten.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="hb-leverancier-label">Leverancier / Winkel *</label>
           <input class="form-input" id="hb-leverancier" placeholder="Bijv. Gamma, Shell, AH, Praxis...">
         </div>
         <div class="form-group">
