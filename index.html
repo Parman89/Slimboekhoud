@@ -683,6 +683,7 @@ tr:hover td{background:var(--bg)}
 <main class="main" id="main-content">
   <div class="topbar">
     <button class="mobile-btn" onclick="toggleSidebar()">☰</button>
+    <button id="back-to-dash" onclick="showPage('dashboard',null)" title="Terug naar dashboard" style="display:none;align-items:center;gap:5px;background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;white-space:nowrap;margin-right:6px">← Terug</button>
     <div class="page-title" id="page-title">Dashboard</div>
     <div style="position:relative;flex:1;max-width:280px;margin:0 10px" id="search-container">
       <input id="global-search" type="text" placeholder="🔍 Zoek alles..." 
@@ -2578,6 +2579,8 @@ function showPage(name,el){
   if(name==='dashboard') setTimeout(renderDashboardFolders, 50);
   const titles={dashboard:'Dashboard',bonnen:'Bonnen',offertes:'Offertes',facturen:'Facturen',wv:'Winst & verlies',btw:'BTW aangifte',bank:'Bankrekening',klanten:'Klanten',instellingen:'Instellingen'};
   document.getElementById('page-title').textContent=titles[name]||name;
+  const backBtn=document.getElementById('back-to-dash');
+  if(backBtn) backBtn.style.display = (name==='dashboard') ? 'none' : 'inline-flex';
   if(el)el.classList.add('active');
   if(window.innerWidth<768)document.getElementById('sidebar').classList.remove('open');
 }
