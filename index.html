@@ -2131,7 +2131,16 @@ Met vriendelijke groet</textarea>
         </div>
       </div>
 
-      <!-- SECTIE 6: GEGEVENS BEHEER -->
+      <!-- SECTIE 6: KWARTAAL VERGRENDELEN -->
+      <div class="card" style="margin-bottom:16px;border:1px solid rgba(36,138,61,.3)">
+        <div class="card-header"><span class="card-title">🔒 Kwartaal vergrendelen</span></div>
+        <div class="card-body">
+          <div style="font-size:11px;color:var(--text-muted);max-width:480px;margin-bottom:14px">Vergrendel een kwartaal nadat je BTW-aangifte hebt gedaan. Bonnen in een vergrendeld kwartaal kunnen dan <strong>niet meer gewijzigd of verwijderd</strong> worden — een extra bescherming voor je administratie. Je kunt altijd weer ontgrendelen.</div>
+          <div id="vergrendel-lijst"></div>
+        </div>
+      </div>
+
+      <!-- SECTIE 7: GEGEVENS BEHEER -->
       <div class="card" style="margin-bottom:16px;border:1px solid rgba(255,59,48,.3)">
         <div class="card-header"><span class="card-title">🗑️ Gegevens beheer</span></div>
         <div class="card-body">
@@ -3541,6 +3550,7 @@ async function autoLoad(){
     const k=localStorage.getItem('sb_klanten');if(k)klanten=JSON.parse(k);
     loadUrenKm();
     loadAbonnementen();
+    loadVergrendeling();
     syncFactuurNr();
     setTimeout(verwerkAbonnementen, 1200);
     if(bonnen.length||facturen.length){renderAll();}
@@ -3873,7 +3883,7 @@ function loadDemo(){
 }
 
 // RENDER
-function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderControleBanner();renderKlanten();renderBanken();renderUren();renderKm();renderAbonnementen();}
+function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderControleBanner();renderKlanten();renderBanken();renderUren();renderKm();renderAbonnementen();renderVergrendeling();}
 
 async function stuurNaarEBoekhouden(index){
   const b = bonnen[index];
@@ -3902,6 +3912,7 @@ async function stuurNaarEBoekhouden(index){
 function bewerkBon(index){
   const b = bonnen[index];
   if(!b) return;
+  if(bonIsVergrendeld(b)){ showNotif('🔒 Dit kwartaal is vergrendeld — wijzigen kan niet (ontgrendel eerst in Instellingen)', true); return; }
   
   const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig'];
   
@@ -4006,6 +4017,7 @@ function saveBonEdit(index){
 function verwijderBon(index){
   const b = bonnen[index];
   if(!b) return;
+  if(bonIsVergrendeld(b)){ showNotif('🔒 Dit kwartaal is vergrendeld — ontgrendel het eerst in Instellingen om te kunnen verwijderen', true); return; }
   if(!confirm(`Bon "${b.leverancier}" (${fmt(b.incl)}) verwijderen?\n\nDit kan niet ongedaan worden gemaakt.`)) return;
   bonnen.splice(index, 1);
   autoSave();
@@ -5524,6 +5536,46 @@ function loadUrenKm(){
 // ============================================================
 let abonnementen = [];
 function loadAbonnementen(){ try{ const a=localStorage.getItem('sb_abonnementen'); if(a) abonnementen=JSON.parse(a); }catch(e){} }
+
+// ============================================================
+// KWARTAAL VERGRENDELEN — controle-vaste bescherming
+// ============================================================
+let vergrendeldePerioden = [];
+function loadVergrendeling(){ try{ const v=localStorage.getItem('sb_vergrendeld'); if(v) vergrendeldePerioden=JSON.parse(v); }catch(e){} }
+function saveVergrendeling(){ try{ localStorage.setItem('sb_vergrendeld', JSON.stringify(vergrendeldePerioden)); }catch(e){} }
+function periodeKeyVan(datum, kwartaal){
+  const jaar = (datum && String(datum).split('-')[0]) || String(new Date().getFullYear());
+  const q = kwartaal || kw(datum);
+  return jaar + '-' + q;
+}
+function bonIsVergrendeld(b){ return b && vergrendeldePerioden.includes(periodeKeyVan(b.datum, b.kwartaal)); }
+function renderVergrendeling(){
+  const box = document.getElementById('vergrendel-lijst');
+  if(!box) return;
+  const jaar = new Date().getFullYear();
+  box.innerHTML = ['Q1','Q2','Q3','Q4'].map(q=>{
+    const key = jaar+'-'+q;
+    const locked = vergrendeldePerioden.includes(key);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+      <span style="font-size:13px;font-weight:600">${q} ${jaar}${locked?' <span style="color:#248a3d">🔒 vergrendeld</span>':''}</span>
+      <button onclick="toggleVergrendel('${key}')" class="btn" style="font-size:12px;padding:5px 12px;${locked?'background:transparent;border:1px solid var(--border);color:var(--text)':'background:#248a3d;color:#fff;border:none'}">${locked?'🔓 Ontgrendel':'🔒 Vergrendel'}</button>
+    </div>`;
+  }).join('');
+}
+function toggleVergrendel(key){
+  const i = vergrendeldePerioden.indexOf(key);
+  if(i>=0){
+    if(!confirm('Kwartaal '+key+' ontgrendelen?\n\nDaarna kun je bonnen in dit kwartaal weer wijzigen en verwijderen.')) return;
+    vergrendeldePerioden.splice(i,1);
+    showNotif('🔓 '+key+' ontgrendeld');
+  } else {
+    if(!confirm('Kwartaal '+key+' vergrendelen?\n\nBonnen in dit kwartaal kunnen daarna NIET meer gewijzigd of verwijderd worden — totdat je het weer ontgrendelt.')) return;
+    vergrendeldePerioden.push(key);
+    showNotif('🔒 '+key+' vergrendeld — bonnen zijn nu beschermd');
+  }
+  saveVergrendeling();
+  renderVergrendeling();
+}
 function saveAbonnementen(){ try{ localStorage.setItem('sb_abonnementen', JSON.stringify(abonnementen)); }catch(e){ showNotif('Opslaan abonnementen mislukt',true); } }
 
 function syncFactuurNr(){
@@ -5685,6 +5737,7 @@ function mailFactuurAutomatisch(fid){
 // BEGIN OPNIEUW — alle gegevens wissen (bewaart instellingen)
 // ============================================================
 function wisAlleGegevens(){
+  if(vergrendeldePerioden.length){ showNotif('🔒 Je hebt vergrendelde kwartalen. Ontgrendel die eerst in Instellingen voordat je alles wist.', true); return; }
   if(!confirm('Weet je zeker dat je ALLE gegevens wilt wissen?\n\nDit verwijdert al je bonnen, facturen, offertes, klanten, uren, km en abonnementen.\nJe bedrijfsinstellingen (naam, KvK, IBAN, logo) blijven behouden.\n\nDit kan NIET ongedaan gemaakt worden.')) return;
   if(!confirm('Laatste check: echt alles wissen en opnieuw beginnen?')) return;
   ['sb_bonnen','sb_facturen','sb_offertes','sb_klanten','sb_uren','sb_km','sb_abonnementen','sb_handmatig','sb_diensten','sb_banktransacties','sb_inkopen'].forEach(k=>localStorage.removeItem(k));
