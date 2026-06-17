@@ -4316,11 +4316,13 @@ window.__bankTransacties = [];
 
 function toonBankTransacties(transacties){
   window.__bankTransacties = transacties;
+  markeerDubbeleInLijst(transacties);   // markeer dubbele (zelfde datum+bedrag)
   const card = document.getElementById('bank-trans-card');
   if(card) card.style.display = 'block';
   // Eén-klik knoppen bovenaan de transactietabel
-  const importeerbaar = transacties.filter(t => t.bedrag < 0 && !isPriveOpname(t.omschrijving)).length;
-  const priveAantal = transacties.filter(t => t.bedrag < 0 && isPriveOpname(t.omschrijving)).length;
+  const importeerbaar = transacties.filter(t => t.bedrag < 0 && !isPriveOpname(t.omschrijving) && !t.__dubbel).length;
+  const priveAantal = transacties.filter(t => t.bedrag < 0 && isPriveOpname(t.omschrijving) && !t.__dubbel).length;
+  const dubbelAantal = transacties.filter(t => t.__dubbel).length;
   const bar = document.getElementById('bank-import-bar');
   if(bar){
     let html = '';
@@ -4330,6 +4332,9 @@ function toonBankTransacties(transacties){
     if(priveAantal>0){
       html += `<button onclick="importAllePrive()" style="background:#5856d6;color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px">👤 Registreer alle ${priveAantal} privé-opnames</button>`;
     }
+    if(dubbelAantal>0){
+      html += `<button onclick="verwijderAlleDubbele()" style="background:#ff9500;color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px">🗑️ Verwijder ${dubbelAantal} dubbele</button>`;
+    }
     if(html) html += `<span style="font-size:12px;color:var(--muted,#888);margin-left:10px">Inkomsten koppel je los aan facturen</span>`;
     bar.innerHTML = html;
   }
@@ -4337,22 +4342,30 @@ function toonBankTransacties(transacties){
   if(!tbody){ renderPriveOverzicht(); return; }
   tbody.innerHTML = transacties.map((t,i) => {
     let actie = '';
-    if(t.bedrag < 0){
+    if(t.__dubbel){
+      // Dubbele rij: alleen verwijderen
+      actie = `<span style="font-size:11px;color:#ff9500;font-weight:600">dubbel</span>
+               <button onclick="verwijderTransactie(${i})" title="Verwijder uit lijst" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;margin-left:4px">🗑️</button>`;
+    } else if(t.bedrag < 0){
       if(isPriveOpname(t.omschrijving)){
-        // Keuze per rij: privé-opname registreren OF tóch als bon
         actie = `<button onclick="importAlsPrive(${i})" title="Geen kosten, geen BTW" style="background:rgba(88,86,214,.12);border:1px solid #5856d6;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;color:#5856d6;font-weight:600">+ Privé</button>
-                 <button onclick="importAlsBon(${i})" title="Toch als zakelijke bon" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;margin-left:4px">+ Bon</button>`;
+                 <button onclick="importAlsBon(${i})" title="Toch als zakelijke bon" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;margin-left:4px">+ Bon</button>
+                 <button onclick="verwijderTransactie(${i})" title="Verwijder uit lijst" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;margin-left:4px">🗑️</button>`;
       } else {
-        actie = `<button onclick="importAlsBon(${i})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">+ Bon</button>`;
+        actie = `<button onclick="importAlsBon(${i})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">+ Bon</button>
+                 <button onclick="verwijderTransactie(${i})" title="Verwijder uit lijst" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;margin-left:4px">🗑️</button>`;
       }
     } else {
-      // Slimme match: zoek openstaande factuur met hetzelfde bedrag
+      // Inkomst: factuur-match of verwijderen
       const match = vindMatchendeFactuur(t.bedrag);
       if(match){
         actie = `<button onclick="koppelBetalingAanFactuur(${i}, ${match.id})" title="Factuur ${match.nummer} (${esc(match.klant)})" style="background:rgba(52,199,89,.12);border:1px solid #34c759;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;color:#248a3d;font-weight:600">✓ Match: ${match.nummer}</button>`;
+      } else {
+        actie = `<button onclick="verwijderTransactie(${i})" title="Verwijder uit lijst" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">🗑️</button>`;
       }
     }
-    return `<tr>
+    const rijStijl = t.__dubbel ? 'opacity:.5;background:rgba(255,149,0,.06)' : '';
+    return `<tr style="${rijStijl}">
       <td style="font-size:12px">${t.datum}</td>
       <td style="font-size:12px;max-width:200px">${t.omschrijving}</td>
       <td class="num" style="color:${t.bedrag<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(Math.abs(t.bedrag))}</td>
@@ -4446,6 +4459,7 @@ function importAlleBonnen(){
   if(!trs.length){ showNotif('Geen transacties ingelezen', true); return; }
   let toegevoegd=0, prv=0, dubbel=0, inkomst=0;
   trs.forEach(t => {
+    if(t.__dubbel) return;                              // dubbele overslaan
     if(t.bedrag >= 0){ inkomst++; return; }            // inkomsten niet als bon
     if(isPriveOpname(t.omschrijving)){ prv++; return; }
     const incl = Math.round(Math.abs(t.bedrag)*100)/100;
@@ -4458,7 +4472,42 @@ function importAlleBonnen(){
   showNotif(`✓ ${toegevoegd} bonnen toegevoegd · ${prv} privé overgeslagen · ${dubbel} dubbel · ${inkomst} inkomsten`);
 }
 
-// === PRIVÉ-OPNAMES ===
+// === DUBBELE TRANSACTIES (binnen het ingelezen bestand) ===
+// Markeer transacties die exact zelfde datum+bedrag+omschrijving hebben als een EERDERE rij
+function markeerDubbeleInLijst(trs){
+  const gezien = {};
+  trs.forEach((t,idx) => {
+    const sleutel = t.datum + '|' + (Math.round(t.bedrag*100)/100) + '|' + (t.omschrijving||'').substring(0,20).toLowerCase();
+    if(gezien[sleutel] !== undefined){
+      t.__dubbel = true;            // deze is een duplicaat van een eerdere rij
+      t.__dubbelVan = gezien[sleutel];
+    } else {
+      t.__dubbel = false;
+      gezien[sleutel] = idx;
+    }
+  });
+  return trs;
+}
+
+// Verwijder één transactie uit de ingelezen lijst (niet uit de boekhouding)
+function verwijderTransactie(i){
+  const trs = window.__bankTransacties || [];
+  if(i<0 || i>=trs.length) return;
+  trs.splice(i,1);
+  toonBankTransacties(trs);   // hertekent + telt opnieuw
+  showNotif('Transactie uit lijst verwijderd');
+}
+
+// Eén-klik: verwijder ALLE auto-herkende dubbele uit de lijst
+function verwijderAlleDubbele(){
+  let trs = window.__bankTransacties || [];
+  markeerDubbeleInLijst(trs);
+  const voor = trs.length;
+  trs = trs.filter(t => !t.__dubbel);
+  window.__bankTransacties = trs;
+  toonBankTransacties(trs);
+  showNotif(`✓ ${voor - trs.length} dubbele transacties verwijderd`);
+}
 // Bestaat deze privé-opname al? (zelfde datum + bedrag + begin omschrijving)
 function priveBestaatAl(datum, bedrag, oms){
   const sleutel = (oms||'').toLowerCase().substring(0,20);
@@ -4495,6 +4544,7 @@ function importAllePrive(){
   if(!trs.length){ showNotif('Geen transacties ingelezen', true); return; }
   let toegevoegd=0, dubbel=0;
   trs.forEach(t => {
+    if(t.__dubbel) return;
     if(t.bedrag >= 0) return;
     if(!isPriveOpname(t.omschrijving)) return;
     const bedrag = Math.round(Math.abs(t.bedrag)*100)/100;
@@ -5216,6 +5266,32 @@ function downloadBonPDF(dataUrl, naam){
 }
 
 // View bon file (PDF or image) in modal
+// Koppel een foto of PDF aan een bestaande bon (bv. een bank-geïmporteerde bon)
+function koppelBonFoto(index, file){
+  if(!file){ return; }
+  const b = bonnen[index];
+  if(!b){ return; }
+  // Max ~4MB om localStorage niet te overvol te maken
+  if(file.size > 4*1024*1024){
+    showNotif('⚠️ Bestand te groot (max 4MB). Maak een kleinere foto.', true);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    b._fileData = e.target.result;
+    b._fileType = file.type;
+    const gelukt = autoSave();
+    renderAll();
+    document.getElementById('bon-detail-modal')?.remove();
+    if(gelukt !== false){
+      toonBonDetail(index);  // heropen met de foto zichtbaar
+      showNotif('✓ Bon-foto gekoppeld');
+    }
+  };
+  reader.onerror = () => showNotif('❌ Kon bestand niet lezen', true);
+  reader.readAsDataURL(file);
+}
+
 function toonBonDetail(index){
   const b = bonnen[index];
   if(!b) return;
@@ -5303,7 +5379,9 @@ function toonBonDetail(index){
       ${!hasPhoto ? `
       <div style="padding:0 20px 16px">
         <div style="background:rgba(244,164,24,.08);border:1px dashed var(--orange);border-radius:10px;padding:16px;text-align:center">
-          <div style="font-size:13px;color:var(--text-muted)">Geen bon foto — <button onclick="document.getElementById('bon-detail-modal').remove();openHandmatigBon()" style="background:none;border:none;color:var(--orange);cursor:pointer;font-weight:600">Bon bewerken</button></div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Nog geen bon-foto gekoppeld</div>
+          <input type="file" id="bon-foto-input-${index}" accept="image/*,application/pdf" style="display:none" onchange="koppelBonFoto(${index}, this.files[0])">
+          <button onclick="document.getElementById('bon-foto-input-${index}').click()" class="btn btn-primary" style="font-size:13px">📎 Voeg foto of PDF toe</button>
         </div>
       </div>` : ''}
 
