@@ -660,6 +660,7 @@ tr:hover td{background:var(--bg)}
     <div class="nav-item" onclick="showPage('btw',this)"><span class="nav-icon">📅</span>BTW aangifte</div>
     <div class="nav-item" onclick="showPage('bank',this)"><span class="nav-icon">🏦</span>Bankrekening</div>
     <div class="nav-section">Boekhouding</div>
+    <div class="nav-item" onclick="showPage('archief',this)"><span class="nav-icon">🗄️</span>Digitaal archief</div>
     <div class="nav-item" onclick="showPage('grootboek',this)"><span class="nav-icon">📚</span>Grootboek</div>
     <div class="nav-item" onclick="showPage('balans',this)"><span class="nav-icon">⚖️</span>Balans</div>
     <div class="nav-item" onclick="showPage('belastingdienst',this)"><span class="nav-icon">🏛️</span>Belastingdienst</div>
@@ -1250,6 +1251,49 @@ tr:hover td{background:var(--bg)}
       </div>
       <div id="prive-overzicht"></div>
 
+    </div>
+
+    <!-- DIGITAAL ARCHIEF -->
+    <div class="page" id="page-archief">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🗄️ Digitaal archief</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="archief-opslag" style="font-size:12px;color:var(--text-muted)"></span>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">
+          Bewaar al je bonnen en documenten veilig in de cloud — 7 jaar te bewaren voor de Belastingdienst. Sleep bestanden in mappen, net als in Verkenner.
+        </div>
+
+        <!-- Opslag-meter -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+            <span id="archief-opslag-tekst" style="color:var(--text-muted)">Opslag berekenen…</span>
+            <span id="archief-opslag-pct" style="color:var(--text-muted)"></span>
+          </div>
+          <div style="height:8px;background:var(--border);border-radius:6px;overflow:hidden">
+            <div id="archief-opslag-bar" style="height:100%;width:0%;background:var(--orange);transition:width .3s"></div>
+          </div>
+        </div>
+
+        <!-- Werkbalk -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+          <button class="btn btn-primary" onclick="archiefUploadKnop()" style="font-size:13px">⬆️ Bestand uploaden</button>
+          <button class="btn btn-secondary" onclick="archiefNieuweMap()" style="font-size:13px">📁 Nieuwe map</button>
+          <button class="btn btn-secondary" onclick="renderArchief()" style="font-size:13px">🔄 Vernieuwen</button>
+          <input type="file" id="archief-file-input" multiple accept="image/*,application/pdf" style="display:none" onchange="archiefVerwerkUpload(this.files)">
+          <span id="archief-pad" style="font-size:13px;color:var(--text-muted);margin-left:auto"></span>
+        </div>
+
+        <!-- Bestandslijst -->
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Naam</th><th>Datum</th><th class="num">Grootte</th><th></th></tr></thead>
+            <tbody id="archief-lijst"><tr><td colspan="4" class="empty">Laden…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- DIENSTEN/CATALOGUS -->
@@ -2590,7 +2634,8 @@ function showPage(name,el){
   document.getElementById('page-'+name).classList.add('active');
   if(name==='instellingen') setTimeout(laadInstellingenPagina, 100);
   if(name==='dashboard') setTimeout(renderDashboardFolders, 50);
-  const titles={dashboard:'Dashboard',bonnen:'Bonnen',offertes:'Offertes',facturen:'Facturen',wv:'Winst & verlies',btw:'BTW aangifte',bank:'Bankrekening',klanten:'Klanten',instellingen:'Instellingen'};
+  if(name==='archief') setTimeout(renderArchief, 50);
+  const titles={dashboard:'Dashboard',bonnen:'Bonnen',offertes:'Offertes',facturen:'Facturen',wv:'Winst & verlies',btw:'BTW aangifte',bank:'Bankrekening',klanten:'Klanten',archief:'Digitaal archief',instellingen:'Instellingen'};
   document.getElementById('page-title').textContent=titles[name]||name;
   const backBtn=document.getElementById('back-to-dash');
   if(backBtn) backBtn.style.display = (name==='dashboard') ? 'none' : 'inline-flex';
@@ -3951,9 +3996,9 @@ function bewerkBon(index){
         <div>
           <label style="font-size:11px;color:var(--text-muted);font-weight:500;display:block;margin-bottom:5px">BTW % </label>
           <select id="edit-pct" class="form-input" style="width:100%" onchange="recalcBtw()">
-            <option value="21" ${(!b.btw_pct||b.btw_pct===21)?'selected':''}>21%</option>
-            <option value="9" ${b.btw_pct===9?'selected':''}>9%</option>
-            <option value="0" ${b.btw_pct===0?'selected':''}>0% (vrijgesteld)</option>
+            <option value="21" ${((b.pct??b.btw_pct??21)===21)?'selected':''}>21%</option>
+            <option value="9" ${((b.pct??b.btw_pct)===9)?'selected':''}>9%</option>
+            <option value="0" ${((b.pct??b.btw_pct)===0)?'selected':''}>0% (vrijgesteld)</option>
           </select>
         </div>
         <div>
@@ -4002,7 +4047,9 @@ function saveBonEdit(index){
   b.leverancier = document.getElementById('edit-lev').value.trim();
   b.cat = document.getElementById('edit-cat').value;
   b.excl = parseFloat(document.getElementById('edit-excl').value) || 0;
-  b.btw_pct = parseInt(document.getElementById('edit-pct').value) || 21;
+  b.pct = parseInt(document.getElementById('edit-pct').value);
+  if(isNaN(b.pct)) b.pct = 21;
+  b.btw_pct = b.pct;  // houd beide velden gelijk voor compatibiliteit
   b.btw = parseFloat(document.getElementById('edit-btw').value) || 0;
   b.incl = parseFloat(document.getElementById('edit-incl').value) || 0;
   b.note = document.getElementById('edit-note').value.trim();
@@ -4332,6 +4379,7 @@ function toonBankTransacties(transacties){
     if(priveAantal>0){
       html += `<button onclick="importAllePrive()" style="background:#5856d6;color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px">👤 Registreer alle ${priveAantal} privé-opnames</button>`;
     }
+    if(html) html += `<button onclick="wisBankLijst()" style="background:none;border:1px solid var(--border);color:var(--muted,#888);border-radius:7px;padding:8px 14px;cursor:pointer;font-size:13px;margin-left:8px">🧹 Maak lijst leeg</button>`;
     if(html) html += `<span style="font-size:12px;color:var(--muted,#888);margin-left:10px">Inkomsten koppel je los aan facturen · 🗑️ verwijdert een rij handmatig</span>`;
     bar.innerHTML = html;
   }
@@ -4485,6 +4533,211 @@ function verwijderTransactie(i){
   trs.splice(i,1);
   toonBankTransacties(trs);   // hertekent + telt opnieuw
   showNotif('Transactie uit lijst verwijderd');
+}
+
+// Maak de hele ingelezen banklijst leeg (verwijdert GEEN geboekte bonnen/privé-opnames)
+// ============ DIGITAAL ARCHIEF (Supabase Storage) ============
+// Bucket: 'bonnen' (maak deze aan in Supabase dashboard → Storage)
+const ARCHIEF_BUCKET = 'bonnen';
+let archiefHuidigePad = '';  // huidige map binnen het archief (leeg = root)
+
+// Pad-prefix per gebruiker, zodat iedereen alleen eigen bestanden ziet
+function archiefBasis(){
+  return (currentUser && currentUser.id) ? currentUser.id : 'anoniem';
+}
+function archiefVolledigPad(naam){
+  const delen = [archiefBasis(), archiefHuidigePad, naam].filter(Boolean);
+  return delen.join('/');
+}
+
+async function renderArchief(){
+  const lijst = document.getElementById('archief-lijst');
+  const padEl = document.getElementById('archief-pad');
+  if(!lijst) return;
+
+  // Niet ingelogd of geen Supabase
+  if(!window.sb || !currentUser){
+    lijst.innerHTML = '<tr><td colspan="4" class="empty">Log in om je archief te zien (cloud-opslag)</td></tr>';
+    return;
+  }
+
+  // Toon huidig pad + terug-knop
+  if(padEl){
+    if(archiefHuidigePad){
+      padEl.innerHTML = `📂 /${esc(archiefHuidigePad)} · <a onclick="archiefGaTerug()" style="color:var(--orange);cursor:pointer">← terug</a>`;
+    } else {
+      padEl.textContent = '📂 Hoofdmap';
+    }
+  }
+
+  lijst.innerHTML = '<tr><td colspan="4" class="empty">Laden…</td></tr>';
+
+  const mapPad = [archiefBasis(), archiefHuidigePad].filter(Boolean).join('/');
+  try{
+    const { data, error } = await window.sb.storage.from(ARCHIEF_BUCKET).list(mapPad, { limit: 200, sortBy: { column:'name', order:'asc' } });
+    if(error){
+      // Bucket bestaat waarschijnlijk nog niet
+      lijst.innerHTML = `<tr><td colspan="4" class="empty">Archief nog niet ingesteld.<br><span style="font-size:12px">Maak in Supabase een bucket "${ARCHIEF_BUCKET}" aan, dan werkt dit direct.</span></td></tr>`;
+      console.warn('Archief list error:', error.message);
+      return;
+    }
+    if(!data || !data.length){
+      lijst.innerHTML = '<tr><td colspan="4" class="empty">Deze map is leeg — upload een bon of maak een map</td></tr>';
+      berekenArchiefOpslag();
+      return;
+    }
+    // Mappen eerst (Supabase markeert mappen met id===null), dan bestanden
+    const mappen = data.filter(x => x.id === null && x.name !== '.emptyFolderPlaceholder');
+    const files  = data.filter(x => x.id !== null && x.name !== '.emptyFolderPlaceholder');
+    let html = '';
+    mappen.forEach(m => {
+      html += `<tr>
+        <td style="cursor:pointer" onclick="archiefOpenMap('${esc(m.name)}')">📁 ${esc(m.name)}</td>
+        <td style="font-size:12px;color:var(--text-muted)">map</td>
+        <td></td>
+        <td><button onclick="archiefVerwijderMap('${esc(m.name)}')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">🗑️</button></td>
+      </tr>`;
+    });
+    files.forEach(f => {
+      const grootte = f.metadata && f.metadata.size ? (f.metadata.size/1024).toFixed(0)+' KB' : '';
+      const datum = f.created_at ? f.created_at.substring(0,10) : '';
+      html += `<tr>
+        <td>🧾 ${esc(f.name)}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${datum}</td>
+        <td class="num" style="font-size:12px">${grootte}</td>
+        <td>
+          <button onclick="archiefBekijk('${esc(f.name)}')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">👁️</button>
+          <button onclick="archiefVerwijder('${esc(f.name)}')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;margin-left:4px">🗑️</button>
+        </td>
+      </tr>`;
+    });
+    lijst.innerHTML = html;
+    berekenArchiefOpslag();
+  }catch(e){
+    lijst.innerHTML = '<tr><td colspan="4" class="empty">Kon archief niet laden</td></tr>';
+    console.error('Archief fout:', e);
+  }
+}
+
+function archiefOpenMap(naam){
+  archiefHuidigePad = archiefHuidigePad ? archiefHuidigePad + '/' + naam : naam;
+  renderArchief();
+}
+function archiefGaTerug(){
+  const delen = archiefHuidigePad.split('/');
+  delen.pop();
+  archiefHuidigePad = delen.join('/');
+  renderArchief();
+}
+
+function archiefUploadKnop(){
+  if(!window.sb || !currentUser){ showNotif('Log eerst in voor cloud-opslag', true); return; }
+  document.getElementById('archief-file-input').click();
+}
+
+async function archiefVerwerkUpload(files){
+  if(!files || !files.length) return;
+  if(!window.sb || !currentUser){ showNotif('Log eerst in', true); return; }
+  let gelukt=0, mislukt=0;
+  for(const file of files){
+    if(file.size > 10*1024*1024){ showNotif(`⚠️ ${file.name} te groot (max 10MB)`, true); mislukt++; continue; }
+    const pad = archiefVolledigPad(file.name);
+    try{
+      const { error } = await window.sb.storage.from(ARCHIEF_BUCKET).upload(pad, file, { upsert:false });
+      if(error){ console.warn('upload err', error.message); mislukt++; }
+      else gelukt++;
+    }catch(e){ console.error(e); mislukt++; }
+  }
+  showNotif(`✓ ${gelukt} bestand(en) geüpload${mislukt?` · ${mislukt} mislukt`:''}`);
+  renderArchief();
+}
+
+async function archiefNieuweMap(){
+  if(!window.sb || !currentUser){ showNotif('Log eerst in', true); return; }
+  const naam = prompt('Naam van de nieuwe map:');
+  if(!naam) return;
+  const schoon = naam.replace(/[^a-zA-Z0-9 _-]/g,'').trim();
+  if(!schoon){ showNotif('Ongeldige mapnaam', true); return; }
+  // Supabase heeft geen "lege map" — we plaatsen een placeholder-bestandje
+  const pad = archiefVolledigPad(schoon) + '/.map';
+  try{
+    const blob = new Blob([''], {type:'text/plain'});
+    const { error } = await window.sb.storage.from(ARCHIEF_BUCKET).upload(pad, blob, { upsert:true });
+    if(error){ showNotif('Kon map niet maken: '+error.message, true); return; }
+    showNotif('✓ Map aangemaakt: '+schoon);
+    renderArchief();
+  }catch(e){ showNotif('Fout bij map maken', true); }
+}
+
+async function archiefBekijk(naam){
+  const pad = archiefVolledigPad(naam);
+  try{
+    const { data, error } = await window.sb.storage.from(ARCHIEF_BUCKET).createSignedUrl(pad, 3600);
+    if(error || !data){ showNotif('Kon bestand niet openen', true); return; }
+    window.open(data.signedUrl, '_blank');
+  }catch(e){ showNotif('Fout bij openen', true); }
+}
+
+async function archiefVerwijder(naam){
+  if(!confirm(`"${naam}" verwijderen uit het archief?`)) return;
+  const pad = archiefVolledigPad(naam);
+  try{
+    const { error } = await window.sb.storage.from(ARCHIEF_BUCKET).remove([pad]);
+    if(error){ showNotif('Kon niet verwijderen: '+error.message, true); return; }
+    showNotif('Bestand verwijderd');
+    renderArchief();
+  }catch(e){ showNotif('Fout bij verwijderen', true); }
+}
+
+async function archiefVerwijderMap(naam){
+  if(!confirm(`Map "${naam}" en alle inhoud verwijderen?`)) return;
+  const mapPad = [archiefBasis(), archiefHuidigePad, naam].filter(Boolean).join('/');
+  try{
+    const { data } = await window.sb.storage.from(ARCHIEF_BUCKET).list(mapPad, { limit: 500 });
+    const paden = (data||[]).map(f => mapPad + '/' + f.name);
+    if(paden.length){ await window.sb.storage.from(ARCHIEF_BUCKET).remove(paden); }
+    showNotif('Map verwijderd');
+    renderArchief();
+  }catch(e){ showNotif('Fout bij map verwijderen', true); }
+}
+
+// Bereken totale opslag van deze gebruiker (alle bestanden, recursief 1 niveau)
+async function berekenArchiefOpslag(){
+  const tekstEl = document.getElementById('archief-opslag-tekst');
+  const pctEl = document.getElementById('archief-opslag-pct');
+  const barEl = document.getElementById('archief-opslag-bar');
+  if(!tekstEl || !window.sb || !currentUser) return;
+  const LIMIET = 1024*1024*1024; // 1 GB (zelfde gevoel als eBoekhouden)
+  try{
+    let totaal = 0;
+    async function telMap(pad){
+      const { data } = await window.sb.storage.from(ARCHIEF_BUCKET).list(pad, { limit: 500 });
+      for(const f of (data||[])){
+        if(f.id === null){ await telMap(pad + '/' + f.name); }      // submap
+        else if(f.metadata && f.metadata.size){ totaal += f.metadata.size; }
+      }
+    }
+    await telMap(archiefBasis());
+    const mb = (totaal/1024/1024).toFixed(1);
+    const pct = Math.min(100, (totaal/LIMIET*100)).toFixed(1);
+    tekstEl.textContent = `Opslag: ${mb} MB van 1 GB`;
+    pctEl.textContent = pct + '%';
+    barEl.style.width = pct + '%';
+  }catch(e){ tekstEl.textContent = 'Opslag onbekend'; }
+}
+
+function wisBankLijst(){
+  const trs = window.__bankTransacties || [];
+  if(!trs.length){ showNotif('De lijst is al leeg', true); return; }
+  if(!confirm('De ingelezen transactielijst leegmaken? Je geboekte bonnen en privé-opnames blijven gewoon staan.')) return;
+  window.__bankTransacties = [];
+  const card = document.getElementById('bank-trans-card');
+  if(card) card.style.display = 'none';
+  const bar = document.getElementById('bank-import-bar');
+  if(bar) bar.innerHTML = '';
+  const tbody = document.getElementById('t-transacties');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="empty">Koppel je bank om transacties te zien</td></tr>';
+  showNotif('✓ Lijst leeggemaakt — klaar voor een nieuw bestand');
 }
 
 // Eén-klik: verwijder ALLE auto-herkende dubbele uit de lijst
