@@ -1240,6 +1240,7 @@ tr:hover td{background:var(--bg)}
             <button class="btn btn-secondary" onclick="refreshTransacties()" style="font-size:12px">🔄 Vernieuwen</button>
           </div>
         </div>
+        <div id="bank-import-bar" style="margin:4px 0 14px 0"></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Datum</th><th>Omschrijving</th><th class="num">Bedrag</th><th>Bon match</th><th>Status</th></tr></thead>
@@ -1247,6 +1248,7 @@ tr:hover td{background:var(--bg)}
           </table>
         </div>
       </div>
+      <div id="prive-overzicht"></div>
 
     </div>
 
@@ -2376,7 +2378,7 @@ const DEMO=[
   {datum:'2026-08-19',leverancier:'Karwei',cat:'Gereedschap',excl:234.50,pct:21},
 ];
 const CAT_BADGE={Materiaal:'b-blue',Brandstof:'b-amber',Gereedschap:'b-purple',Verzekering:'b-green',Telefoon:'b-gray','Eten & drinken':'b-gray',Transport:'b-amber',Subcontractor:'b-blue',Overig:'b-gray'};
-let bonnen=[],facturen=[],offertes=[],klanten=[],pendingFiles=[];
+let bonnen=[],facturen=[],offertes=[],klanten=[],prive=[],pendingFiles=[];
 let factuurNr=1,offerteNr=1;
 let deferredPrompt=null;
 
@@ -3377,6 +3379,7 @@ function autoSave(){
     localStorage.setItem('sb_facturen',JSON.stringify(facturen));
     localStorage.setItem('sb_offertes',JSON.stringify(offertes));
     localStorage.setItem('sb_klanten',JSON.stringify(klanten));
+    localStorage.setItem('sb_prive',JSON.stringify(prive));
     window.__laatsteSave = new Date();
   }catch(e){
     opslaanGelukt = false;
@@ -3548,6 +3551,7 @@ async function autoLoad(){
     const f=localStorage.getItem('sb_facturen');if(f)facturen=JSON.parse(f);
     const o=localStorage.getItem('sb_offertes');if(o)offertes=JSON.parse(o);
     const k=localStorage.getItem('sb_klanten');if(k)klanten=JSON.parse(k);
+    const pv=localStorage.getItem('sb_prive');if(pv)prive=JSON.parse(pv);
     loadUrenKm();
     loadAbonnementen();
     loadVergrendeling();
@@ -3883,7 +3887,7 @@ function loadDemo(){
 }
 
 // RENDER
-function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderControleBanner();renderKlanten();renderBanken();renderUren();renderKm();renderAbonnementen();renderVergrendeling();}
+function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDashboardFolders();renderBTW();renderWV();renderOffertes();renderCategoryFolders();renderControleBanner();renderKlanten();renderBanken();renderUren();renderKm();renderAbonnementen();renderVergrendeling();renderPriveOverzicht();}
 
 async function stuurNaarEBoekhouden(index){
   const b = bonnen[index];
@@ -4172,14 +4176,58 @@ function handleBankCSVFile(file){
   reader.readAsText(file, 'UTF-8');
 }
 
+// Parse een Nederlands bankbedrag correct: "1.234,56" -> 1234.56, "-2.000,00" -> -2000.00
+// Belangrijk: punt = duizendtal-scheiding, komma = decimaal. Eerst punten weg, dan komma -> punt.
+function parseBedragNL(raw){
+  if(raw===null||raw===undefined) return 0;
+  let s = String(raw).trim();
+  if(!s) return 0;
+  const negatief = s.indexOf('-') !== -1;
+  // Houd alleen cijfers, punt en komma over
+  s = s.replace(/[^\d.,]/g,'');
+  if(s.indexOf(',') !== -1){
+    // Komma aanwezig = decimaalteken (NL). Punten zijn duizendtallen -> verwijderen.
+    s = s.replace(/\./g,'').replace(',', '.');
+  } else {
+    // Geen komma. Als er meerdere punten zijn, zijn het duizendtallen -> verwijderen.
+    const puntCount = (s.match(/\./g)||[]).length;
+    if(puntCount > 1){ s = s.replace(/\./g,''); }
+    // (1 punt en geen komma laten we staan: zou een echt decimaalpunt kunnen zijn, bv. ".83")
+  }
+  let n = parseFloat(s)||0;
+  n = Math.abs(n);
+  return negatief ? -n : n;
+}
+
+// Herken privé-opnames / overboekingen naar privé (geen kosten, geen BTW, niet importeren als bon)
+function isPriveOpname(oms){
+  const t = (oms||'').toLowerCase();
+  return /\bp[\.\s]?singh\b/.test(t) || /priv[ée]/.test(t) || /\bzelf\b/.test(t);
+}
+
 function parseCSVBank(text){
   const lines = text.split('\n').filter(l => l.trim());
   const transacties = [];
   // Detect separator
   const sep = lines[0].includes(';') ? ';' : ',';
+  // Quote-bewuste splitsing: komma's/puntkomma's BINNEN aanhalingstekens niet splitsen
+  function splitCSVLine(line){
+    const out = []; let cur = ''; let inQ = false;
+    for(let k=0;k<line.length;k++){
+      const ch = line[k];
+      if(ch === '"'){
+        if(inQ && line[k+1] === '"'){ cur += '"'; k++; }  // escaped quote
+        else inQ = !inQ;
+      } else if(ch === sep && !inQ){
+        out.push(cur); cur = '';
+      } else { cur += ch; }
+    }
+    out.push(cur);
+    return out.map(c => c.trim());
+  }
   // Skip header
   for(let i = 1; i < lines.length; i++){
-    const cols = lines[i].split(sep).map(c => c.replace(/"/g,'').trim());
+    const cols = splitCSVLine(lines[i]);
     if(cols.length < 3) continue;
     // Try common Dutch bank CSV formats
     let datum='', omschrijving='', bedrag=0;
@@ -4188,28 +4236,28 @@ function parseCSVBank(text){
       datum = cols[0];
       omschrijving = (cols[1]||'') + ' ' + (cols[8]||'');
       const afbij = cols[5].toLowerCase();
-      const amt = parseFloat((cols[6]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+      const amt = Math.abs(parseBedragNL(cols[6]||'0'));
       bedrag = (afbij==='bij'||afbij==='credit') ? amt : -amt;
     }
     // Rabobank format: IBAN;Munt;BIC;Volgnr;Datum;Rentedatum;Bedrag;Saldo;Tegenpartij IBAN;Tegenpartij naam;Betalingskenmerk;Omschrijving
     else if(cols.length >= 12 && cols[0].startsWith('NL')){
       datum = cols[4];
       omschrijving = (cols[9]||'') + ' ' + (cols[11]||'');
-      bedrag = parseFloat((cols[6]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+      bedrag = parseBedragNL(cols[6]||'0');
     }
     // ABN AMRO format: Rekeningnummer;Muntsoort;Transactiedatum;Rentedatum;Beginsaldo;Eindsaldo;Omschrijving
     else if(cols.length >= 7){
       datum = cols[2]||cols[0];
       omschrijving = cols[6]||cols[3]||'';
-      const begin = parseFloat((cols[4]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
-      const eind = parseFloat((cols[5]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+      const begin = parseBedragNL(cols[4]||'0');
+      const eind = parseBedragNL(cols[5]||'0');
       bedrag = eind - begin;
     }
     // Generic: first col date, last numeric col is amount
     else {
       datum = cols[0];
       omschrijving = cols.slice(1,-1).join(' ');
-      bedrag = parseFloat((cols[cols.length-1]||'0').replace(',','.').replace(/[^\d.-]/g,''))||0;
+      bedrag = parseBedragNL(cols[cols.length-1]||'0');
     }
     if(datum && omschrijving){
       transacties.push({
@@ -4270,12 +4318,33 @@ function toonBankTransacties(transacties){
   window.__bankTransacties = transacties;
   const card = document.getElementById('bank-trans-card');
   if(card) card.style.display = 'block';
+  // Eén-klik knoppen bovenaan de transactietabel
+  const importeerbaar = transacties.filter(t => t.bedrag < 0 && !isPriveOpname(t.omschrijving)).length;
+  const priveAantal = transacties.filter(t => t.bedrag < 0 && isPriveOpname(t.omschrijving)).length;
+  const bar = document.getElementById('bank-import-bar');
+  if(bar){
+    let html = '';
+    if(importeerbaar>0){
+      html += `<button onclick="importAlleBonnen()" style="background:var(--accent,#F4A418);color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px">⬇️ Importeer alle ${importeerbaar} uitgaven als bon</button>`;
+    }
+    if(priveAantal>0){
+      html += `<button onclick="importAllePrive()" style="background:#5856d6;color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px">👤 Registreer alle ${priveAantal} privé-opnames</button>`;
+    }
+    if(html) html += `<span style="font-size:12px;color:var(--muted,#888);margin-left:10px">Inkomsten koppel je los aan facturen</span>`;
+    bar.innerHTML = html;
+  }
   const tbody = document.getElementById('t-transacties');
-  if(!tbody) return;
+  if(!tbody){ renderPriveOverzicht(); return; }
   tbody.innerHTML = transacties.map((t,i) => {
     let actie = '';
     if(t.bedrag < 0){
-      actie = `<button onclick="importAlsBon(${i})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">+ Bon</button>`;
+      if(isPriveOpname(t.omschrijving)){
+        // Keuze per rij: privé-opname registreren OF tóch als bon
+        actie = `<button onclick="importAlsPrive(${i})" title="Geen kosten, geen BTW" style="background:rgba(88,86,214,.12);border:1px solid #5856d6;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;color:#5856d6;font-weight:600">+ Privé</button>
+                 <button onclick="importAlsBon(${i})" title="Toch als zakelijke bon" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px;margin-left:4px">+ Bon</button>`;
+      } else {
+        actie = `<button onclick="importAlsBon(${i})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">+ Bon</button>`;
+      }
     } else {
       // Slimme match: zoek openstaande factuur met hetzelfde bedrag
       const match = vindMatchendeFactuur(t.bedrag);
@@ -4291,6 +4360,7 @@ function toonBankTransacties(transacties){
       <td>${actie}</td>
     </tr>`;
   }).join('');
+  renderPriveOverzicht();
 }
 
 // Zoek een openstaande factuur waarvan het totaal overeenkomt met een inkomende betaling
@@ -4313,28 +4383,164 @@ function koppelBetalingAanFactuur(transactieIndex, factuurId){
   showNotif(`✓ Factuur ${f.nummer} gemarkeerd als betaald`);
 }
 
-function importAlsBon(i){
-  const t = window.__bankTransacties[i];
-  if(!t) return;
-  // Add as bon
-  const bon = {
+// Slimme BTW-inschatting per transactie. Privé/overboekingen en belasting = 0%.
+function schatBtwPct(oms){
+  const t = (oms||'').toLowerCase();
+  if(isPriveOpname(t)) return 0;
+  if(/belastingdienst|belasting|btw|ib\/pvv|zvw|teruggaaf|aangifte/.test(t)) return 0;
+  if(/verzekering|prolongatie|unive|turien|assuradeuren|premie/.test(t)) return 0; // verzekering vrijgesteld
+  return 21; // standaard; pas zelf aan naar 9% voor stuc/schilderwerk indien nodig
+}
+
+// Bestaat deze transactie al als bon? (zelfde datum + bedrag + begin omschrijving)
+function bonBestaatAl(datum, incl, oms){
+  const sleutel = (oms||'').toLowerCase().substring(0,20);
+  return bonnen.some(b =>
+    b.datum===datum &&
+    Math.abs((parseFloat(b.incl)||0) - incl) < 0.005 &&
+    String(b.notitie||b.leverancier||'').toLowerCase().substring(0,20)===sleutel
+  );
+}
+
+function maakBonVanTransactie(t){
+  const incl = Math.abs(t.bedrag);
+  const pct = schatBtwPct(t.omschrijving);
+  const excl = pct>0 ? incl/(1+pct/100) : incl;
+  const btw = incl - excl;
+  return {
     datum: t.datum,
     leverancier: t.omschrijving.substring(0,30),
     cat: 'Overig',
-    excl: Math.abs(t.bedrag) / 1.21,
-    btw: Math.abs(t.bedrag) - (Math.abs(t.bedrag) / 1.21),
-    incl: Math.abs(t.bedrag),
-    pct: 21,
+    excl: Math.round(excl*100)/100,
+    btw: Math.round(btw*100)/100,
+    incl: Math.round(incl*100)/100,
+    pct: pct,
     kwartaal: kw(t.datum),
     notitie: t.omschrijving,
     status: 'ok'
   };
-  bon.excl = Math.round(bon.excl*100)/100;
-  bon.btw = Math.round(bon.btw*100)/100;
+}
+
+function importAlsBon(i){
+  const t = window.__bankTransacties[i];
+  if(!t) return;
+  if(isPriveOpname(t.omschrijving)){
+    showNotif('⏭️ Privé-opname overgeslagen (geen kosten): ' + t.omschrijving.substring(0,30), true);
+    return;
+  }
+  const incl = Math.abs(t.bedrag);
+  if(bonBestaatAl(t.datum, Math.round(incl*100)/100, t.omschrijving)){
+    showNotif('⚠️ Deze bon bestaat al — niet nogmaals toegevoegd', true);
+    return;
+  }
+  const bon = maakBonVanTransactie(t);
   bonnen.unshift(bon);
   autoSave();
   renderAll();
   showNotif('✓ Bon toegevoegd: ' + bon.leverancier);
+}
+
+// Eén-klik: importeer ALLE uitgaven uit de ingelezen transacties (privé + dubbel worden overgeslagen)
+function importAlleBonnen(){
+  const trs = window.__bankTransacties || [];
+  if(!trs.length){ showNotif('Geen transacties ingelezen', true); return; }
+  let toegevoegd=0, prv=0, dubbel=0, inkomst=0;
+  trs.forEach(t => {
+    if(t.bedrag >= 0){ inkomst++; return; }            // inkomsten niet als bon
+    if(isPriveOpname(t.omschrijving)){ prv++; return; }
+    const incl = Math.round(Math.abs(t.bedrag)*100)/100;
+    if(bonBestaatAl(t.datum, incl, t.omschrijving)){ dubbel++; return; }
+    bonnen.unshift(maakBonVanTransactie(t));
+    toegevoegd++;
+  });
+  autoSave();
+  renderAll();
+  showNotif(`✓ ${toegevoegd} bonnen toegevoegd · ${prv} privé overgeslagen · ${dubbel} dubbel · ${inkomst} inkomsten`);
+}
+
+// === PRIVÉ-OPNAMES ===
+// Bestaat deze privé-opname al? (zelfde datum + bedrag + begin omschrijving)
+function priveBestaatAl(datum, bedrag, oms){
+  const sleutel = (oms||'').toLowerCase().substring(0,20);
+  return prive.some(p =>
+    p.datum===datum &&
+    Math.abs((parseFloat(p.bedrag)||0) - bedrag) < 0.005 &&
+    String(p.omschrijving||'').toLowerCase().substring(0,20)===sleutel
+  );
+}
+
+// Registreer één transactie als privé-opname (geen kosten, geen BTW)
+function importAlsPrive(i){
+  const t = window.__bankTransacties[i];
+  if(!t) return;
+  const bedrag = Math.round(Math.abs(t.bedrag)*100)/100;
+  if(priveBestaatAl(t.datum, bedrag, t.omschrijving)){
+    showNotif('⚠️ Deze privé-opname bestaat al — niet nogmaals toegevoegd', true);
+    return;
+  }
+  prive.unshift({
+    datum: t.datum,
+    bedrag: bedrag,
+    omschrijving: t.omschrijving.substring(0,60),
+    kwartaal: kw(t.datum)
+  });
+  autoSave();
+  renderAll();
+  showNotif('✓ Privé-opname geregistreerd: ' + fmt(bedrag));
+}
+
+// Eén-klik: registreer ALLE herkende privé-opnames in één keer
+function importAllePrive(){
+  const trs = window.__bankTransacties || [];
+  if(!trs.length){ showNotif('Geen transacties ingelezen', true); return; }
+  let toegevoegd=0, dubbel=0;
+  trs.forEach(t => {
+    if(t.bedrag >= 0) return;
+    if(!isPriveOpname(t.omschrijving)) return;
+    const bedrag = Math.round(Math.abs(t.bedrag)*100)/100;
+    if(priveBestaatAl(t.datum, bedrag, t.omschrijving)){ dubbel++; return; }
+    prive.unshift({ datum:t.datum, bedrag:bedrag, omschrijving:t.omschrijving.substring(0,60), kwartaal:kw(t.datum) });
+    toegevoegd++;
+  });
+  autoSave();
+  renderAll();
+  showNotif(`✓ ${toegevoegd} privé-opnames geregistreerd${dubbel?` · ${dubbel} dubbel overgeslagen`:''}`);
+}
+
+// Verwijder een privé-opname
+function verwijderPrive(idx){
+  if(idx<0||idx>=prive.length) return;
+  if(!confirm('Privé-opname verwijderen?')) return;
+  prive.splice(idx,1);
+  autoSave();
+  renderAll();
+  if(typeof renderPriveOverzicht==='function') renderPriveOverzicht();
+  showNotif('Privé-opname verwijderd');
+}
+
+// Render het privé-opname overzicht (op de bank-pagina onder de transacties)
+function renderPriveOverzicht(){
+  const box = document.getElementById('prive-overzicht');
+  if(!box) return;
+  if(!prive.length){ box.innerHTML=''; return; }
+  const totaal = prive.reduce((s,p)=>s+(parseFloat(p.bedrag)||0),0);
+  const rows = prive.map((p,idx)=>`<tr>
+      <td style="font-size:12px">${p.datum}</td>
+      <td style="font-size:12px">${esc(p.omschrijving||'')}</td>
+      <td class="num" style="font-weight:600">${fmt(p.bedrag)}</td>
+      <td><button onclick="verwijderPrive(${idx})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">🗑️</button></td>
+    </tr>`).join('');
+  box.innerHTML = `
+    <div class="card" style="margin-top:20px">
+      <div class="card-header">
+        <span class="card-title">👤 Privé-opnames (geen kosten, geen BTW)</span>
+        <span style="font-weight:700">${fmt(totaal)}</span>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Datum</th><th>Omschrijving</th><th class="num">Bedrag</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
 }
 
 function matchTransacties(){
