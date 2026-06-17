@@ -4332,10 +4332,7 @@ function toonBankTransacties(transacties){
     if(priveAantal>0){
       html += `<button onclick="importAllePrive()" style="background:#5856d6;color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px">👤 Registreer alle ${priveAantal} privé-opnames</button>`;
     }
-    if(dubbelAantal>0){
-      html += `<button onclick="verwijderAlleDubbele()" style="background:#ff9500;color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px">🗑️ Verwijder ${dubbelAantal} dubbele</button>`;
-    }
-    if(html) html += `<span style="font-size:12px;color:var(--muted,#888);margin-left:10px">Inkomsten koppel je los aan facturen</span>`;
+    if(html) html += `<span style="font-size:12px;color:var(--muted,#888);margin-left:10px">Inkomsten koppel je los aan facturen · 🗑️ verwijdert een rij handmatig</span>`;
     bar.innerHTML = html;
   }
   const tbody = document.getElementById('t-transacties');
@@ -4472,20 +4469,12 @@ function importAlleBonnen(){
   showNotif(`✓ ${toegevoegd} bonnen toegevoegd · ${prv} privé overgeslagen · ${dubbel} dubbel · ${inkomst} inkomsten`);
 }
 
-// === DUBBELE TRANSACTIES (binnen het ingelezen bestand) ===
-// Markeer transacties die exact zelfde datum+bedrag+omschrijving hebben als een EERDERE rij
+// === DUBBELE TRANSACTIES ===
+// LET OP: twee echte overboekingen kunnen exact gelijk zijn (zelfde dag, bedrag, ontvanger).
+// Daarom markeren we NIETS automatisch als dubbel — dat zou een echte transactie verbergen.
+// De gebruiker bepaalt zelf via de 🗑️ verwijder-knop welke rij een echte dubbele import is.
 function markeerDubbeleInLijst(trs){
-  const gezien = {};
-  trs.forEach((t,idx) => {
-    const sleutel = t.datum + '|' + (Math.round(t.bedrag*100)/100) + '|' + (t.omschrijving||'').substring(0,20).toLowerCase();
-    if(gezien[sleutel] !== undefined){
-      t.__dubbel = true;            // deze is een duplicaat van een eerdere rij
-      t.__dubbelVan = gezien[sleutel];
-    } else {
-      t.__dubbel = false;
-      gezien[sleutel] = idx;
-    }
-  });
+  trs.forEach(t => { t.__dubbel = false; });
   return trs;
 }
 
