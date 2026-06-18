@@ -3458,12 +3458,13 @@ async function syncToCloud(){
         excl: parseFloat(b.excl)||0,
         btw: parseFloat(b.btw)||0,
         incl: parseFloat(b.incl)||0,
-        status: b.status||'ok',
-        bon_nr: b._localId||bonnen.indexOf(b)
+        btw_pct: parseInt(b.pct ?? b.btw_pct ?? 21),
+        foto_pad: b._fotoPad||null,
+        status: b.status||'ok'
       }));
-      // Delete old and reinsert (simple upsert strategy)
       await window.sb.from('bonnen').delete().eq('user_id', uid);
-      await window.sb.from('bonnen').insert(rows);
+      const { error: insErr } = await window.sb.from('bonnen').insert(rows);
+      if(insErr) console.warn('Bonnen insert fout:', insErr.message);
     }
     // Sync facturen
     if(facturen.length){
@@ -3520,6 +3521,19 @@ async function syncToCloud(){
       }));
       await window.sb.from('offertes').delete().eq('user_id', uid);
       await window.sb.from('offertes').insert(rows);
+    }
+    // Sync privé-opnames
+    if(typeof prive!=='undefined' && prive.length){
+      const rows = prive.map(p=>({
+        user_id: uid,
+        datum: p.datum||null,
+        bedrag: parseFloat(p.bedrag)||0,
+        omschrijving: p.omschrijving||'',
+        kwartaal: p.kwartaal||kw(p.datum)
+      }));
+      await window.sb.from('prive').delete().eq('user_id', uid);
+      const { error: prvErr } = await window.sb.from('prive').insert(rows);
+      if(prvErr) console.warn('Privé insert fout:', prvErr.message);
     }
   }catch(e){ console.warn('Cloud sync error:', e.message); }
 }
@@ -3626,7 +3640,8 @@ async function loadFromCloud(){
         btw: parseFloat(b.btw)||0,
         incl: parseFloat(b.incl)||0,
         status: b.status||'ok',
-        pct: Math.round((parseFloat(b.btw)/parseFloat(b.excl))*100)||21,
+        pct: (b.btw_pct!==null && b.btw_pct!==undefined) ? parseInt(b.btw_pct) : (Math.round((parseFloat(b.btw)/parseFloat(b.excl))*100)||21),
+        _fotoPad: b.foto_pad||null,
         _cloudId: b.id
       }));
       changed = true;
@@ -3689,12 +3704,24 @@ async function loadFromCloud(){
       }));
       changed = true;
     }
+    // Load privé-opnames
+    const {data:pData} = await window.sb.from('prive').select('*').eq('user_id', uid).order('datum', {ascending:false});
+    if(pData && pData.length > 0){
+      prive = pData.map(p=>({
+        datum: p.datum,
+        bedrag: parseFloat(p.bedrag)||0,
+        omschrijving: p.omschrijving||'',
+        kwartaal: p.kwartaal||kw(p.datum)
+      }));
+      changed = true;
+    }
     if(changed){
       // Save to localStorage as cache
       localStorage.setItem('sb_bonnen',JSON.stringify(bonnen));
       localStorage.setItem('sb_facturen',JSON.stringify(facturen));
       localStorage.setItem('sb_offertes',JSON.stringify(offertes));
       localStorage.setItem('sb_klanten',JSON.stringify(klanten));
+      if(typeof prive!=='undefined') localStorage.setItem('sb_prive',JSON.stringify(prive));
       renderAll();
       showNotif('☁️ Data geladen vanuit cloud ✓');
     } else if(!bonnen.length && !facturen.length){
@@ -5509,26 +5536,46 @@ function downloadBonPDF(dataUrl, naam){
 
 // View bon file (PDF or image) in modal
 // Koppel een foto of PDF aan een bestaande bon (bv. een bank-geïmporteerde bon)
-function koppelBonFoto(index, file){
+async function koppelBonFoto(index, file){
   if(!file){ return; }
   const b = bonnen[index];
   if(!b){ return; }
-  // Max ~4MB om localStorage niet te overvol te maken
-  if(file.size > 4*1024*1024){
-    showNotif('⚠️ Bestand te groot (max 4MB). Maak een kleinere foto.', true);
+  if(file.size > 10*1024*1024){
+    showNotif('⚠️ Bestand te groot (max 10MB). Maak een kleinere foto.', true);
     return;
   }
+  // Probeer naar de cloud te uploaden (veilig bewaard, ook op mobiel zichtbaar)
+  if(window.sb && currentUser){
+    try{
+      const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
+      const pad = currentUser.id + '/bonnen/bon_' + Date.now() + '.' + ext;
+      const { error } = await window.sb.storage.from('bonnen').upload(pad, file, {upsert:true});
+      if(!error){
+        b._fotoPad = pad;
+        // Toon-link ophalen voor directe weergave
+        const { data:urlData } = await window.sb.storage.from('bonnen').createSignedUrl(pad, 3600);
+        if(urlData) b._fileData = urlData.signedUrl;
+        b._fileType = file.type;
+        autoSave();
+        renderAll();
+        document.getElementById('bon-detail-modal')?.remove();
+        toonBonDetail(index);
+        showNotif('☁️ Bon-foto opgeslagen in cloud ✓');
+        return;
+      }
+      console.warn('Cloud-upload mislukt, val terug op lokaal:', error.message);
+    }catch(e){ console.warn('Cloud-upload fout:', e.message); }
+  }
+  // Terugval: lokaal opslaan (als niet ingelogd of cloud faalt)
   const reader = new FileReader();
   reader.onload = (e) => {
     b._fileData = e.target.result;
     b._fileType = file.type;
-    const gelukt = autoSave();
+    autoSave();
     renderAll();
     document.getElementById('bon-detail-modal')?.remove();
-    if(gelukt !== false){
-      toonBonDetail(index);  // heropen met de foto zichtbaar
-      showNotif('✓ Bon-foto gekoppeld');
-    }
+    toonBonDetail(index);
+    showNotif('✓ Bon-foto gekoppeld (lokaal)');
   };
   reader.onerror = () => showNotif('❌ Kon bestand niet lezen', true);
   reader.readAsDataURL(file);
