@@ -2200,6 +2200,18 @@ Met vriendelijke groet</textarea>
         </div>
       </div>
 
+      <div class="card" style="margin-top:20px">
+        <div class="card-header"><span class="card-title">💾 Backup &amp; herstel</span></div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">
+          De Belastingdienst vereist dat je je administratie 7 jaar bewaart. Download regelmatig een backup en bewaar die veilig (bijvoorbeeld in Google Drive of op je computer). Bij verlies kun je alles terugzetten.
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="downloadBackup()" style="font-size:13px">⬇️ Download backup</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('herstel-input').click()" style="font-size:13px">⬆️ Herstel uit backup</button>
+          <input type="file" id="herstel-input" accept="application/json,.json" style="display:none" onchange="herstelBackupVan(this.files[0])">
+        </div>
+      </div>
+
     </div>
 
 
@@ -3442,8 +3454,81 @@ function autoSave(){
   return opslaanGelukt;
 }
 
+// ============ BACKUP & HERSTEL ============
+// Maak automatisch een lokale snapshot (bewaart de laatste 3 versies)
+function maakAutoBackup(){
+  try{
+    const snapshot = {
+      tijd: new Date().toISOString(),
+      bonnen: bonnen||[],
+      facturen: facturen||[],
+      klanten: klanten||[],
+      offertes: offertes||[],
+      prive: (typeof prive!=='undefined')?prive:[]
+    };
+    let backups = [];
+    try{ backups = JSON.parse(localStorage.getItem('sb_backups')||'[]'); }catch(e){}
+    backups.unshift(snapshot);
+    backups = backups.slice(0,3); // bewaar laatste 3
+    localStorage.setItem('sb_backups', JSON.stringify(backups));
+  }catch(e){ console.warn('Auto-backup mislukt:', e.message); }
+}
+
+// Download alle data als backup-bestand (JSON) — voor 7-jaar bewaarplicht
+function downloadBackup(){
+  const data = {
+    app: 'SlimBoekhoud',
+    versie: 1,
+    geexporteerd: new Date().toISOString(),
+    bedrijf: localStorage.getItem('sb_bedrijfsnaam')||'',
+    bonnen: bonnen||[],
+    facturen: facturen||[],
+    klanten: klanten||[],
+    offertes: offertes||[],
+    prive: (typeof prive!=='undefined')?prive:[]
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const datum = new Date().toISOString().substring(0,10);
+  a.href = url;
+  a.download = `slimboekhoud-backup-${datum}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const n = (bonnen?.length||0)+(facturen?.length||0)+(klanten?.length||0)+(offertes?.length||0)+((typeof prive!=='undefined'?prive.length:0));
+  showNotif(`✓ Backup gedownload (${n} items) — bewaar dit veilig`);
+}
+
+// Herstel data uit een backup-bestand
+function herstelBackupVan(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.bonnen && !data.facturen){ showNotif('❌ Geen geldig SlimBoekhoud-backup bestand', true); return; }
+      const n = (data.bonnen?.length||0)+(data.facturen?.length||0)+(data.klanten?.length||0)+(data.offertes?.length||0);
+      if(!confirm(`Backup herstellen van ${data.geexporteerd?.substring(0,10)||'onbekend'}?\n\nDit vervangt je huidige data met ${n} items uit de backup.`)) return;
+      bonnen = data.bonnen||[];
+      facturen = data.facturen||[];
+      klanten = data.klanten||[];
+      offertes = data.offertes||[];
+      if(typeof prive!=='undefined') prive = data.prive||[];
+      autoSave();
+      renderAll();
+      showNotif(`✓ Backup hersteld: ${n} items teruggezet`);
+    }catch(err){ showNotif('❌ Kon backup niet lezen: '+err.message, true); }
+  };
+  reader.onerror = () => showNotif('❌ Kon bestand niet lezen', true);
+  reader.readAsText(file);
+}
+
 async function syncToCloud(){
   if(!window.sb || !currentUser) return;
+  // VEILIGHEID: maak eerst een lokale backup-snapshot voordat we de cloud aanraken
+  maakAutoBackup();
   try{
     const uid = currentUser.id;
     // Sync bonnen
@@ -4487,6 +4572,19 @@ function bonBestaatAl(datum, incl, oms){
   );
 }
 
+// Raad de categorie op basis van de leverancier/omschrijving
+function gokCategorie(oms){
+  const t = (oms||'').toLowerCase();
+  if(/hornbach|gamma|praxis|bouwmaat|karwei|bouwcity|toolstation|raab|saint.?gobain|baumit|knauf|stuc|verf|sigma|flexa|brico/.test(t)) return 'Materiaal';
+  if(/shell|bp|esso|tinq|tango|texaco|tankstation|tinq|q8|total|gulf|avia/.test(t)) return 'Brandstof';
+  if(/makita|bosch|dewalt|festool|hilti|gereedschap|toolstation/.test(t)) return 'Gereedschap';
+  if(/verzekering|unive|univé|prolongatie|premie|assuradeuren|turien|interpolis|nationale.?nederlanden|asr|aegon/.test(t)) return 'Verzekering';
+  if(/kpn|vodafone|t-mobile|odido|tele2|ben|simyo|lebara|telefoon|mobiel/.test(t)) return 'Telefoon';
+  if(/albert heijn|jumbo|lidl|aldi|restaurant|cafe|café|lunch|mcdonald|kfc|eten|coffee|starbucks|bakker/.test(t)) return 'Eten & drinken';
+  if(/ns |9292|ov-|parkeren|parking|q-park|transport|tankstation|garage|onderhoud auto|apk/.test(t)) return 'Transport';
+  return 'Overig';
+}
+
 function maakBonVanTransactie(t){
   const incl = Math.abs(t.bedrag);
   const pct = schatBtwPct(t.omschrijving);
@@ -4495,7 +4593,7 @@ function maakBonVanTransactie(t){
   return {
     datum: t.datum,
     leverancier: t.omschrijving.substring(0,30),
-    cat: 'Overig',
+    cat: gokCategorie(t.omschrijving),
     excl: Math.round(excl*100)/100,
     btw: Math.round(btw*100)/100,
     incl: Math.round(incl*100)/100,
