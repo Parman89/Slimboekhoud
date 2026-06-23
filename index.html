@@ -809,7 +809,8 @@ tr:hover td{background:var(--bg)}
             <option value="">Alle kwartalen</option>
             <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
           </select>
-          <button id="zonder-bon-btn" class="btn btn-ghost" onclick="toggleZonderBonFilter()" style="font-size:11px;padding:5px 10px;border:1px solid #248a3d;color:#248a3d" title="Toon alleen bonnen die nog een foto/bon nodig hebben">📎 Zonder bon: 0</button>
+          <button id="zonder-bon-btn" class="btn btn-ghost" onclick="setBonStatusFilter('zonder')" style="font-size:11px;padding:5px 10px;border:1px solid #248a3d;color:#248a3d" title="Toon alleen bonnen die nog een foto/bon nodig hebben">📎 Nog te koppelen: 0</button>
+          <button id="met-bon-btn" class="btn btn-ghost" onclick="setBonStatusFilter('met')" style="font-size:11px;padding:5px 10px;border:1px solid #1f7a35;color:#1f7a35" title="Toon alleen verwerkte bonnen (met bon gekoppeld)">✅ Verwerkt: 0</button>
           <button class="btn btn-ghost" onclick="resetBonFilter()" style="font-size:11px;padding:5px 10px">× Reset</button>
           <span id="bon-filter-count" style="font-size:11px;color:var(--text-muted);margin-left:auto"></span>
         </div>
@@ -4050,6 +4051,9 @@ function renderAll(){renderBonnen();renderFacturen();renderDashboard();renderDas
 async function stuurNaarEBoekhouden(index){
   const b = bonnen[index];
   if(!b){ return; }
+  if(b._ebSent){
+    if(!confirm('⚠️ Deze bon is al naar eBoekhouden gestuurd' + (b._ebSentDatum?(' op '+b._ebSentDatum):'') + '.\n\nNog een keer sturen maakt een DUBBELE boeking in eBoekhouden. Toch opnieuw sturen?')) return;
+  }
   showNotif('📤 Bon wordt verstuurd naar eBoekhouden...');
   try{
     const res = await fetch('/.netlify/functions/eboekhouden', {
@@ -4061,6 +4065,7 @@ async function stuurNaarEBoekhouden(index){
     if(data.success){
       showNotif('✅ Bon verstuurd naar eBoekhouden!');
       b._ebSent = true;
+      b._ebSentDatum = new Date().toISOString().slice(0,10);
       autoSave();
       renderAll();
     } else {
@@ -5576,7 +5581,7 @@ function openCategoryFolder(cat){
 
 
 function renderBonnen(lijst){
-  const data = lijst || (window.bonFilterZonderBon ? bonnen.filter(b=>!bonHeeftBon(b)) : bonnen);
+  const data = lijst || (window.bonStatusFilter==='zonder' ? bonnen.filter(b=>!bonHeeftBon(b)) : window.bonStatusFilter==='met' ? bonnen.filter(b=>bonHeeftBon(b)) : bonnen);
   document.getElementById('t-bonnen').innerHTML = data.map((b,i,_a,ix=bonnen.indexOf(b)) => `
     <tr id="bon-row-${ix}" style="cursor:pointer" onclick="toonBonDetail(${ix})" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
       <td class="mono" style="color:var(--text-muted);font-size:12px">${b.datum}</td>
@@ -5606,7 +5611,7 @@ function renderBonnen(lijst){
           ${bonHeeftBon(b) ? `<button onclick="event.stopPropagation();toonBonDetail(${ix})" title="Bon gekoppeld - klik om te bekijken" style="background:rgba(36,138,61,.12);border:1px solid #248a3d;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;color:#248a3d">📎</button>` : `<input type="file" id="koppel-input-${ix}" accept="image/*,application/pdf" style="display:none" onclick="event.stopPropagation()" onchange="koppelBonFoto(${ix},this.files[0])"><button onclick="event.stopPropagation();document.getElementById('koppel-input-${ix}').click()" title="Bon/foto koppelen aan deze regel" style="background:#248a3d;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;color:#fff;font-weight:600">➕ bon</button>`}
           <button onclick="event.stopPropagation();toonBonDetail(${ix})" title="Bekijk bon details" style="background:none;border:1px solid var(--orange);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;color:var(--orange)">👁️</button>
           <button onclick="event.stopPropagation();bewerkBon(${ix})" title="Bewerk bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px">✏️</button>
-          <button onclick="event.stopPropagation();stuurNaarEBoekhouden(${ix})" title="Stuur naar eBoekhouden" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px">📤 eB</button>
+          <button onclick="event.stopPropagation();stuurNaarEBoekhouden(${ix})" title="${b._ebSent?('Al naar eBoekhouden gestuurd'+(b._ebSentDatum?(' op '+b._ebSentDatum):'')+' - klik om opnieuw te sturen'):'Stuur naar eBoekhouden'}" style="background:${b._ebSent?'rgba(36,138,61,.12)':'none'};border:1px solid ${b._ebSent?'#248a3d':'var(--border)'};border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:${b._ebSent?'#248a3d':'inherit'}">${b._ebSent?'✅ eB':'📤 eB'}</button>
           <button onclick="event.stopPropagation();verwijderBon(${ix})" title="Verwijder bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;color:var(--red)">🗑️</button>
         </div>
       </td>
@@ -5837,14 +5842,22 @@ function wijzigNotitie(index, notitie) {
 // ── BON KOPPELEN AAN AFSCHRIFT (heeft deze bon al een foto/PDF?) ──
 function bonHeeftBon(b){ return !!(b && (b._fileData || b._fotoPad || b.foto)); }
 function updateZonderBonKnop(){
-  const zb = document.getElementById('zonder-bon-btn');
-  if(!zb) return;
   const zonder = bonnen.filter(b=>!bonHeeftBon(b)).length;
-  zb.textContent = (window.bonFilterZonderBon?'✓ ':'📎 ') + 'Zonder bon: ' + zonder;
-  zb.style.background = window.bonFilterZonderBon ? '#248a3d' : 'transparent';
-  zb.style.color = window.bonFilterZonderBon ? '#fff' : 'var(--text)';
+  const met = bonnen.length - zonder;
+  const zb = document.getElementById('zonder-bon-btn');
+  if(zb){
+    zb.textContent = (window.bonStatusFilter==='zonder'?'✓ ':'📎 ') + 'Nog te koppelen: ' + zonder;
+    zb.style.background = window.bonStatusFilter==='zonder' ? '#248a3d' : 'transparent';
+    zb.style.color = window.bonStatusFilter==='zonder' ? '#fff' : 'var(--text)';
+  }
+  const mb = document.getElementById('met-bon-btn');
+  if(mb){
+    mb.textContent = (window.bonStatusFilter==='met'?'✓ ':'✅ ') + 'Verwerkt: ' + met;
+    mb.style.background = window.bonStatusFilter==='met' ? '#1f7a35' : 'transparent';
+    mb.style.color = window.bonStatusFilter==='met' ? '#fff' : 'var(--text)';
+  }
 }
-function toggleZonderBonFilter(){ window.bonFilterZonderBon = !window.bonFilterZonderBon; filterBonnen(); }
+function setBonStatusFilter(status){ window.bonStatusFilter = (window.bonStatusFilter===status)?'':status; filterBonnen(); }
 
 function filterBonnen() {
   const search = (document.getElementById('bon-search')?.value||'').toLowerCase();
@@ -5854,10 +5867,11 @@ function filterBonnen() {
   if (search) gefilterd = gefilterd.filter(b => b.leverancier.toLowerCase().includes(search) || (b.note||'').toLowerCase().includes(search));
   if (cat) gefilterd = gefilterd.filter(b => b.cat === cat);
   if (kw2) gefilterd = gefilterd.filter(b => b.kwartaal === kw2);
-  if (window.bonFilterZonderBon) gefilterd = gefilterd.filter(b => !bonHeeftBon(b));
+  if (window.bonStatusFilter==='zonder') gefilterd = gefilterd.filter(b => !bonHeeftBon(b));
+  else if (window.bonStatusFilter==='met') gefilterd = gefilterd.filter(b => bonHeeftBon(b));
   renderBonnen(gefilterd);
   const count = document.getElementById('bon-filter-count');
-  if (count) count.textContent = (search||cat||kw2||window.bonFilterZonderBon) ? gefilterd.length + ' van ' + bonnen.length + ' bonnen' : '';
+  if (count) count.textContent = (search||cat||kw2||window.bonStatusFilter) ? gefilterd.length + ' van ' + bonnen.length + ' bonnen' : '';
   updateZonderBonKnop();
 }
 
@@ -5865,7 +5879,7 @@ function resetBonFilter() {
   document.getElementById('bon-search').value = '';
   document.getElementById('bon-cat-filter').value = '';
   document.getElementById('bon-kw-filter').value = '';
-  window.bonFilterZonderBon = false;
+  window.bonStatusFilter = '';
   filterBonnen();
 }
 
