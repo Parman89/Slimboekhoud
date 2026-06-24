@@ -812,6 +812,7 @@ tr:hover td{background:var(--bg)}
           <button id="zonder-bon-btn" class="btn btn-ghost" onclick="setBonStatusFilter('zonder')" style="font-size:11px;padding:5px 10px;border:1px solid #248a3d;color:#248a3d" title="Toon alleen bonnen die nog een foto/bon nodig hebben">📎 Nog te koppelen: 0</button>
           <button id="met-bon-btn" class="btn btn-ghost" onclick="setBonStatusFilter('met')" style="font-size:11px;padding:5px 10px;border:1px solid #1f7a35;color:#1f7a35" title="Toon alleen verwerkte bonnen (met bon gekoppeld)">✅ Verwerkt: 0</button>
           <button class="btn btn-ghost" onclick="resetBonFilter()" style="font-size:11px;padding:5px 10px">× Reset</button>
+          <button class="btn btn-ghost" onclick="slimSorteerBonnen()" style="font-size:11px;padding:5px 10px;border:1px solid var(--orange);color:var(--orange)" title="Sorteer 'Overig'-bonnen automatisch op leverancier (Rabobank→Bankkosten, Belastingdienst→Belasting, enz.)">🔄 Auto-sorteer</button>
           <span id="bon-filter-count" style="font-size:11px;color:var(--text-muted);margin-left:auto"></span>
         </div>
         <div class="table-wrap">
@@ -2435,7 +2436,7 @@ const DEMO=[
   {datum:'2026-07-03',leverancier:'Bouwmaat',cat:'Materiaal',excl:890.00,pct:21},
   {datum:'2026-08-19',leverancier:'Karwei',cat:'Gereedschap',excl:234.50,pct:21},
 ];
-const CAT_BADGE={Materiaal:'b-blue',Brandstof:'b-amber',Gereedschap:'b-purple',Verzekering:'b-green',Telefoon:'b-gray','Eten & drinken':'b-gray',Transport:'b-amber',Subcontractor:'b-blue',Overig:'b-gray'};
+const CAT_BADGE={Materiaal:'b-blue',Brandstof:'b-amber',Gereedschap:'b-purple',Verzekering:'b-green',Telefoon:'b-gray','Eten & drinken':'b-gray',Transport:'b-amber',Subcontractor:'b-blue',Bankkosten:'b-red',Abonnementen:'b-purple',Belasting:'b-amber',Kantoor:'b-blue',Overig:'b-gray'};
 let bonnen=[],facturen=[],offertes=[],klanten=[],prive=[],pendingFiles=[];
 let factuurNr=1,offerteNr=1;
 let deferredPrompt=null;
@@ -4081,7 +4082,7 @@ function bewerkBon(index){
   if(!b) return;
   if(bonIsVergrendeld(b)){ showNotif('🔒 Dit kwartaal is vergrendeld — wijzigen kan niet (ontgrendel eerst in Instellingen)', true); return; }
   
-  const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig'];
+  const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Bankkosten','Abonnementen','Belasting','Kantoor','Overig'];
   
   const modal = document.createElement('div');
   modal.id = 'bon-edit-modal';
@@ -4942,27 +4943,71 @@ function verwijderPrive(idx){
 }
 
 // Render het privé-opname overzicht (op de bank-pagina onder de transacties)
+// ── SLIM AUTO-SORTEREN (leverancier-trefwoorden → categorie) ──
+const CAT_KEYWORDS = [
+  [['rabobank','bankkost','sepa kosten','incassokosten','ing bank','abn amro','bunq'], 'Bankkosten'],
+  [['belastingdienst','gem belastingen','gemeente','waterschap','heffing','motorrijtuig',' mrb'], 'Belasting'],
+  [['skillsource','paypro','adobe','microsoft','google','spotify','hosting','netlify','vercel','supabase','abonnement','software'], 'Abonnementen'],
+  [['shell','bp ','esso','tinq','tango','total','texaco','brandstof','benzine','diesel'], 'Brandstof'],
+  [['ziggo','odido','kpn','vodafone','t-mobile','tele2','telefoon','internet'], 'Telefoon'],
+  [['unive','interpolis','aegon','verzekering','centraal beheer','nationale ned'], 'Verzekering'],
+  [['gamma','praxis','hornbach','bouwmaat','bricorama','karwei','toolstation','arsenius'], 'Materiaal'],
+  [['boels','verhuur','gereedschap','makita','dewalt'], 'Gereedschap'],
+  [['hema','eethuis','restaurant','cafe','lunch','fafi','bakker','horeca','albert heijn'], 'Eten & drinken'],
+  [['q-park','parkeren','parking','p+r','ov-chip','trein'], 'Transport'],
+  [['kantoor','staples','office','printer','papier'], 'Kantoor'],
+];
+function slimSorteerBonnen(){
+  let aantal = 0;
+  bonnen.forEach(b=>{
+    if(b.cat && b.cat !== 'Overig') return;
+    const lev = (b.leverancier||'').toLowerCase();
+    for(const pair of CAT_KEYWORDS){
+      if(pair[0].some(k=>lev.includes(k))){ b.cat = pair[1]; aantal++; break; }
+    }
+  });
+  if(typeof autoSave==='function') autoSave();
+  if(typeof renderAll==='function') renderAll();
+  showNotif('\ud83d\udd04 ' + aantal + ' bonnen automatisch gesorteerd \u2713');
+}
+
+// ── PRIVE-OPNAME handmatig toevoegen ──
+function voegPriveToe(){
+  const datum = prompt('Datum (JJJJ-MM-DD):', new Date().toISOString().slice(0,10));
+  if(!datum) return;
+  const bedragStr = prompt('Bedrag in euro:', '');
+  if(!bedragStr) return;
+  const bedrag = parseFloat(String(bedragStr).replace(',','.').replace(/[^0-9.]/g,''));
+  if(isNaN(bedrag) || bedrag<=0){ showNotif('Ongeldig bedrag', true); return; }
+  const omschrijving = prompt('Omschrijving (optioneel):', 'Priv\u00e9-opname') || 'Priv\u00e9-opname';
+  prive.push({ datum: datum, bedrag: bedrag, omschrijving: omschrijving });
+  try{ localStorage.setItem('sb_prive', JSON.stringify(prive)); }catch(e){}
+  if(typeof autoSave==='function') autoSave();
+  renderPriveOverzicht();
+  showNotif('\u2713 Priv\u00e9-opname toegevoegd');
+}
+
 function renderPriveOverzicht(){
   const box = document.getElementById('prive-overzicht');
   if(!box) return;
-  if(!prive.length){ box.innerHTML=''; return; }
   const totaal = prive.reduce((s,p)=>s+(parseFloat(p.bedrag)||0),0);
-  const rows = prive.map((p,idx)=>`<tr>
+  const rows = prive.length ? prive.map((p,idx)=>`<tr>
       <td style="font-size:12px">${p.datum}</td>
       <td style="font-size:12px">${esc(p.omschrijving||'')}</td>
       <td class="num" style="font-weight:600">${fmt(p.bedrag)}</td>
       <td><button onclick="verwijderPrive(${idx})" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px">🗑️</button></td>
-    </tr>`).join('');
+    </tr>`).join('') : '<tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nog geen privé-opnames</td></tr>';
   box.innerHTML = `
     <div class="card" style="margin-top:20px">
       <div class="card-header">
         <span class="card-title">👤 Privé-opnames (geen kosten, geen BTW)</span>
-        <span style="font-weight:700">${fmt(totaal)}</span>
+        <span style="display:flex;gap:12px;align-items:center"><span style="font-weight:700">${fmt(totaal)}</span><button onclick="voegPriveToe()" class="btn btn-primary" style="font-size:12px;padding:5px 12px">➕ Privé-opname</button></span>
       </div>
       <div class="table-wrap"><table>
         <thead><tr><th>Datum</th><th>Omschrijving</th><th class="num">Bedrag</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
+      <div style="font-size:11px;color:var(--text-muted);padding:8px 4px 0">ℹ️ Privé-opnames tellen niet mee in je winst & verlies — het is geld dat je uit de zaak haalt (gaat naar je kapitaal/balans).</div>
     </div>`;
 }
 
@@ -5472,7 +5517,7 @@ function renderCategoryFolders(){
   const results = document.getElementById('bonnen-results');
   if(results) results.style.display = 'block';
 
-  const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig'];
+  const cats = ['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Bankkosten','Abonnementen','Belasting','Kantoor','Overig'];
   const counts = {}; const amounts = {};
   bonnen.forEach(b => {
     counts[b.cat] = (counts[b.cat] || 0) + 1;
@@ -5589,7 +5634,7 @@ function renderBonnen(lijst){
       <td onclick="event.stopPropagation()">
         <select class="badge ${CAT_BADGE[b.cat]||'b-gray'}" onchange="wijzigCat(${ix},this.value)"
           style="border:none;cursor:pointer;font-size:11px;font-weight:500;padding:3px 6px;border-radius:20px;appearance:none;-webkit-appearance:none">
-          ${['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Overig']
+          ${['Materiaal','Brandstof','Gereedschap','Verzekering','Telefoon','Eten & drinken','Transport','Subcontractor','Bankkosten','Abonnementen','Belasting','Kantoor','Overig']
             .map(c=>`<option value="${c}" ${b.cat===c?'selected':''}>${CAT_EMOJI[c]||''} ${c}</option>`).join('')}
         </select>
       </td>
@@ -5610,6 +5655,7 @@ function renderBonnen(lijst){
           <span class="badge ${b.status==='vlag'?'b-red':'b-green'}">${b.status==='vlag'?'⚠️ Vlag':'✓ OK'}</span>
           ${bonHeeftBon(b) ? `<button onclick="event.stopPropagation();toonBonDetail(${ix})" title="Bon gekoppeld - klik om te bekijken" style="background:rgba(36,138,61,.12);border:1px solid #248a3d;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;color:#248a3d">📎</button>` : `<input type="file" id="koppel-input-${ix}" accept="image/*,application/pdf" style="display:none" onclick="event.stopPropagation()" onchange="koppelBonFoto(${ix},this.files[0])"><button onclick="event.stopPropagation();document.getElementById('koppel-input-${ix}').click()" title="Bon/foto koppelen aan deze regel" style="background:#248a3d;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;color:#fff;font-weight:600">➕ bon</button>`}
           <button onclick="event.stopPropagation();stuurNaarEBoekhouden(${ix})" title="${b._ebSent?('Al naar eBoekhouden gestuurd'+(b._ebSentDatum?(' op '+b._ebSentDatum):'')+' - klik om opnieuw te sturen'):'Stuur naar eBoekhouden'}" style="background:${b._ebSent?'rgba(36,138,61,.12)':'none'};border:1px solid ${b._ebSent?'#248a3d':'var(--border)'};border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:${b._ebSent?'#248a3d':'inherit'}">${b._ebSent?'✅ eB':'📤 eB'}</button>
+          <button onclick="event.stopPropagation();verwijderBon(${ix})" title="Verwijder bon" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;color:var(--red)">🗑️</button>
         </div>
       </td>
     </tr>`).join('') || '<tr><td colspan="9" class="empty">Geen bonnen</td></tr>';
@@ -7301,7 +7347,7 @@ function switchInkoopTab(name,btn){
   if(name==='handmatig')renderHandmatig();
 }
 
-const CAT_EMOJI={Materiaal:'🧱',Brandstof:'⛽',Gereedschap:'🔧',Verzekering:'🛡️',Telefoon:'📱','Eten & drinken':'🍽️',Transport:'🚐',Subcontractor:'👷',Overig:'📦'};
+const CAT_EMOJI={Materiaal:'🧱',Brandstof:'⛽',Gereedschap:'🔧',Verzekering:'🛡️',Telefoon:'📱','Eten & drinken':'🍽️',Transport:'🚐',Subcontractor:'👷',Bankkosten:'🏦',Abonnementen:'💻',Belasting:'🏛️',Kantoor:'📎',Overig:'📦'};
 
 function alleInkopen(){
   const uitBonnen=bonnen.map(b=>({...b,bron:'bon',product:b.note||b.cat}));
