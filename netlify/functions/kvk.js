@@ -16,7 +16,7 @@ exports.handler = async (event) => {
 
   try {
     const res = await fetch(`https://api.kvk.nl/test/api/v1/basisprofielen/${kvk}`, {
-      headers: { 'apikey': 'l7xx1f2691f2520d487185b1e8e0d30e7265' }
+      headers: { 'apikey': process.env.KVK_API_KEY }
     });
 
     if (!res.ok) {
