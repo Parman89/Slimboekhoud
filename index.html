@@ -2519,7 +2519,9 @@ async function kvkLookup(){
   btn.innerHTML='⏳'; btn.disabled=true;
 
   try{
-    const res=await fetch(`/.netlify/functions/kvk?kvk=${kvk}`);
+    const res=await fetch(`/.netlify/functions/kvk?kvk=${kvk}`, {
+      headers: await authHeaders()
+    });
     const data=await res.json();
 
     if(!res.ok||data.error){
