@@ -2451,6 +2451,13 @@ const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&g
 let currentUser = null;
 let currentProfile = null;
 
+// Stuurt Supabase-login-token mee naar de beveiligde Netlify functions
+async function authHeaders(){
+  const { data } = await window.sb.auth.getSession();
+  const token = data?.session?.access_token || '';
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+}
+
 function toggleAuthMode(mode){
   const lf=document.getElementById('login-form');
   const sf=document.getElementById('signup-form');
@@ -2763,9 +2770,7 @@ Schrijf omschrijvingen professioneel in het Nederlands.`;
   try{
     const res = await fetch('/.netlify/functions/claude', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: await authHeaders(),
       body: JSON.stringify({
         messages: [{role: 'user', content: prompt}]
       })
@@ -3267,7 +3272,7 @@ Voorbeeld: "toon BTW aangifte Q2" → Antwoord + NAVIGEER:btw`;
 
     const res = await fetch('/.netlify/functions/claude', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers: await authHeaders(),
       body: JSON.stringify({
         messages:[{role:'user',content: ctx + '\n\n--- Vraag van gebruiker ---\n' + vraag}]
       })
@@ -3406,7 +3411,7 @@ async function startCheckout(plan){
     const email = currentUser?.email || '';
     const res = await fetch('/.netlify/functions/stripe', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: await authHeaders(),
       body: JSON.stringify({action:'create_checkout', email, plan})
     });
     const data = await res.json();
@@ -3934,7 +3939,7 @@ async function runAgents(){
           // Fallback via Netlify function (als geen API key)
           response = await fetch('/.netlify/functions/claude', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: await authHeaders(),
             body: JSON.stringify({
               messages: [{
                 role: 'user',
@@ -3997,7 +4002,7 @@ async function runAgents(){
     try {
       const r = await fetch('/.netlify/functions/claude', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: await authHeaders(),
         body: JSON.stringify({messages: [{role: 'user', content: 'Genereer 10-12 realistische zakelijke bonnen voor Pro Stukadoors Rotterdam. JSON:\n[{"datum":"2026-MM-DD","leverancier":"naam","cat":"Materiaal/Brandstof/Gereedschap/Verzekering/Telefoon/Eten & drinken/Transport/Subcontractor/Overig","excl":getal,"pct":21}]\nAlleen JSON.'}]})
       });
       const d = await r.json();
@@ -4060,7 +4065,7 @@ async function stuurNaarEBoekhouden(index){
   try{
     const res = await fetch('/.netlify/functions/eboekhouden', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: await authHeaders(),
       body: JSON.stringify({ action: 'stuur_bon', data: b })
     });
     const data = await res.json();
@@ -7004,7 +7009,7 @@ async function stuurBetaallink(id){
     // Create Stripe payment link for this invoice
     const res = await fetch('/.netlify/functions/stripe', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: await authHeaders(),
       body: JSON.stringify({
         action: 'create_payment_link',
         email: f.klantEmail || '',
