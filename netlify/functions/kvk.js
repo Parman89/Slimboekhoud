@@ -1,8 +1,15 @@
+const { getUser, unauthorized, ALLOWED_ORIGIN } = require('./_auth');
+
 exports.handler = async (event) => {
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
     'Content-Type': 'application/json'
   };
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
+
+  // Login verplicht: zonder geldige Supabase-login niets uitvoeren.
+  const user = await getUser(event);
+  if (!user) return unauthorized(headers);
 
   const kvk = event.queryStringParameters?.kvk?.trim();
 
