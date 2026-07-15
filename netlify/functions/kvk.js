@@ -1,5 +1,14 @@
 const { getUser, unauthorized, ALLOWED_ORIGIN } = require('./_auth');
 
+// KvK API: gebruikt automatisch de productie-endpoint zodra KVK_API_KEY een
+// echte productiesleutel is; valt anders terug op de openbare KvK-testsleutel
+// (test-endpoint, alleen testdata).
+const KVK_TEST_KEY = 'l7xx1f2691f2520d487185b1e8e0d30e7265';
+const KVK_KEY = process.env.KVK_API_KEY || KVK_TEST_KEY;
+const KVK_BASE = KVK_KEY === KVK_TEST_KEY
+  ? 'https://api.kvk.nl/test/api/v1'
+  : 'https://api.kvk.nl/api/v1';
+
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -22,8 +31,8 @@ exports.handler = async (event) => {
   }
 
   try {
-    const res = await fetch(`https://api.kvk.nl/test/api/v1/basisprofielen/${kvk}`, {
-      headers: { 'apikey': process.env.KVK_API_KEY }
+    const res = await fetch(`${KVK_BASE}/basisprofielen/${kvk}`, {
+      headers: { 'apikey': KVK_KEY }
     });
 
     if (!res.ok) {
